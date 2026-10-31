@@ -63,6 +63,8 @@ public class WildOccupationService {
             item.put("level", tile.getLevel()); item.put("x", tile.getX()); item.put("y", tile.getY());
             item.put("totalRes", Objects.requireNonNullElse(tile.getTotalRes(), 0));
             item.put("mined", Objects.requireNonNullElse(tile.getMined(), 0));
+            item.put("remainingRes", Math.max(0L, (long) Objects.requireNonNullElse(tile.getTotalRes(), 0)
+                    - Objects.requireNonNullElse(tile.getMined(), 0)));
             owned.add(item);
         });
         return limit.state(owned);

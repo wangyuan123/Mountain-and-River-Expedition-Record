@@ -68,6 +68,7 @@ class HeadquartersServiceTest extends BaseServiceTest {
 
     @Test void citySelectionNeverChangesExplicitCityChiefAndDemolitionPausesBonus() {
         createBuilding(playerId, "headquarters", 1);
+        branchCity(playerId, 30);
         Officer mainChief = createOfficer(playerId, "commander_in_chief", 100, 100, 100);
         try (var ignored = scope.enter(playerId, 1)) {
             Building branchHq = createBuilding(playerId, "headquarters", 1);
@@ -98,7 +99,7 @@ class HeadquartersServiceTest extends BaseServiceTest {
         assertEquals(237, snapshot.military()); // 219 + 三件装备各5 + 三件套3。
         assertEquals(103, snapshot.defense());
         assertEquals(70, session.getAttackerCommanderMil());
-        assertEquals(Map.of("bulwark", 2), JsonUtil.parseIntMap(session.getAttackerSkills()));
+        assertEquals(Map.of("bulwark", 5), JsonUtil.parseIntMap(session.getAttackerSkills()));
         equipment.deleteAll(equipment.findByPlayerIdAndOfficerId(playerId, chief.getId())); equipment.flush();
         officers.appoint(playerId, chief.getId(), "commander_in_chief");
         marchService.processTimedOutTacticalBattle(session.getId(), session.getRoundDeadlineAt());
@@ -212,7 +213,7 @@ class HeadquartersServiceTest extends BaseServiceTest {
         assertEquals(defenseChief.getId(), CommandBonus.fromJson(session.getDefenderCommandBonus()).officerId());
         assertEquals(210, CommandBonus.fromJson(session.getDefenderCommandBonus()).military());
         assertEquals(commander.getId(), session.getDefenderCommanderId());
-        assertEquals(Map.of("bulwark", 2), JsonUtil.parseIntMap(session.getDefenderSkills()));
+        assertEquals(Map.of("bulwark", 5), JsonUtil.parseIntMap(session.getDefenderSkills()));
         Map<String, Object> defendingView = marchService.getTacticalBattle(defender.getId(), march.getId());
         // 双方使用各自分城的常驻加成，但接口不公开敌方内部军官快照。
         assertEquals(CommandBonus.fromJson(session.getAttackerCommandBonus()).toMap(), attackingView.get("attackerCommandBonus"));

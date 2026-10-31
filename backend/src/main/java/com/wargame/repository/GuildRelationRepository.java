@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface GuildRelationRepository extends JpaRepository<GuildRelation, Long> {
+    void deleteByGuildLowIdOrGuildHighId(Long low, Long high);
     Optional<GuildRelation> findByGuildLowIdAndGuildHighId(Long guildLowId, Long guildHighId);
     List<GuildRelation> findByGuildLowIdOrGuildHighIdOrderByUpdatedAtDesc(Long guildLowId, Long guildHighId);
 }

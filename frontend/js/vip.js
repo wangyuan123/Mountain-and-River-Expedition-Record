@@ -15,20 +15,7 @@
     return isNaN(n) ? '0' : n.toLocaleString();
   }
 
-  // 服务端等级配置尚未返回时的预览；每日资源与服务端同表，不叠加资源包。
-  var DEFAULT_LEVEL_DEFS = [
-    { level: 0, requiredCents: 0, title: '预备指挥官', buildQueuePerCity: 3, techQueuePerCity: 1, dailyRewards: { gold: 10000, food: 10000, steel: 10000, oil: 10000, rare: 10000, speedUp10m: 2, skillBook: 1, populationOrder: 1 } },
-    { level: 1, requiredCents: 600, title: '特遣队指挥官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 20000, food: 20000, steel: 20000, oil: 20000, rare: 20000, speedUp10m: 3, skillBook: 1, populationOrder: 1, marchOrd: 1 }, levelPackRewards: { recruitOrd: 1, starUp: 20, gold: 400000 } },
-    { level: 2, requiredCents: 3000, title: '前线先锋官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 30000, food: 50000, steel: 50000, oil: 50000, rare: 50000, speedUp10m: 6, expBook: 2, skillBook: 2, populationOrder: 2, marchOrd: 1 }, levelPackRewards: { recruitOrd: 2, starUp: 40, teleportNormal: 2 } },
-    { level: 3, requiredCents: 9800, title: '战略支柱长官', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 40000, food: 100000, steel: 100000, oil: 100000, rare: 100000, speedUp1h: 2, expBook: 3, skillBook: 2, populationOrder: 2, marchOrd: 1, signalJammingOrder: 1 }, levelPackRewards: { recruitOrd: 3, starUp: 60, commanderRenameCard: 1 } },
-    { level: 4, requiredCents: 19800, title: '方面军参谋长', buildQueuePerCity: 5, techQueuePerCity: 1, dailyRewards: { gold: 50000, food: 200000, steel: 200000, oil: 200000, rare: 200000, speedUp1h: 3, speedUp10m: 3, expBook: 4, skillBook: 3, populationOrder: 3, marchOrd: 2, signalJammingOrder: 1 }, levelPackRewards: { recruitOrd: 4, starUp: 100, teleportNormal: 4 } },
-    { level: 5, requiredCents: 32800, title: '兵团副司令官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 60000, food: 300000, steel: 300000, oil: 300000, rare: 300000, speedUp5h: 1, speedUp1h: 2, expBookAdv: 1, skillBook: 3, populationOrder: 3, emergencyPopulationOrder: 1, marchOrd: 2, signalJammingOrder: 1, feintOrder: 1 }, levelPackRewards: { recruitOrd: 5, starUp: 150 } },
-    { level: 6, requiredCents: 64800, title: '兵团总司令官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 70000, food: 400000, steel: 400000, oil: 400000, rare: 400000, speedUp5h: 2, expBookAdv: 2, skillBook: 4, populationOrder: 4, emergencyPopulationOrder: 1, marchOrd: 2, signalJammingOrder: 2, feintOrder: 1 }, levelPackRewards: { recruitOrd: 6, starUp: 200 } },
-    { level: 7, requiredCents: 128000, title: '战区副长官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 80000, food: 500000, steel: 500000, oil: 500000, rare: 500000, shield: 1, speedUp12h: 1, expBookAdv: 3, skillBook: 4, populationOrder: 4, emergencyPopulationOrder: 2, marchOrd: 3, signalJammingOrder: 2, feintOrder: 2 }, levelPackRewards: { recruitOrd: 7, starUp: 280 } },
-    { level: 8, requiredCents: 300000, title: '战区最高司令', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 90000, food: 600000, steel: 600000, oil: 600000, rare: 600000, shield12h: 1, speedUp12h: 1, speedUp5h: 1, expBookAdv: 4, skillBook: 5, populationOrder: 5, emergencyPopulationOrder: 2, marchOrd: 3, signalJammingOrder: 3, feintOrder: 2 }, levelPackRewards: { recruitOrd: 8, starUp: 360 } },
-    { level: 9, requiredCents: 600000, title: '战时常务长官', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 100000, food: 700000, steel: 700000, oil: 700000, rare: 700000, shield12h: 1, shield: 1, speedUp12h: 2, expBookAdv: 5, skillBook: 5, populationOrder: 5, emergencyPopulationOrder: 3, marchOrd: 4, signalJammingOrder: 3, feintOrder: 3 }, levelPackRewards: { recruitOrd: 9, starUp: 450 } },
-    { level: 10, requiredCents: 1000000, title: '特级上将·五星统帅', buildQueuePerCity: 5, techQueuePerCity: 2, dailyRewards: { gold: 110000, food: 800000, steel: 800000, oil: 800000, rare: 800000, shield24h: 1, speedUp24h: 1, speedUp12h: 1, expBookAdv: 8, skillBook: 6, populationOrder: 6, emergencyPopulationOrder: 3, marchOrd: 5, signalJammingOrder: 4, feintOrder: 4 }, levelPackRewards: { recruitOrd: 10, starUp: 600 } }
-  ];
+  // 等级目录及奖励资格只取服务端状态，缺失时不使用本地数值表。
 
   var Vip = {
     cachedStatus: null,
@@ -117,43 +104,21 @@
 
     /** 将服务端 VIP 字段适配为展示模型，同时同步当前玩家的等级与累计充值。 */
     applyStatus: function (status) {
-      var levels = (status.levels && status.levels.length) ? status.levels : DEFAULT_LEVEL_DEFS.slice();
+      var levels = status.levels || [];
       var level = status.vipLevel != null ? status.vipLevel : (status.level || 0);
       var current = levels.find(function (definition) { return definition.level === level; }) || (levels[0] || {});
-      var next = levels.find(function (definition) { return definition.level === level + 1; });
-      var claimedPacks = new Set(status.claimedPackLevels || []);
-      var claimedMilestones = new Set(status.claimedMilestones || []);
       var totalCents = Number(status.totalRechargeCents) || 0;
-
-      var levelPacks = levels.filter(function (l) { return l.level > 0; }).map(function (l) {
-        return {
-          level: l.level,
-          name: l.title,
-          requiredCents: l.requiredCents,
-          rewards: l.levelPackRewards || {},
-          claimed: claimedPacks.has(l.level),
-          claimable: level >= l.level && !claimedPacks.has(l.level)
-        };
-      });
-
-      var milestones = (status.milestones || []).map(function (m) {
-        return {
-          milestoneCents: m.milestoneCents,
-          name: m.title,
-          rewards: m.rewards || {},
-          claimed: claimedMilestones.has(m.milestoneCents),
-          claimable: totalCents >= m.milestoneCents && !claimedMilestones.has(m.milestoneCents)
-        };
-      });
+      var levelPacks = status.levelPacks || [];
+      var milestones = status.milestoneViews || [];
 
       this.cachedStatus = Object.assign({}, status, {
         level: level,
         titleName: status.title || status.titleName || current.title || '参谋',
         totalRechargeCents: totalCents,
-        currentLevelRequiredCents: current.requiredCents || 0,
-        nextLevelRequiredCents: next ? next.requiredCents : (status.nextLevelRequiredCents || current.requiredCents || 0),
-        dailySalaryClaimable: !status.dailyClaimed || ((status.storedDailySalaries || 0) > 0),
-        salaryBacklogDays: (status.storedDailySalaries || 0) + (status.dailyClaimed ? 0 : 1),
+        currentLevelRequiredCents: status.currentLevelRequiredCents || 0,
+        nextLevelRequiredCents: status.nextLevelRequiredCents || 0,
+        dailySalaryClaimable: status.dailySalaryClaimable === true,
+        salaryBacklogDays: status.salaryBacklogDays || 0,
         freeAmnestyAvailableToday: Boolean(status.freeAmnestyAvailable),
         badgeVisible: status.vipBadgeVisible !== false,
         levels: levels,
@@ -191,17 +156,12 @@
       var rechargeCents = st.totalRechargeCents || 0;
       var currentLevelRequiredCents = st.currentLevelRequiredCents || 0;
       var nextLevelRequiredCents = st.nextLevelRequiredCents || 0;
-      var isMax = level >= 10;
+      var isMax = st.isMax === true;
 
       var currentYuan = (rechargeCents / 100).toFixed(0);
       var nextYuan = (nextLevelRequiredCents / 100).toFixed(0);
 
-      var progressPct = 100;
-      if (!isMax && nextLevelRequiredCents > currentLevelRequiredCents) {
-        var span = nextLevelRequiredCents - currentLevelRequiredCents;
-        var cur = rechargeCents - currentLevelRequiredCents;
-        progressPct = Math.max(0, Math.min(100, Math.round((cur / span) * 100)));
-      }
+      var progressPct = st.intervalProgress || 0;
 
       var h = '<div class="vip-hero-top">' +
         '<div class="vip-hero-level">' +
@@ -220,7 +180,7 @@
       if (isMax) {
         h += '<span>已达最高统帅阶衔（五星至尊统帅）</span><span>功勋卓著</span>';
       } else {
-        var diffYuan = ((nextLevelRequiredCents - rechargeCents) / 100).toFixed(0);
+        var diffYuan = st.centsNeededForNext == null ? '待同步' : (st.centsNeededForNext / 100).toFixed(0);
         h += '<span>升级进度 ' + progressPct + '%</span>' +
           '<span>再累积 <b>¥' + diffYuan + '</b> 晋升至 VIP ' + (level + 1) + '</span>';
       }
@@ -594,11 +554,11 @@
       var curLv = st.level || 0;
       var inspLv = (this.inspectedLevel != null) ? this.inspectedLevel : curLv;
       var levels = st.levels || [];
-      var def = levels.find(function (l) { return l.level === inspLv; }) ||
-        DEFAULT_LEVEL_DEFS.find(function (l) { return l.level === inspLv; }) || levels[0] || {};
+      var def = levels.find(function (l) { return l.level === inspLv; }) || {};
+      var levelView = (st.levelViews || []).find(function (entry) { return entry.level === inspLv; }) || {};
       var reqYuan = ((def.requiredCents || 0) / 100).toFixed(0);
-      var isAchieved = curLv >= inspLv;
-      var needCents = Math.max(0, (def.requiredCents || 0) - (st.totalRechargeCents || 0));
+      var isAchieved = levelView.achieved === true;
+      var needCents = levelView.centsNeeded || 0;
       var needYuan = (needCents / 100).toFixed(0);
 
       // 1. VIP 0~10 全等级横向切换选择胶囊
@@ -975,7 +935,7 @@
           username = G.API.getUsername() || '';
         }
       } catch (e) {}
-      var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+      var core = G.Core;
       var player = (core && core.state && core.state.player) ? core.state.player : null;
       var uname = username || (player && (player.username || player.name)) || 'guest';
       return 'wargame_home_vip_visible_' + uname;
@@ -1005,7 +965,7 @@
       if (typeof G.toast === 'function') {
         G.toast(isVisible ? '已开启首页特勤部卡片显示' : '已关闭首页特勤部卡片显示');
       }
-      var core = (G && G.Core) || (typeof Core !== 'undefined' ? Core : null);
+      var core = G.Core;
       if (core && typeof core.render === 'function') {
         core.render();
       }
@@ -1026,14 +986,11 @@
       var salaryHint = salaryClaimed ? '今日特勤军饷已受领' :
         (p.vipDailySalaryClaimed === false ? '每日特勤军饷已就绪' : '查看每日特勤军饷');
 
-      // 计算简明进度
-      var levelThresholds = [0, 600, 3000, 9800, 19800, 32800, 64800, 128000, 300000, 600000, 1000000];
-      var nextThreshold = levelThresholds[level + 1] || levelThresholds[10];
-      var curThreshold = levelThresholds[level] || 0;
-      var pct = 100;
-      if (level < 10 && nextThreshold > curThreshold) {
-        pct = Math.max(0, Math.min(100, Math.round(((totalRechargeCents - curThreshold) / (nextThreshold - curThreshold)) * 100)));
-      }
+      // 首页与弹窗读取同一服务端晋升结果，未同步时不推算充值门槛。
+      var vip = s.vip || this.cachedStatus || {};
+      var pct = vip.intervalProgress || 0;
+      var nextHint = vip.isMax === true ? '最高五星统帅荣耀' :
+        (vip.centsNeededForNext != null ? '再积 ¥' + (vip.centsNeededForNext / 100).toFixed(0) + ' 晋升 VIP ' + (level + 1) : '晋升进度待同步');
 
       var h = '<div class="home-vip-card">' +
         '<div class="home-vip-card-head">' +
@@ -1046,7 +1003,7 @@
         '<div class="home-vip-progress-row">' +
         '  <div class="home-vip-progress-text">' +
         '    <span>战费累积 ¥' + currentYuan + '</span>' +
-        '    <span>' + (level >= 10 ? '最高五星统帅荣耀' : ('再积 ¥' + ((nextThreshold - totalRechargeCents) / 100).toFixed(0) + ' 晋升 VIP ' + (level + 1))) + '</span>' +
+        '    <span>' + nextHint + '</span>' +
         '  </div>' +
         '  <div class="home-vip-progress-bar"><div class="home-vip-progress-fill" style="width:' + pct + '%"></div></div>' +
         '</div>' +
@@ -1056,12 +1013,12 @@
       if (level >= 3) h += '<span class="home-vip-priv-pill">伤兵黄金救治8折</span>';
       if (level >= 6) h += '<span class="home-vip-priv-pill">全城一键安抚/大赦</span>';
       if (level >= 7) h += '<span class="home-vip-priv-pill">万能技能书定向转化</span>';
-      if (level === 0) h += '<span class="home-vip-priv-pill">¥6首充开启5施工队+超额礼包</span>';
+      if (level === 0) h += '<span class="home-vip-priv-pill">VIP0每日免费军饷</span>';
       h += '</div>' +
         '<div class="home-vip-actions">' +
-        '  <span class="home-vip-salary-hint">' + (level > 0 ? salaryHint : '首充激活特勤战备') + '</span>' +
+        '  <span class="home-vip-salary-hint">' + salaryHint + '</span>' +
         '  <button class="btn sm ok home-vip-salary-btn" onclick="Game.Vip.openModal(\'overview\')">' +
-        (level > 0 ? (salaryClaimed ? '查看特勤军饷' : '受领特勤军饷') : '立即激活特勤部') +
+        (salaryClaimed ? '查看特勤军饷' : '受领特勤军饷') +
         '  </button>' +
         '</div></div>';
 

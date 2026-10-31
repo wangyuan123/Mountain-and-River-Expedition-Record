@@ -13,6 +13,15 @@ public final class GameConstants {
     public static final String VERSION = "2.0.0";
     public static final String SAVE_KEY = "ww2_wistone_v1";
 
+    /** 已完成建筑的统一等级上限，升级校验和主线目标共用。 */
+    public static final int BUILDING_MAX_LEVEL = 10;
+
+    /** 世界频道首次解锁声望门槛；解锁结果由玩家账号永久保存。 */
+    public static final int WORLD_CHAT_PRESTIGE_THRESHOLD = 10000;
+
+    /** 新建 PvP 编队和入队的声望门槛，状态展示与执行共用。 */
+    public static final int PVP_PRESTIGE_THRESHOLD = 10000;
+
     /** 资源区与军工区各固定35个共享卡槽，不随市政厅等级扩容；与前端 G.DATA 保持一致。 */
     public static final int GROUP_SLOTS_RES = 35;
     public static final int GROUP_SLOTS_RES_MAX = GROUP_SLOTS_RES;

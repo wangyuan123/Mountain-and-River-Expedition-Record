@@ -1,0 +1,41 @@
+{
+  "frozen_city_global_food_callback": {
+    "afterFood": 9900,
+    "beforeFood": 10000,
+    "frozen": true
+  },
+  "peaceful_transfer_food_clock": {
+    "beforeFood": 10000,
+    "foodLedgerAt": 1800000000000,
+    "cityLastTick": 1800000000000,
+    "afterFood": 7600,
+    "frozenHours": 24
+  },
+  "frozen_wounded_retention": {
+    "retained": false,
+    "frozen": true,
+    "beforeWounded": 10
+  },
+  "vip_healing_quotes": {
+    "goldCost": 660,
+    "goldPerUnit": 3,
+    "diamondCost": 2,
+    "unit": "infantry",
+    "originalGoldPerUnit": 5,
+    "count": 220,
+    "discountPercent": 40
+  },
+  "vip_healing_rounding_quotes": {
+    "goldCost": 35,
+    "goldPerUnit": 4,
+    "diamondCost": 1,
+    "unit": "infantry",
+    "originalGoldPerUnit": 5,
+    "count": 10,
+    "discountPercent": 30
+  },
+  "medical_recovery_with_full_skill": {
+    "recoveryPercent": 65,
+    "medicalLevel": 10
+  }
+}

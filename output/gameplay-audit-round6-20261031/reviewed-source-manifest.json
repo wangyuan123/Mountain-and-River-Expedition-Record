@@ -1,0 +1,10 @@
+{
+  "backend/src/main/java/com/wargame/repository/WoundedUnitRepository.java": "0f4e07ec273500a296f460d88f72fe95e1671ae536db5b90d2b7451bf252b0d5",
+  "backend/src/main/java/com/wargame/service/CityConquestService.java": "04491a5c26da369f5fc3244f0d5c9ee443fde67c7ed9ea025aceb5fd529c328e",
+  "backend/src/main/java/com/wargame/service/CitySurrenderService.java": "f60e94b5eceb32e04416712c59dda6ee5f8b197c1404689c2cf3213a88b03044",
+  "backend/src/main/java/com/wargame/service/GarrisonFoodService.java": "28036912d8785baea285345a9c67d56733b1e061df2e3e7e92de949e9258c9bd",
+  "backend/src/main/java/com/wargame/service/TechService.java": "328e332f31c00a588b62204d3525d41dde6df590ebc9d5f57ebe07b3c19d95fc",
+  "backend/src/main/java/com/wargame/service/WoundedService.java": "739bf0ad3b428dfc31e06b249bb9661e448ee047960b1eeb28ccb2cfd95cc8c4",
+  "docs/CITY_SURRENDER_DESIGN_20261012.md": "1b062c1ad2da84c808b82f9ff6b6fc25f1a631e69b8780f7a3806810e751a8d2",
+  "frontend/js/wounded.js": "1b22744161e3c368f098ea5731bf2c7b6ac6b40df0089f97adef22ed702a8bf1"
+}

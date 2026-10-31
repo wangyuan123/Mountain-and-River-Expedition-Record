@@ -53,7 +53,7 @@ public class CityContextConfig implements WebMvcConfigurer {
                 || uri.endsWith("/game/world/march-stratagem")) return false;
         return uri.contains("/game/build") || uri.contains("/game/army") || uri.contains("/game/tech")
                 || uri.contains("/game/officer") || uri.contains("/game/fort") || uri.contains("/game/depot")
-                || uri.contains("/game/market") || uri.contains("/game/cities/teleport") || uri.contains("/game/wounded") || uri.contains("/game/unit-equipment")
+                || uri.contains("/game/market") || uri.contains("/game/cities/teleport") || uri.contains("/game/wounded")
                 || uri.contains("/game/prisoner") || uri.endsWith("/game/world/dispatch")
                 || uri.endsWith("/game/world/stop-gather") || uri.endsWith("/game/world/cancel-march")
                 || uri.endsWith("/game/world/speedup-march") || uri.contains("/game/world/battle/command")

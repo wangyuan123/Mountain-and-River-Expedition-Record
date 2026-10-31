@@ -11,6 +11,8 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 public class BattleResult {
+    /** 冻结交战时的身份，城市或俘虏移交后仍可准确脱敏。 */
+    private Long defenderPlayerId;
 
     /** 独立墙体终局供战报回放，不能混入部队损失统计。 */
     private ConquestWallState wall;
@@ -27,7 +29,7 @@ public class BattleResult {
     private Map<String, Object> commanders;
 
     /** 双方实际参战的装备物品、数值和规则版本快照。 */
-    private Map<String, Object> unitEquipment;
+    private Map<String, Object> supportSources;
 
     /** 经白名单投影的来源贡献，不包含内部快照。 */
     private java.util.List<Map<String, Object>> formationContributions;

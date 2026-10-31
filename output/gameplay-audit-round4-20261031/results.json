@@ -1,0 +1,4881 @@
+{
+  "branch_stage_gift_diamonds": {
+    "response": {
+      "success": true,
+      "message": "🎉 成功开启【新兵奠基礼包】！获得：\n粮/钢/油各 +20000、稀矿 +5000\n黄金 +2000、钻石 +50！\n额外附赠：10分加速符×5，列兵军事装备箱×1",
+      "itemId": "stage_gift_1",
+      "gold": 12000,
+      "diamond": 50
+    },
+    "branchDiamond": 50,
+    "mainDiamond": 100
+  },
+  "stage_gift_diamond_overflow": {
+    "response": {
+      "success": true,
+      "message": "🎉 成功开启【新兵奠基礼包】！获得：\n粮/钢/油各 +20000、稀矿 +5000\n黄金 +2000、钻石 +50！\n额外附赠：10分加速符×5，列兵军事装备箱×1",
+      "itemId": "stage_gift_1",
+      "gold": 102000,
+      "diamond": -2147483609
+    },
+    "diamondAfter": -2147483609
+  },
+  "experience_book_two_entrances": {
+    "depotLevel": 10,
+    "officerLevel": 1,
+    "officer": {
+      "success": true,
+      "message": "已使用经验书，获得 +10000 经验",
+      "exp": 10000,
+      "level": 1,
+      "gain": 10000,
+      "count": 1,
+      "itemId": "expBook"
+    },
+    "depot": {
+      "success": true,
+      "message": "审查军官 获得 10000 经验,当前 Lv.10",
+      "exp": 1000,
+      "level": 10
+    }
+  },
+  "wash_changes_birth_attributes": {
+    "after": [
+      120,
+      75,
+      75,
+      75
+    ],
+    "response": {
+      "success": true,
+      "message": "审查军官 洗点成功！属性恢复初始值，返还 0 点可分配属性点",
+      "attrPoints": 0,
+      "military": 120,
+      "defense": 75,
+      "logistics": 75,
+      "knowledge": 75
+    },
+    "before": [
+      111,
+      50,
+      60,
+      65
+    ]
+  },
+  "wash_changes_specialty_using_allocated_points": {
+    "afterMilitary": 75,
+    "originalMainAttribute": "military",
+    "response": {
+      "success": true,
+      "message": "审查军官 洗点成功！属性恢复初始值，返还 29 点可分配属性点",
+      "attrPoints": 29,
+      "military": 75,
+      "defense": 120,
+      "logistics": 75,
+      "knowledge": 75
+    },
+    "afterDefense": 120
+  },
+  "mayor_assignment_retroactive_steel": {
+    "baselineSteel": 600,
+    "response": {
+      "success": true,
+      "message": "任命成功！审查军官 出任 市长"
+    },
+    "newMayorSteel": 1200
+  },
+  "morale_tick_frequency": {
+    "oneHourMorale": 100,
+    "twoHalfHoursMorale": 10
+  },
+  "food_cap_managed_unmanaged": {
+    "initialCap": 200000,
+    "managedFood": 200000,
+    "unmanagedFood": 199900
+  },
+  "tech_completed_before_tick_retroactive_production": {
+    "lateTechSteel": 630,
+    "baselineSteel": 600
+  },
+  "building_event_lost_offline_production": {
+    "steelAfterHalfHourProducing": 0,
+    "completedBuildings": 1
+  },
+  "vip_amnesty_modifies_frozen_city": {
+    "frozenResentmentAfter": 0,
+    "frozenMoraleAfter": 100,
+    "response": {
+      "success": true,
+      "type": "free_amnesty",
+      "action": "free_amnesty",
+      "affectedCities": 3,
+      "message": "军委会全域大赦令颁布生效！名下 3 座城池民心拉满至 100，民怨全域清零！"
+    },
+    "actualCities": 2
+  },
+  "vip_amnesty_count": {
+    "response": {
+      "success": true,
+      "type": "free_amnesty",
+      "action": "free_amnesty",
+      "affectedCities": 2,
+      "message": "军委会全域大赦令颁布生效！名下 2 座城池民心拉满至 100，民怨全域清零！"
+    },
+    "actualCities": 1
+  },
+  "guild_unilateral_friendship": {
+    "otherSideConsent": false,
+    "response": {
+      "message": "已设为友好军团",
+      "success": true,
+      "status": "friendly"
+    },
+    "before": "hostile",
+    "after": "friendly"
+  },
+  "forum_tip_total_overflow": {
+    "response": {
+      "success": true,
+      "amountGold": 1500000000,
+      "totalGold": -1294967296,
+      "totalTips": 2
+    },
+    "actualTransferred": 3000000000,
+    "storedTotal": -1294967296
+  },
+  "guild_application_survives_disband": {
+    "guildStillExists": false,
+    "orphanApplications": 1
+  },
+  "vip_gold_appease_ignores_cooldown": {
+    "goldAfter": 96800,
+    "first": {
+      "success": true,
+      "type": "batch_gold",
+      "action": "batch_gold",
+      "totalGoldDeducted": 1600,
+      "message": "全域一键黄金赈民完成，总计消耗 1600 黄金 (已享 VIP 8 折优惠)！"
+    },
+    "moraleAfter": 40,
+    "second": {
+      "success": true,
+      "type": "batch_gold",
+      "action": "batch_gold",
+      "totalGoldDeducted": 1600,
+      "message": "全域一键黄金赈民完成，总计消耗 1600 黄金 (已享 VIP 8 折优惠)！"
+    },
+    "sameGameTime": 1800000000000
+  },
+  "vip_gold_appease_spends_frozen_city": {
+    "frozenMoraleAfter": 30,
+    "response": {
+      "success": true,
+      "type": "batch_gold",
+      "action": "batch_gold",
+      "totalGoldDeducted": 3200,
+      "message": "全域一键黄金赈民完成，总计消耗 3200 黄金 (已享 VIP 8 折优惠)！"
+    },
+    "frozenGoldBefore": 10000,
+    "frozenGoldAfter": 8400
+  },
+  "frozen_city_shield_cancel": {
+    "shieldAfter": 0,
+    "response": {
+      "success": true,
+      "message": "已主动解除本城免战护盾",
+      "cityName": "审查城市0",
+      "cityId": 9
+    },
+    "shieldBefore": 1800003600000
+  },
+  "stage_gift_extra_item_overflow": {
+    "response": {
+      "success": true,
+      "message": "🎉 成功开启【新兵奠基礼包】！获得：\n粮/钢/油各 +20000、稀矿 +5000\n黄金 +2000、钻石 +50！\n额外附赠：10分加速符×5，列兵军事装备箱×1",
+      "itemId": "stage_gift_1",
+      "gold": 102000,
+      "diamond": 150
+    },
+    "speedUp10m": -2147483645
+  },
+  "officer_exp_book_while_marching": {
+    "levelAfter": 100,
+    "response": {
+      "success": true,
+      "message": "⚡ 审查军官 使用满级经验书直升满级 Lv.100！获得 99 点可分配属性！",
+      "exp": 0,
+      "level": 100
+    },
+    "role": "march"
+  },
+  "forum_concurrent_double_spending": {
+    "responses": [
+      "java.util.concurrent.ExecutionException: org.springframework.orm.ObjectOptimisticLockingFailureException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect) : [com.wargame.model.entity.Resources#31]",
+      {
+        "success": true,
+        "amountGold": 60,
+        "totalGold": 60,
+        "totalTips": 1
+      }
+    ],
+    "firstAuthorGold": 0,
+    "secondAuthorGold": 60,
+    "senderGold": 40,
+    "initialTotalGold": 100
+  },
+  "normal_appease_ignores_cooldown": {
+    "moraleAfter": 40,
+    "first": {
+      "success": true,
+      "message": "消耗 2000 黄金开仓赈民，民心 +10，民怨 -5",
+      "morale": 30,
+      "resentment": 0,
+      "state": {
+        "serverTime": 1800000000000,
+        "cityBattleLocked": false,
+        "cityOverview": {
+          "cities": [],
+          "count": 0,
+          "cap": 1,
+          "rankName": "列兵",
+          "nextRankName": "上等兵",
+          "nextCap": 2,
+          "buildCost": {
+            "food": 5000,
+            "gold": 10000,
+            "steel": 10000,
+            "rare": 2000,
+            "oil": 5000
+          },
+          "buildDurationMs": 1800000,
+          "sites": []
+        },
+        "foodSupply": null,
+        "player": {
+          "id": 32,
+          "username": "r4_normal_appease",
+          "commanderRenameCount": 0,
+          "commanderNameRenameAvailableAt": 0,
+          "name": "r4_normal_appease",
+          "faction": "allies",
+          "cityName": "r4_normal_appease",
+          "cityNameRenameAvailableAt": 0,
+          "avatar": "img/avatars/historical/rank-lieutenant-v1.webp",
+          "homeModuleOrder": null,
+          "militaryRank": 1,
+          "mobilizationExpiries": {
+            "mobilizationOrder": 0,
+            "advancedMobilizationOrder": 0,
+            "rapidMobilizationOrder": 0
+          },
+          "mobilizationCycle": 0,
+          "militaryRankName": "列兵",
+          "vipLevel": 0,
+          "vipDailySalaryClaimed": false,
+          "totalRechargeCents": 0,
+          "customAvatar": null,
+          "avatarFrame": "default",
+          "vipBadgeVisible": true,
+          "tutorialDismissed": false,
+          "newbieProtectionStartedAt": 0,
+          "newbieProtectionUntil": 0,
+          "citySlot": 0,
+          "npcVictories": 0,
+          "formationPower": 0,
+          "overallPower": 0
+        },
+        "rankInfo": {
+          "tier": 1,
+          "name": "列兵",
+          "baseCap": 25000,
+          "prestige": 100,
+          "npcVictories": 0,
+          "cityCap": 1,
+          "nextCityCap": 2,
+          "nextCityRankName": "上等兵",
+          "nextExpansionCap": 2,
+          "isMax": false,
+          "canPromote": false,
+          "canTakeExam": false,
+          "promotionReward": {
+            "itemKey": "rank_diamond_pack_2",
+            "tier": 2,
+            "name": "上等兵晋升钻石大礼包",
+            "diamonds": 40,
+            "icon": "img/items/newbie-pack.svg",
+            "cat": "resource",
+            "desc": "开启获得40钻石，计入账号共享余额；可用于购买下士晋升凭证",
+            "nextCertificateTier": 3,
+            "nextCertificateName": "下士晋升凭证"
+          },
+          "serverTime": 1800000000000,
+          "nextTier": 2,
+          "nextName": "上等兵",
+          "nextBaseCap": 50000,
+          "reqPrestige": 10000,
+          "reqNpcVictories": 10,
+          "certificate": {
+            "name": "上等兵晋升凭证",
+            "source": "商城「晋升凭证」购买，20 钻石/张；NPC 不再掉落",
+            "owned": 0,
+            "required": 1,
+            "key": "rank_certificate_2",
+            "price": 20
+          },
+          "prestigeEnough": false,
+          "victoriesEnough": false,
+          "certificateEnough": false,
+          "prerequisitesMet": false,
+          "exam": {
+            "status": "not_started",
+            "questionCount": 5,
+            "requiredCorrect": 4,
+            "expiresAt": 0,
+            "retryAt": 0,
+            "correct": 0
+          },
+          "examPassed": false
+        },
+        "rankDiamondGifts": {
+          "unopenedCount": 0,
+          "rewards": []
+        },
+        "unreadReportCount": 0,
+        "resources": {
+          "food": 10000,
+          "steel": 100000,
+          "oil": 100000,
+          "rare": 100000,
+          "gold": 98000,
+          "diamond": 100
+        },
+        "buildings": {},
+        "wilds": {
+          "citySlot": 0,
+          "baseCap": 5,
+          "commandLevel": 0,
+          "cap": 5,
+          "ownedCount": 0,
+          "owned": []
+        },
+        "unitUnlocks": {
+          "infantry": {
+            "unitId": "infantry",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ]
+          },
+          "truck": {
+            "unitId": "truck",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ]
+          },
+          "recon_car": {
+            "unitId": "recon_car",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ]
+          },
+          "armored": {
+            "unitId": "armored",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 3,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "weapon_range",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 3,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "weapon_range",
+                "kind": "technology"
+              }
+            ]
+          },
+          "ltank": {
+            "unitId": "ltank",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "轻装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "lightfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "轻装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "lightfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ]
+          },
+          "scout": {
+            "unitId": "scout",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ]
+          },
+          "assault": {
+            "unitId": "assault",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ]
+          },
+          "transport": {
+            "unitId": "transport",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "负重科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_load",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_food",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "负重科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_load",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_food",
+                "kind": "technology"
+              }
+            ]
+          },
+          "htank": {
+            "unitId": "htank",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ]
+          },
+          "fighter": {
+            "unitId": "fighter",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "attack_tech",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "attack_tech",
+                "kind": "technology"
+              }
+            ]
+          },
+          "destroyer": {
+            "unitId": "destroyer",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          },
+          "rocket": {
+            "unitId": "rocket",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 9,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 8,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 7,
+                "id": "arm_engine",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 9,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 8,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 7,
+                "id": "arm_engine",
+                "kind": "technology"
+              }
+            ]
+          },
+          "sub": {
+            "unitId": "sub",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          },
+          "special": {
+            "unitId": "special",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "训练加速",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_train",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军队生命",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "cmd_hp",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "训练加速",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_train",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军队生命",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "cmd_hp",
+                "kind": "technology"
+              }
+            ]
+          },
+          "bomber": {
+            "unitId": "bomber",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ]
+          },
+          "battleship": {
+            "unitId": "battleship",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          },
+          "carrier": {
+            "unitId": "carrier",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          }
+        },
+        "coastalPortLevel": 0,
+        "population": {
+          "civilian": 1000,
+          "capacity": 0,
+          "effectiveCapacity": 0,
+          "recruitable": 1000,
+          "growthPerHour": 0.0
+        },
+        "army": {},
+        "woundedCount": 0,
+        "prisonerCount": 0,
+        "prisonerCapacity": 0,
+        "forts": {},
+        "items": {},
+        "technologyRulesVersion": "technology-v3-20261019",
+        "tech": {},
+        "research": null,
+        "researches": [],
+        "vip": {
+          "vipLevel": 0,
+          "title": "预备指挥官",
+          "totalRechargeCents": 0,
+          "vipExp": 0,
+          "nextVipExp": 60,
+          "intervalProgress": 0.0,
+          "centsNeededForNext": 600,
+          "dailyClaimed": false,
+          "storedDailySalaries": 0,
+          "freeAmnestyAvailable": false,
+          "vipBadgeVisible": true,
+          "customAvatar": null,
+          "avatarFrame": "default",
+          "claimedPackLevels": [],
+          "claimedMilestones": [],
+          "buildQueuePerCity": 3,
+          "techQueuePerCity": 1,
+          "woundedGoldDiscount": 0.0,
+          "mapFavoriteLimit": 10,
+          "marchPresetLimit": 2,
+          "levels": [
+            {
+              "level": 0,
+              "requiredCents": 0,
+              "title": "预备指挥官",
+              "buildQueuePerCity": 3,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.0,
+              "mapFavoriteLimit": 10,
+              "marchPresetLimit": 2,
+              "buildSpeedBonus": 0.0,
+              "customAvatarUnlocked": false,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 10000,
+                "food": 10000,
+                "steel": 10000,
+                "oil": 10000,
+                "rare": 10000,
+                "speedUp10m": 2,
+                "skillBook": 1,
+                "populationOrder": 1
+              },
+              "levelPackRewards": {}
+            },
+            {
+              "level": 1,
+              "requiredCents": 600,
+              "title": "特遣队指挥官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.0,
+              "mapFavoriteLimit": 10,
+              "marchPresetLimit": 2,
+              "buildSpeedBonus": 0.0,
+              "customAvatarUnlocked": false,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 20000,
+                "food": 20000,
+                "steel": 20000,
+                "oil": 20000,
+                "rare": 20000,
+                "speedUp10m": 3,
+                "skillBook": 1,
+                "populationOrder": 1,
+                "marchOrd": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 1,
+                "gold": 400000,
+                "shield2h": 6,
+                "shield": 2,
+                "starUp": 20,
+                "skillBook": 3,
+                "speedUp10m": 10,
+                "expBook": 5
+              }
+            },
+            {
+              "level": 2,
+              "requiredCents": 3000,
+              "title": "前线先锋官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.0,
+              "mapFavoriteLimit": 15,
+              "marchPresetLimit": 2,
+              "buildSpeedBonus": 0.05,
+              "customAvatarUnlocked": false,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 30000,
+                "food": 50000,
+                "steel": 50000,
+                "oil": 50000,
+                "rare": 50000,
+                "speedUp10m": 6,
+                "expBook": 2,
+                "skillBook": 2,
+                "populationOrder": 2,
+                "marchOrd": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 2,
+                "teleportNormal": 2,
+                "gold": 800000,
+                "shield2h": 8,
+                "shield": 4,
+                "starUp": 40,
+                "skillBook": 6,
+                "speedUp1h": 6,
+                "expBook": 10
+              }
+            },
+            {
+              "level": 3,
+              "requiredCents": 9800,
+              "title": "战略支柱长官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.2,
+              "mapFavoriteLimit": 20,
+              "marchPresetLimit": 3,
+              "buildSpeedBonus": 0.05,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 40000,
+                "food": 100000,
+                "steel": 100000,
+                "oil": 100000,
+                "rare": 100000,
+                "speedUp1h": 2,
+                "expBook": 3,
+                "skillBook": 2,
+                "populationOrder": 2,
+                "marchOrd": 1,
+                "signalJammingOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 3,
+                "teleportNormal": 3,
+                "gold": 1200000,
+                "shield2h": 8,
+                "shield": 6,
+                "shield12h": 2,
+                "commanderRenameCard": 1,
+                "starUp": 60,
+                "skillBook": 9,
+                "speedUp1h": 12,
+                "speedUp5h": 2,
+                "expBookAdv": 2
+              }
+            },
+            {
+              "level": 4,
+              "requiredCents": 19800,
+              "title": "方面军参谋长",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.2,
+              "mapFavoriteLimit": 30,
+              "marchPresetLimit": 3,
+              "buildSpeedBonus": 0.05,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 50000,
+                "food": 200000,
+                "steel": 200000,
+                "oil": 200000,
+                "rare": 200000,
+                "speedUp1h": 3,
+                "speedUp10m": 3,
+                "expBook": 4,
+                "skillBook": 3,
+                "populationOrder": 3,
+                "marchOrd": 2,
+                "signalJammingOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 4,
+                "teleportNormal": 4,
+                "gold": 1600000,
+                "shield2h": 10,
+                "shield": 8,
+                "shield12h": 4,
+                "shield24h": 1,
+                "commanderRenameCard": 1,
+                "starUp": 100,
+                "skillBook": 12,
+                "speedUp5h": 5,
+                "expBookAdv": 4
+              }
+            },
+            {
+              "level": 5,
+              "requiredCents": 32800,
+              "title": "兵团副司令官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.3,
+              "mapFavoriteLimit": 30,
+              "marchPresetLimit": 4,
+              "buildSpeedBonus": 0.08,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 60000,
+                "food": 300000,
+                "steel": 300000,
+                "oil": 300000,
+                "rare": 300000,
+                "speedUp5h": 1,
+                "speedUp1h": 2,
+                "expBookAdv": 1,
+                "skillBook": 3,
+                "populationOrder": 3,
+                "emergencyPopulationOrder": 1,
+                "marchOrd": 2,
+                "signalJammingOrder": 1,
+                "feintOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 5,
+                "teleportNormal": 5,
+                "gold": 2000000,
+                "shield2h": 12,
+                "shield": 10,
+                "shield12h": 6,
+                "shield24h": 2,
+                "starUp": 150,
+                "skillBook": 15,
+                "speedUp5h": 10,
+                "expBookAdv": 6
+              }
+            },
+            {
+              "level": 6,
+              "requiredCents": 64800,
+              "title": "兵团总司令官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.3,
+              "mapFavoriteLimit": 40,
+              "marchPresetLimit": 4,
+              "buildSpeedBonus": 0.08,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 70000,
+                "food": 400000,
+                "steel": 400000,
+                "oil": 400000,
+                "rare": 400000,
+                "speedUp5h": 2,
+                "expBookAdv": 2,
+                "skillBook": 4,
+                "populationOrder": 4,
+                "emergencyPopulationOrder": 1,
+                "marchOrd": 2,
+                "signalJammingOrder": 2,
+                "feintOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 6,
+                "teleportNormal": 6,
+                "gold": 2400000,
+                "shield": 12,
+                "shield12h": 8,
+                "shield24h": 4,
+                "shield72h": 1,
+                "teleportAdvanced": 2,
+                "starUp": 200,
+                "skillBook": 18,
+                "speedUp5h": 8,
+                "speedUp12h": 2,
+                "expBookAdv": 10,
+                "supplyPack": 3
+              }
+            },
+            {
+              "level": 7,
+              "requiredCents": 128000,
+              "title": "战区副长官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.4,
+              "mapFavoriteLimit": 50,
+              "marchPresetLimit": 5,
+              "buildSpeedBonus": 0.1,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 80000,
+                "food": 500000,
+                "steel": 500000,
+                "oil": 500000,
+                "rare": 500000,
+                "shield": 1,
+                "speedUp12h": 1,
+                "expBookAdv": 3,
+                "skillBook": 4,
+                "populationOrder": 4,
+                "emergencyPopulationOrder": 2,
+                "marchOrd": 3,
+                "signalJammingOrder": 2,
+                "feintOrder": 2
+              },
+              "levelPackRewards": {
+                "recruitOrd": 7,
+                "teleportNormal": 7,
+                "gold": 2800000,
+                "shield": 16,
+                "shield12h": 12,
+                "shield24h": 6,
+                "shield72h": 2,
+                "teleportAdvanced": 3,
+                "starUp": 280,
+                "skillBook": 21,
+                "universalSkillBook": 1,
+                "speedUp12h": 4,
+                "expBookMax": 2
+              }
+            },
+            {
+              "level": 8,
+              "requiredCents": 300000,
+              "title": "战区最高司令",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.4,
+              "mapFavoriteLimit": 50,
+              "marchPresetLimit": 5,
+              "buildSpeedBonus": 0.12,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 90000,
+                "food": 600000,
+                "steel": 600000,
+                "oil": 600000,
+                "rare": 600000,
+                "shield12h": 1,
+                "speedUp12h": 1,
+                "speedUp5h": 1,
+                "expBookAdv": 4,
+                "skillBook": 5,
+                "populationOrder": 5,
+                "emergencyPopulationOrder": 2,
+                "marchOrd": 3,
+                "signalJammingOrder": 3,
+                "feintOrder": 2
+              },
+              "levelPackRewards": {
+                "recruitOrd": 8,
+                "teleportNormal": 8,
+                "gold": 3200000,
+                "shield": 16,
+                "shield12h": 16,
+                "shield24h": 8,
+                "shield72h": 3,
+                "teleportAdvanced": 4,
+                "starUp": 360,
+                "skillBook": 24,
+                "universalSkillBook": 2,
+                "speedUp12h": 6,
+                "expBookMax": 3
+              }
+            },
+            {
+              "level": 9,
+              "requiredCents": 600000,
+              "title": "战时常务长官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.5,
+              "mapFavoriteLimit": 60,
+              "marchPresetLimit": 6,
+              "buildSpeedBonus": 0.15,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 100000,
+                "food": 700000,
+                "steel": 700000,
+                "oil": 700000,
+                "rare": 700000,
+                "shield12h": 1,
+                "shield": 1,
+                "speedUp12h": 2,
+                "expBookAdv": 5,
+                "skillBook": 5,
+                "populationOrder": 5,
+                "emergencyPopulationOrder": 3,
+                "marchOrd": 4,
+                "signalJammingOrder": 3,
+                "feintOrder": 3
+              },
+              "levelPackRewards": {
+                "recruitOrd": 9,
+                "teleportNormal": 9,
+                "gold": 3600000,
+                "shield": 20,
+                "shield12h": 20,
+                "shield24h": 10,
+                "shield72h": 4,
+                "teleportAdvanced": 5,
+                "starUp": 450,
+                "skillBook": 27,
+                "universalSkillBook": 3,
+                "speedUp24h": 4,
+                "expBookMax": 5
+              }
+            },
+            {
+              "level": 10,
+              "requiredCents": 1000000,
+              "title": "特级上将·五星统帅",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.5,
+              "mapFavoriteLimit": 80,
+              "marchPresetLimit": 6,
+              "buildSpeedBonus": 0.15,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 110000,
+                "food": 800000,
+                "steel": 800000,
+                "oil": 800000,
+                "rare": 800000,
+                "shield24h": 1,
+                "speedUp24h": 1,
+                "speedUp12h": 1,
+                "expBookAdv": 8,
+                "skillBook": 6,
+                "populationOrder": 6,
+                "emergencyPopulationOrder": 3,
+                "marchOrd": 5,
+                "signalJammingOrder": 4,
+                "feintOrder": 4
+              },
+              "levelPackRewards": {
+                "recruitOrd": 10,
+                "teleportNormal": 10,
+                "gold": 4000000,
+                "shield": 24,
+                "shield12h": 24,
+                "shield24h": 12,
+                "shield72h": 6,
+                "teleportAdvanced": 8,
+                "starUp": 600,
+                "skillBook": 30,
+                "universalSkillBook": 5,
+                "speedUp36h": 4,
+                "expBookMax": 8,
+                "supplyPack": 5
+              }
+            }
+          ],
+          "milestones": [
+            {
+              "milestoneCents": 150000,
+              "title": "特勤战备军需箱 A",
+              "rewards": {
+                "gold": 500000,
+                "speedUp5h": 2,
+                "teleportNormal": 2,
+                "starUp": 10,
+                "expBookAdv": 2
+              }
+            },
+            {
+              "milestoneCents": 200000,
+              "title": "特勤战备军需箱 B",
+              "rewards": {
+                "gold": 800000,
+                "speedUp12h": 1,
+                "recruitOrd": 2,
+                "starUp": 15,
+                "skillBook": 3
+              }
+            },
+            {
+              "milestoneCents": 250000,
+              "title": "特勤战备军需箱 C",
+              "rewards": {
+                "gold": 1000000,
+                "speedUp12h": 2,
+                "teleportAdvanced": 1,
+                "starUp": 20,
+                "skillBook": 5
+              }
+            },
+            {
+              "milestoneCents": 400000,
+              "title": "统帅将星战备箱 A",
+              "rewards": {
+                "gold": 1500000,
+                "speedUp24h": 1,
+                "teleportAdvanced": 2,
+                "starUp": 25,
+                "universalSkillBook": 1
+              }
+            },
+            {
+              "milestoneCents": 500000,
+              "title": "统帅将星战备箱 B",
+              "rewards": {
+                "gold": 2000000,
+                "speedUp24h": 1,
+                "speedUp36h": 1,
+                "starUp": 30
+              }
+            },
+            {
+              "milestoneCents": 700000,
+              "title": "五星战区统帅箱 A",
+              "rewards": {
+                "gold": 2500000,
+                "speedUp36h": 2,
+                "teleportAdvanced": 3,
+                "starUp": 35,
+                "universalSkillBook": 1
+              }
+            },
+            {
+              "milestoneCents": 800000,
+              "title": "五星战区统帅箱 B",
+              "rewards": {
+                "gold": 3000000,
+                "speedUp48h": 1,
+                "speedUp36h": 2,
+                "starUp": 40
+              }
+            },
+            {
+              "milestoneCents": 900000,
+              "title": "五星战区统帅箱 C",
+              "rewards": {
+                "gold": 3500000,
+                "speedUp48h": 2,
+                "shield72h": 1,
+                "universalSkillBook": 2,
+                "starUp": 50
+              }
+            }
+          ]
+        },
+        "officers": [],
+        "officerEquipment": {
+          "collection": [],
+          "loadouts": {
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "achievements": [
+            {
+              "id": "first",
+              "unlocked": false,
+              "name": "初装成军"
+            },
+            {
+              "id": "branches",
+              "unlocked": false,
+              "name": "四军齐备"
+            },
+            {
+              "id": "collection",
+              "unlocked": false,
+              "name": "军械收藏家"
+            },
+            {
+              "id": "marshal",
+              "unlocked": false,
+              "name": "元帅仪仗"
+            },
+            {
+              "id": "empire",
+              "unlocked": false,
+              "name": "帝国军备"
+            }
+          ]
+        },
+        "constructions": [],
+        "freeBuildSpeedUpSeconds": 300,
+        "academy": {
+          "list": [],
+          "refreshRoundCount": 0,
+          "refreshRoundLimit": 30,
+          "refreshDailyCount": 0,
+          "refreshDailyLimit": 100,
+          "refreshAt": 0,
+          "refreshDailyResetAt": 1800028800000,
+          "candidateCount": 10,
+          "fiveStarBatchChance": 0.0,
+          "militaryTheoryLevel": 0,
+          "baseFiveStarBatchChance": 0.0,
+          "militaryTheoryBonus": 0.0
+        },
+        "world": {
+          "view": {
+            "loadedAt": 1793380354210,
+            "radius": 3,
+            "y": 0,
+            "x": 0
+          },
+          "pos": {
+            "x": 0,
+            "y": 0
+          },
+          "cityPos": {
+            "x": 10,
+            "y": 10
+          },
+          "npcCities": [],
+          "playerCities": [],
+          "simulatedNpcCities": [],
+          "bandits": [],
+          "wildTiles": [],
+          "marches": [],
+          "reinforcements": [],
+          "incoming": [],
+          "regionalRadar": {
+            "revision": 0,
+            "cities": [],
+            "contacts": [],
+            "history": [],
+            "joinedGuild": false,
+            "unread": 0,
+            "nextBeforeId": null
+          },
+          "returningEnemyMarches": []
+        },
+        "cityState": {
+          "status": "peace",
+          "warUntil": 0,
+          "shieldUntil": 0,
+          "peaceUntil": 0,
+          "newbieProtectionUntil": 0,
+          "marchBoostUntil": 0,
+          "marchBoostPercent": 0
+        },
+        "tax": 0,
+        "morale": 30,
+        "resentment": 0,
+        "lastAppeaseAt": 1800000000000,
+        "prestige": 100,
+        "lastTick": 1800000000000,
+        "stats": {},
+        "progress": {}
+      }
+    },
+    "goldAfter": 96000,
+    "second": {
+      "success": true,
+      "message": "消耗 2000 黄金开仓赈民，民心 +10，民怨 -5",
+      "morale": 40,
+      "resentment": 0,
+      "state": {
+        "serverTime": 1800000000000,
+        "cityBattleLocked": false,
+        "cityOverview": {
+          "cities": [],
+          "count": 0,
+          "cap": 1,
+          "rankName": "列兵",
+          "nextRankName": "上等兵",
+          "nextCap": 2,
+          "buildCost": {
+            "food": 5000,
+            "gold": 10000,
+            "steel": 10000,
+            "rare": 2000,
+            "oil": 5000
+          },
+          "buildDurationMs": 1800000,
+          "sites": []
+        },
+        "foodSupply": null,
+        "player": {
+          "id": 32,
+          "username": "r4_normal_appease",
+          "commanderRenameCount": 0,
+          "commanderNameRenameAvailableAt": 0,
+          "name": "r4_normal_appease",
+          "faction": "allies",
+          "cityName": "r4_normal_appease",
+          "cityNameRenameAvailableAt": 0,
+          "avatar": "img/avatars/historical/rank-lieutenant-v1.webp",
+          "homeModuleOrder": null,
+          "militaryRank": 1,
+          "mobilizationExpiries": {
+            "mobilizationOrder": 0,
+            "advancedMobilizationOrder": 0,
+            "rapidMobilizationOrder": 0
+          },
+          "mobilizationCycle": 0,
+          "militaryRankName": "列兵",
+          "vipLevel": 0,
+          "vipDailySalaryClaimed": false,
+          "totalRechargeCents": 0,
+          "customAvatar": null,
+          "avatarFrame": "default",
+          "vipBadgeVisible": true,
+          "tutorialDismissed": false,
+          "newbieProtectionStartedAt": 0,
+          "newbieProtectionUntil": 0,
+          "citySlot": 0,
+          "npcVictories": 0,
+          "formationPower": 0,
+          "overallPower": 0
+        },
+        "rankInfo": {
+          "tier": 1,
+          "name": "列兵",
+          "baseCap": 25000,
+          "prestige": 100,
+          "npcVictories": 0,
+          "cityCap": 1,
+          "nextCityCap": 2,
+          "nextCityRankName": "上等兵",
+          "nextExpansionCap": 2,
+          "isMax": false,
+          "canPromote": false,
+          "canTakeExam": false,
+          "promotionReward": {
+            "itemKey": "rank_diamond_pack_2",
+            "tier": 2,
+            "name": "上等兵晋升钻石大礼包",
+            "diamonds": 40,
+            "icon": "img/items/newbie-pack.svg",
+            "cat": "resource",
+            "desc": "开启获得40钻石，计入账号共享余额；可用于购买下士晋升凭证",
+            "nextCertificateTier": 3,
+            "nextCertificateName": "下士晋升凭证"
+          },
+          "serverTime": 1800000000000,
+          "nextTier": 2,
+          "nextName": "上等兵",
+          "nextBaseCap": 50000,
+          "reqPrestige": 10000,
+          "reqNpcVictories": 10,
+          "certificate": {
+            "name": "上等兵晋升凭证",
+            "source": "商城「晋升凭证」购买，20 钻石/张；NPC 不再掉落",
+            "owned": 0,
+            "required": 1,
+            "key": "rank_certificate_2",
+            "price": 20
+          },
+          "prestigeEnough": false,
+          "victoriesEnough": false,
+          "certificateEnough": false,
+          "prerequisitesMet": false,
+          "exam": {
+            "status": "not_started",
+            "questionCount": 5,
+            "requiredCorrect": 4,
+            "expiresAt": 0,
+            "retryAt": 0,
+            "correct": 0
+          },
+          "examPassed": false
+        },
+        "rankDiamondGifts": {
+          "unopenedCount": 0,
+          "rewards": []
+        },
+        "unreadReportCount": 0,
+        "resources": {
+          "food": 10000,
+          "steel": 100000,
+          "oil": 100000,
+          "rare": 100000,
+          "gold": 96000,
+          "diamond": 100
+        },
+        "buildings": {},
+        "wilds": {
+          "citySlot": 0,
+          "baseCap": 5,
+          "commandLevel": 0,
+          "cap": 5,
+          "ownedCount": 0,
+          "owned": []
+        },
+        "unitUnlocks": {
+          "infantry": {
+            "unitId": "infantry",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ]
+          },
+          "truck": {
+            "unitId": "truck",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "factory",
+                "kind": "building"
+              }
+            ]
+          },
+          "recon_car": {
+            "unitId": "recon_car",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ]
+          },
+          "armored": {
+            "unitId": "armored",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 3,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "weapon_range",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 3,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "weapon_range",
+                "kind": "technology"
+              }
+            ]
+          },
+          "ltank": {
+            "unitId": "ltank",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "轻装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "lightfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "轻装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "lightfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ]
+          },
+          "scout": {
+            "unitId": "scout",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 2,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 1,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "侦察技术",
+                "met": false,
+                "scope": "empire",
+                "required": 2,
+                "id": "recon_level",
+                "kind": "technology"
+              }
+            ]
+          },
+          "assault": {
+            "unitId": "assault",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ]
+          },
+          "transport": {
+            "unitId": "transport",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "负重科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_load",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_food",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 4,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "负重科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_load",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "log_food",
+                "kind": "technology"
+              }
+            ]
+          },
+          "htank": {
+            "unitId": "htank",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "arm_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "防御科技",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "defense_tech",
+                "kind": "technology"
+              }
+            ]
+          },
+          "fighter": {
+            "unitId": "fighter",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "attack_tech",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 5,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 3,
+                "id": "attack_tech",
+                "kind": "technology"
+              }
+            ]
+          },
+          "destroyer": {
+            "unitId": "destroyer",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 6,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 4,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          },
+          "rocket": {
+            "unitId": "rocket",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 9,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 8,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 7,
+                "id": "arm_engine",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 9,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "重装战车厂",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "heavyfactory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 8,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "燃烧引擎",
+                "met": false,
+                "scope": "empire",
+                "required": 7,
+                "id": "arm_engine",
+                "kind": "technology"
+              }
+            ]
+          },
+          "sub": {
+            "unitId": "sub",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          },
+          "special": {
+            "unitId": "special",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "训练加速",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_train",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军队生命",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "cmd_hp",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "军工厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "factory",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "训练加速",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_train",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "攻击科技",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "attack_tech",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军队生命",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "cmd_hp",
+                "kind": "technology"
+              }
+            ]
+          },
+          "bomber": {
+            "unitId": "bomber",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "空军基地",
+                "met": false,
+                "scope": "city",
+                "required": 8,
+                "id": "airport",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "战备机场",
+                "met": false,
+                "scope": "city",
+                "required": 7,
+                "id": "apron",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 6,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 5,
+                "id": "fire_density",
+                "kind": "technology"
+              }
+            ]
+          },
+          "battleship": {
+            "unitId": "battleship",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 9,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          },
+          "carrier": {
+            "unitId": "carrier",
+            "ruleVersion": "unit-unlock-20261020-v4",
+            "eligible": false,
+            "requirements": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ],
+            "missing": [
+              {
+                "current": 0,
+                "name": "造船厂",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "shipyard",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "军港",
+                "met": false,
+                "scope": "city",
+                "required": 10,
+                "id": "port",
+                "kind": "building"
+              },
+              {
+                "current": 0,
+                "name": "舰船动力",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "nav_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "武器射程",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "weapon_range",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "火力密度",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "fire_density",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "军需补给",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "log_food",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "喷气推进",
+                "met": false,
+                "scope": "empire",
+                "required": 10,
+                "id": "air_engine",
+                "kind": "technology"
+              },
+              {
+                "current": 0,
+                "name": "沿海或既有海军城市资格",
+                "met": false,
+                "scope": "city",
+                "required": 1,
+                "id": "coastal_or_legacy_naval",
+                "kind": "geography"
+              }
+            ]
+          }
+        },
+        "coastalPortLevel": 0,
+        "population": {
+          "civilian": 1000,
+          "capacity": 0,
+          "effectiveCapacity": 0,
+          "recruitable": 1000,
+          "growthPerHour": 0.0
+        },
+        "army": {},
+        "woundedCount": 0,
+        "prisonerCount": 0,
+        "prisonerCapacity": 0,
+        "forts": {},
+        "items": {},
+        "technologyRulesVersion": "technology-v3-20261019",
+        "tech": {},
+        "research": null,
+        "researches": [],
+        "vip": {
+          "vipLevel": 0,
+          "title": "预备指挥官",
+          "totalRechargeCents": 0,
+          "vipExp": 0,
+          "nextVipExp": 60,
+          "intervalProgress": 0.0,
+          "centsNeededForNext": 600,
+          "dailyClaimed": false,
+          "storedDailySalaries": 0,
+          "freeAmnestyAvailable": false,
+          "vipBadgeVisible": true,
+          "customAvatar": null,
+          "avatarFrame": "default",
+          "claimedPackLevels": [],
+          "claimedMilestones": [],
+          "buildQueuePerCity": 3,
+          "techQueuePerCity": 1,
+          "woundedGoldDiscount": 0.0,
+          "mapFavoriteLimit": 10,
+          "marchPresetLimit": 2,
+          "levels": [
+            {
+              "level": 0,
+              "requiredCents": 0,
+              "title": "预备指挥官",
+              "buildQueuePerCity": 3,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.0,
+              "mapFavoriteLimit": 10,
+              "marchPresetLimit": 2,
+              "buildSpeedBonus": 0.0,
+              "customAvatarUnlocked": false,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 10000,
+                "food": 10000,
+                "steel": 10000,
+                "oil": 10000,
+                "rare": 10000,
+                "speedUp10m": 2,
+                "skillBook": 1,
+                "populationOrder": 1
+              },
+              "levelPackRewards": {}
+            },
+            {
+              "level": 1,
+              "requiredCents": 600,
+              "title": "特遣队指挥官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.0,
+              "mapFavoriteLimit": 10,
+              "marchPresetLimit": 2,
+              "buildSpeedBonus": 0.0,
+              "customAvatarUnlocked": false,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 20000,
+                "food": 20000,
+                "steel": 20000,
+                "oil": 20000,
+                "rare": 20000,
+                "speedUp10m": 3,
+                "skillBook": 1,
+                "populationOrder": 1,
+                "marchOrd": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 1,
+                "gold": 400000,
+                "shield2h": 6,
+                "shield": 2,
+                "starUp": 20,
+                "skillBook": 3,
+                "speedUp10m": 10,
+                "expBook": 5
+              }
+            },
+            {
+              "level": 2,
+              "requiredCents": 3000,
+              "title": "前线先锋官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.0,
+              "mapFavoriteLimit": 15,
+              "marchPresetLimit": 2,
+              "buildSpeedBonus": 0.05,
+              "customAvatarUnlocked": false,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 30000,
+                "food": 50000,
+                "steel": 50000,
+                "oil": 50000,
+                "rare": 50000,
+                "speedUp10m": 6,
+                "expBook": 2,
+                "skillBook": 2,
+                "populationOrder": 2,
+                "marchOrd": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 2,
+                "teleportNormal": 2,
+                "gold": 800000,
+                "shield2h": 8,
+                "shield": 4,
+                "starUp": 40,
+                "skillBook": 6,
+                "speedUp1h": 6,
+                "expBook": 10
+              }
+            },
+            {
+              "level": 3,
+              "requiredCents": 9800,
+              "title": "战略支柱长官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.2,
+              "mapFavoriteLimit": 20,
+              "marchPresetLimit": 3,
+              "buildSpeedBonus": 0.05,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 40000,
+                "food": 100000,
+                "steel": 100000,
+                "oil": 100000,
+                "rare": 100000,
+                "speedUp1h": 2,
+                "expBook": 3,
+                "skillBook": 2,
+                "populationOrder": 2,
+                "marchOrd": 1,
+                "signalJammingOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 3,
+                "teleportNormal": 3,
+                "gold": 1200000,
+                "shield2h": 8,
+                "shield": 6,
+                "shield12h": 2,
+                "commanderRenameCard": 1,
+                "starUp": 60,
+                "skillBook": 9,
+                "speedUp1h": 12,
+                "speedUp5h": 2,
+                "expBookAdv": 2
+              }
+            },
+            {
+              "level": 4,
+              "requiredCents": 19800,
+              "title": "方面军参谋长",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 1,
+              "woundedGoldDiscount": 0.2,
+              "mapFavoriteLimit": 30,
+              "marchPresetLimit": 3,
+              "buildSpeedBonus": 0.05,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 0,
+              "dailyRewards": {
+                "gold": 50000,
+                "food": 200000,
+                "steel": 200000,
+                "oil": 200000,
+                "rare": 200000,
+                "speedUp1h": 3,
+                "speedUp10m": 3,
+                "expBook": 4,
+                "skillBook": 3,
+                "populationOrder": 3,
+                "marchOrd": 2,
+                "signalJammingOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 4,
+                "teleportNormal": 4,
+                "gold": 1600000,
+                "shield2h": 10,
+                "shield": 8,
+                "shield12h": 4,
+                "shield24h": 1,
+                "commanderRenameCard": 1,
+                "starUp": 100,
+                "skillBook": 12,
+                "speedUp5h": 5,
+                "expBookAdv": 4
+              }
+            },
+            {
+              "level": 5,
+              "requiredCents": 32800,
+              "title": "兵团副司令官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.3,
+              "mapFavoriteLimit": 30,
+              "marchPresetLimit": 4,
+              "buildSpeedBonus": 0.08,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": false,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 60000,
+                "food": 300000,
+                "steel": 300000,
+                "oil": 300000,
+                "rare": 300000,
+                "speedUp5h": 1,
+                "speedUp1h": 2,
+                "expBookAdv": 1,
+                "skillBook": 3,
+                "populationOrder": 3,
+                "emergencyPopulationOrder": 1,
+                "marchOrd": 2,
+                "signalJammingOrder": 1,
+                "feintOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 5,
+                "teleportNormal": 5,
+                "gold": 2000000,
+                "shield2h": 12,
+                "shield": 10,
+                "shield12h": 6,
+                "shield24h": 2,
+                "starUp": 150,
+                "skillBook": 15,
+                "speedUp5h": 10,
+                "expBookAdv": 6
+              }
+            },
+            {
+              "level": 6,
+              "requiredCents": 64800,
+              "title": "兵团总司令官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.3,
+              "mapFavoriteLimit": 40,
+              "marchPresetLimit": 4,
+              "buildSpeedBonus": 0.08,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 70000,
+                "food": 400000,
+                "steel": 400000,
+                "oil": 400000,
+                "rare": 400000,
+                "speedUp5h": 2,
+                "expBookAdv": 2,
+                "skillBook": 4,
+                "populationOrder": 4,
+                "emergencyPopulationOrder": 1,
+                "marchOrd": 2,
+                "signalJammingOrder": 2,
+                "feintOrder": 1
+              },
+              "levelPackRewards": {
+                "recruitOrd": 6,
+                "teleportNormal": 6,
+                "gold": 2400000,
+                "shield": 12,
+                "shield12h": 8,
+                "shield24h": 4,
+                "shield72h": 1,
+                "teleportAdvanced": 2,
+                "starUp": 200,
+                "skillBook": 18,
+                "speedUp5h": 8,
+                "speedUp12h": 2,
+                "expBookAdv": 10,
+                "supplyPack": 3
+              }
+            },
+            {
+              "level": 7,
+              "requiredCents": 128000,
+              "title": "战区副长官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.4,
+              "mapFavoriteLimit": 50,
+              "marchPresetLimit": 5,
+              "buildSpeedBonus": 0.1,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 80000,
+                "food": 500000,
+                "steel": 500000,
+                "oil": 500000,
+                "rare": 500000,
+                "shield": 1,
+                "speedUp12h": 1,
+                "expBookAdv": 3,
+                "skillBook": 4,
+                "populationOrder": 4,
+                "emergencyPopulationOrder": 2,
+                "marchOrd": 3,
+                "signalJammingOrder": 2,
+                "feintOrder": 2
+              },
+              "levelPackRewards": {
+                "recruitOrd": 7,
+                "teleportNormal": 7,
+                "gold": 2800000,
+                "shield": 16,
+                "shield12h": 12,
+                "shield24h": 6,
+                "shield72h": 2,
+                "teleportAdvanced": 3,
+                "starUp": 280,
+                "skillBook": 21,
+                "universalSkillBook": 1,
+                "speedUp12h": 4,
+                "expBookMax": 2
+              }
+            },
+            {
+              "level": 8,
+              "requiredCents": 300000,
+              "title": "战区最高司令",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.4,
+              "mapFavoriteLimit": 50,
+              "marchPresetLimit": 5,
+              "buildSpeedBonus": 0.12,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 90000,
+                "food": 600000,
+                "steel": 600000,
+                "oil": 600000,
+                "rare": 600000,
+                "shield12h": 1,
+                "speedUp12h": 1,
+                "speedUp5h": 1,
+                "expBookAdv": 4,
+                "skillBook": 5,
+                "populationOrder": 5,
+                "emergencyPopulationOrder": 2,
+                "marchOrd": 3,
+                "signalJammingOrder": 3,
+                "feintOrder": 2
+              },
+              "levelPackRewards": {
+                "recruitOrd": 8,
+                "teleportNormal": 8,
+                "gold": 3200000,
+                "shield": 16,
+                "shield12h": 16,
+                "shield24h": 8,
+                "shield72h": 3,
+                "teleportAdvanced": 4,
+                "starUp": 360,
+                "skillBook": 24,
+                "universalSkillBook": 2,
+                "speedUp12h": 6,
+                "expBookMax": 3
+              }
+            },
+            {
+              "level": 9,
+              "requiredCents": 600000,
+              "title": "战时常务长官",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.5,
+              "mapFavoriteLimit": 60,
+              "marchPresetLimit": 6,
+              "buildSpeedBonus": 0.15,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 100000,
+                "food": 700000,
+                "steel": 700000,
+                "oil": 700000,
+                "rare": 700000,
+                "shield12h": 1,
+                "shield": 1,
+                "speedUp12h": 2,
+                "expBookAdv": 5,
+                "skillBook": 5,
+                "populationOrder": 5,
+                "emergencyPopulationOrder": 3,
+                "marchOrd": 4,
+                "signalJammingOrder": 3,
+                "feintOrder": 3
+              },
+              "levelPackRewards": {
+                "recruitOrd": 9,
+                "teleportNormal": 9,
+                "gold": 3600000,
+                "shield": 20,
+                "shield12h": 20,
+                "shield24h": 10,
+                "shield72h": 4,
+                "teleportAdvanced": 5,
+                "starUp": 450,
+                "skillBook": 27,
+                "universalSkillBook": 3,
+                "speedUp24h": 4,
+                "expBookMax": 5
+              }
+            },
+            {
+              "level": 10,
+              "requiredCents": 1000000,
+              "title": "特级上将·五星统帅",
+              "buildQueuePerCity": 5,
+              "techQueuePerCity": 2,
+              "woundedGoldDiscount": 0.5,
+              "mapFavoriteLimit": 80,
+              "marchPresetLimit": 6,
+              "buildSpeedBonus": 0.15,
+              "customAvatarUnlocked": true,
+              "allCitiesAppeaseUnlocked": true,
+              "storedDailySalariesDays": 3,
+              "dailyRewards": {
+                "gold": 110000,
+                "food": 800000,
+                "steel": 800000,
+                "oil": 800000,
+                "rare": 800000,
+                "shield24h": 1,
+                "speedUp24h": 1,
+                "speedUp12h": 1,
+                "expBookAdv": 8,
+                "skillBook": 6,
+                "populationOrder": 6,
+                "emergencyPopulationOrder": 3,
+                "marchOrd": 5,
+                "signalJammingOrder": 4,
+                "feintOrder": 4
+              },
+              "levelPackRewards": {
+                "recruitOrd": 10,
+                "teleportNormal": 10,
+                "gold": 4000000,
+                "shield": 24,
+                "shield12h": 24,
+                "shield24h": 12,
+                "shield72h": 6,
+                "teleportAdvanced": 8,
+                "starUp": 600,
+                "skillBook": 30,
+                "universalSkillBook": 5,
+                "speedUp36h": 4,
+                "expBookMax": 8,
+                "supplyPack": 5
+              }
+            }
+          ],
+          "milestones": [
+            {
+              "milestoneCents": 150000,
+              "title": "特勤战备军需箱 A",
+              "rewards": {
+                "gold": 500000,
+                "speedUp5h": 2,
+                "teleportNormal": 2,
+                "starUp": 10,
+                "expBookAdv": 2
+              }
+            },
+            {
+              "milestoneCents": 200000,
+              "title": "特勤战备军需箱 B",
+              "rewards": {
+                "gold": 800000,
+                "speedUp12h": 1,
+                "recruitOrd": 2,
+                "starUp": 15,
+                "skillBook": 3
+              }
+            },
+            {
+              "milestoneCents": 250000,
+              "title": "特勤战备军需箱 C",
+              "rewards": {
+                "gold": 1000000,
+                "speedUp12h": 2,
+                "teleportAdvanced": 1,
+                "starUp": 20,
+                "skillBook": 5
+              }
+            },
+            {
+              "milestoneCents": 400000,
+              "title": "统帅将星战备箱 A",
+              "rewards": {
+                "gold": 1500000,
+                "speedUp24h": 1,
+                "teleportAdvanced": 2,
+                "starUp": 25,
+                "universalSkillBook": 1
+              }
+            },
+            {
+              "milestoneCents": 500000,
+              "title": "统帅将星战备箱 B",
+              "rewards": {
+                "gold": 2000000,
+                "speedUp24h": 1,
+                "speedUp36h": 1,
+                "starUp": 30
+              }
+            },
+            {
+              "milestoneCents": 700000,
+              "title": "五星战区统帅箱 A",
+              "rewards": {
+                "gold": 2500000,
+                "speedUp36h": 2,
+                "teleportAdvanced": 3,
+                "starUp": 35,
+                "universalSkillBook": 1
+              }
+            },
+            {
+              "milestoneCents": 800000,
+              "title": "五星战区统帅箱 B",
+              "rewards": {
+                "gold": 3000000,
+                "speedUp48h": 1,
+                "speedUp36h": 2,
+                "starUp": 40
+              }
+            },
+            {
+              "milestoneCents": 900000,
+              "title": "五星战区统帅箱 C",
+              "rewards": {
+                "gold": 3500000,
+                "speedUp48h": 2,
+                "shield72h": 1,
+                "universalSkillBook": 2,
+                "starUp": 50
+              }
+            }
+          ]
+        },
+        "officers": [],
+        "officerEquipment": {
+          "collection": [],
+          "loadouts": {
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "achievements": [
+            {
+              "id": "first",
+              "unlocked": false,
+              "name": "初装成军"
+            },
+            {
+              "id": "branches",
+              "unlocked": false,
+              "name": "四军齐备"
+            },
+            {
+              "id": "collection",
+              "unlocked": false,
+              "name": "军械收藏家"
+            },
+            {
+              "id": "marshal",
+              "unlocked": false,
+              "name": "元帅仪仗"
+            },
+            {
+              "id": "empire",
+              "unlocked": false,
+              "name": "帝国军备"
+            }
+          ]
+        },
+        "constructions": [],
+        "freeBuildSpeedUpSeconds": 300,
+        "academy": {
+          "list": [],
+          "refreshRoundCount": 0,
+          "refreshRoundLimit": 30,
+          "refreshDailyCount": 0,
+          "refreshDailyLimit": 100,
+          "refreshAt": 0,
+          "refreshDailyResetAt": 1800028800000,
+          "candidateCount": 10,
+          "fiveStarBatchChance": 0.0,
+          "militaryTheoryLevel": 0,
+          "baseFiveStarBatchChance": 0.0,
+          "militaryTheoryBonus": 0.0
+        },
+        "world": {
+          "view": {
+            "loadedAt": 1793380354261,
+            "radius": 3,
+            "y": 0,
+            "x": 0
+          },
+          "pos": {
+            "x": 0,
+            "y": 0
+          },
+          "cityPos": {
+            "x": 10,
+            "y": 10
+          },
+          "npcCities": [],
+          "playerCities": [],
+          "simulatedNpcCities": [],
+          "bandits": [],
+          "wildTiles": [],
+          "marches": [],
+          "reinforcements": [],
+          "incoming": [],
+          "regionalRadar": {
+            "revision": 0,
+            "cities": [],
+            "contacts": [],
+            "history": [],
+            "joinedGuild": false,
+            "unread": 0,
+            "nextBeforeId": null
+          },
+          "returningEnemyMarches": []
+        },
+        "cityState": {
+          "status": "peace",
+          "warUntil": 0,
+          "shieldUntil": 0,
+          "peaceUntil": 0,
+          "newbieProtectionUntil": 0,
+          "marchBoostUntil": 0,
+          "marchBoostPercent": 0
+        },
+        "tax": 0,
+        "morale": 40,
+        "resentment": 0,
+        "lastAppeaseAt": 1800000000000,
+        "prestige": 100,
+        "lastTick": 1800000000000,
+        "stats": {},
+        "progress": {}
+      }
+    }
+  },
+  "war_declaration_overwrites_existing_war": {
+    "first": {
+      "success": true,
+      "message": "已宣战! 2小时0分钟0秒后可交战,持续2天0小时0分钟0秒",
+      "warAt": 1800007200000,
+      "warEndAt": 1800180000000
+    },
+    "second": {
+      "success": false,
+      "message": "目标正处于战时状态,无法重复宣战"
+    },
+    "aId": 33,
+    "bId": 34,
+    "cId": 35,
+    "aOpponent": 34,
+    "bOpponent": 33,
+    "cOpponent": null
+  },
+  "shield_expiry_loses_past_bonus": {
+    "tickBeforeExpirySteel": 629,
+    "oneLateTickSteel": 600
+  },
+  "deleted_display_name_not_anonymized": {
+    "reportAfter": {
+      "attackerName": "审查统帅旧名",
+      "defenderName": "对手"
+    },
+    "username": "r4_privacy_login"
+  },
+  "deleted_seller_order_swallows_gold": {
+    "sellerStatus": "DELETED",
+    "orderAfterPurge": "ACTIVE",
+    "orderAfterPurchase": "SOLD",
+    "sellerWalletExists": false,
+    "buyerSteel": 100100,
+    "buyerGold": 99900
+  }
+}

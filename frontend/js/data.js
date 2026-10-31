@@ -14,53 +14,49 @@ window.Game = window.Game || {};
     },
 
     resources: {
-      food:  { name: '粮食', icon: 'img/resources/models/food.webp', baseCap: 2000, capGrowth: 1.0 },
-      steel: { name: '钢铁', icon: 'img/resources/models/steel.webp', baseCap: 2000, capGrowth: 1.0 },
-      oil:   { name: '石油', icon: 'img/resources/models/oil.webp', baseCap: 1500, capGrowth: 0.9 },
-      rare:  { name: '稀矿', icon: 'img/resources/models/rare.webp', baseCap: 800,  capGrowth: 0.7 },
-      gold:  { name: '黄金', icon: 'img/resources/models/gold.webp', baseCap: 0,    capGrowth: 0 },
-      diamond:{ name: '钻石', icon: '💎', baseCap: 0,   capGrowth: 0 }
+      food:  { name: '粮食', icon: 'img/resources/models/food.webp', },
+      steel: { name: '钢铁', icon: 'img/resources/models/steel.webp', },
+      oil:   { name: '石油', icon: 'img/resources/models/oil.webp', },
+      rare:  { name: '稀矿', icon: 'img/resources/models/rare.webp', },
+      gold:  { name: '黄金', icon: 'img/resources/models/gold.webp', },
+      diamond:{ name: '钻石', icon: '💎', }
     },
-    // 资源区与军工区各固定35个共享卡槽，不随市政厅等级扩容；与后端 GameConstants 一致。
-    groupSlots: {
-      res: 35,
-      army: 35
-    },
+    // 本地只保留名称、图标与说明；数值和限制由后端目录安装。
     buildings: {
-      prisoner_camp: { name: '战俘营', desc: '每级收容2000战俘，黄金犒赏后可招募归队', baseCost: { steel: 400, food: 200, gold: 150 }, growth: 1.6, cat: 'army', slots: 1 },
-      command:      { name: '市政厅',   desc: '城市枢纽，决定建筑等级与本城野地上限（基础5＋等级）', baseCost: { steel: 400, food: 200 },            growth: 1.6, cat: 'core', slots: 1 },
-      house:        { name: '民居',   desc: '每级增加1200平民人口容量，平民可用于征兵；不限制已有军队数量或单队带兵上限', baseCost: { steel: 120, food: 60 },             growth: 1.5, cat: 'core', popPer: 1200, slots: 35 },
-      factory:      { name: '军工厂', desc: '生产步兵、卡车、装甲车、侦查装甲车、突击炮、反坦克火箭与特种兵；等级提高生产速度与并行数',             baseCost: { steel: 240, oil: 100 },             growth: 1.6, cat: 'army', slots: 35 },
-      lightfactory: { name: '轻装战车厂', desc: '生产轻型坦克；等级提高生产速度与并行数',              baseCost: { steel: 260, oil: 110, rare: 10 },   growth: 1.6, cat: 'army', slots: 1 },
-      heavyfactory: { name: '重装战车厂', desc: '生产重型坦克；等级提高生产速度与并行数',  baseCost: { steel: 320, oil: 140, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
-      airport:      { name: '空军基地',   desc: '生产侦察机、战斗机、轰炸机和运输机；等级提高生产速度与并行数', baseCost: { steel: 280, oil: 120, rare: 30 },   growth: 1.6, cat: 'army', slots: 1 },
-      port:         { name: '军港',   desc: '沿海城市海军配套设施；本城造舰同时需要军港与造船厂，军港不直接加速造舰',                  baseCost: { steel: 360, oil: 160, rare: 50 },   growth: 1.7, cat: 'army', slots: 1 },
-      shipyard:     { name: '造船厂',   desc: '建造海军舰船，等级提升生产速度与并行数，需本城军港', baseCost: { steel: 400, oil: 180, rare: 60 }, growth: 1.7, cat: 'army', slots: 1 },
-      academy:      { name: '军校', desc: '招募军官；普通刷新整批出现五星的基础概率每级增加0.3个百分点，可与军事理论相加，每批最多1名五星',                  baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
-      headquarters: { name: '司令部', desc: '任命司令官与提升出征队伍上限(基础5支+每级1支)，四项属性增益本城全部战斗', baseCost: { steel: 300, food: 150, gold: 150 }, growth: 1.6, cat: 'core', slots: 1 },
-      staff:        { name: '作战参谋部', desc: '军事指挥、军官管理与高级科技', baseCost: { steel: 220, food: 100 },            growth: 1.6, cat: 'core', slots: 1 },
+      prisoner_camp: { name: '战俘营', desc: '每级收容2000战俘，黄金犒赏后可招募归队', cat: 'army'},
+      command:      { name: '市政厅',   desc: '城市枢纽，决定建筑等级与本城野地上限（基础5＋等级）', cat: 'core'},
+      house:        { name: '民居',   desc: '每级增加1200平民人口容量，平民可用于征兵；不限制已有军队数量或单队带兵上限', cat: 'core'},
+      factory:      { name: '军工厂', desc: '生产步兵、卡车、装甲车、侦查装甲车、突击炮、反坦克火箭与特种兵；等级提高生产速度与并行数',             cat: 'army'},
+      lightfactory: { name: '轻装战车厂', desc: '生产轻型坦克；等级提高生产速度与并行数',              cat: 'army'},
+      heavyfactory: { name: '重装战车厂', desc: '生产重型坦克；等级提高生产速度与并行数',  cat: 'army'},
+      airport:      { name: '空军基地',   desc: '生产侦察机、战斗机、轰炸机和运输机；等级提高生产速度与并行数', cat: 'army'},
+      port:         { name: '军港',   desc: '沿海城市海军配套设施；本城造舰同时需要军港与造船厂，军港不直接加速造舰',                  cat: 'army'},
+      shipyard:     { name: '造船厂',   desc: '建造海军舰船，等级提升生产速度与并行数，需本城军港', cat: 'army'},
+      academy:      { name: '军校', desc: '招募军官；普通刷新整批出现五星的基础概率每级增加0.3个百分点，可与军事理论相加，每批最多1名五星',                  cat: 'core'},
+      headquarters: { name: '司令部', desc: '任命司令官与提升出征队伍上限(基础5支+每级1支)，四项属性增益本城全部战斗', cat: 'core'},
+      staff:        { name: '作战参谋部', desc: '军事指挥、军官管理与高级科技', cat: 'core'},
       // 一级基准产出：粮食/钢铁均为600/小时，石油/稀矿均为500/小时。
-      farm:         { name: '农田',     desc: '每小时产出粮食',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'food',  baseProduce: 600, slots: 35 },
-      refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'steel', baseProduce: 600, slots: 35 },
-      oilfield:     { name: '石油基地', desc: '每小时产出石油',            baseCost: { steel: 80 },                        growth: 1.5, cat: 'res', produces: 'oil',   baseProduce: 500, slots: 35 },
-      raremine:     { name: '稀矿厂',   desc: '每小时产出稀矿',            baseCost: { steel: 120, oil: 40 },              growth: 1.6, cat: 'res', produces: 'rare',  baseProduce: 500, slots: 35 },
-      depot:        { name: '军需仓库', desc: '每级为粮食、钢铁、石油、稀矿各提供1000掠夺保护额度，可叠加仓储技术；不增加生产或库存上限', baseCost: { steel: 100 },                  growth: 1.5, cat: 'res', protectPer: 1000, slots: 35 },
-      lab:          { name: '军工科技研发中心', desc: '升级解锁更多科技，并提高可研究等级上限；不加速科研', baseCost: { steel: 200, food: 100, rare: 20 },  growth: 1.6, cat: 'core', slots: 1 },
-      radar:        { name: '城防雷达', desc: '地图扫描半径每级增加1格，支撑侦察与雷达预警科研；本城基本来袭提醒无需此建筑，建筑不直接增加战斗属性或联防覆盖', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, cat: 'core', slots: 1 },
-      guild_radar:  { name: '联防雷达', desc: '开启后，敌对行军路线经过覆盖区且威胁团友即预警，无需等待部队进入；覆盖半径每级1格，情报明细由雷达预警科技决定。无需加入军团即可建造和开启，未入团时暂无区域军情', baseCost: { steel: 180, oil: 60, rare: 20 }, growth: 1.6, cat: 'core', slots: 1 },
-      wall:         { name: '城防',   desc: '征服战须先清除守军再破墙；每级墙体生命+250000、防御+20，四类工事共享容量+3000', baseCost: { steel: 200, food: 80 },             growth: 1.5, cat: 'def', fortCapPerLevel: 3000, wallHpPerLevel: 250000, wallDefensePerLevel: 20, slots: 1 },
-      apron:        { name: '战备机场', desc: '本城出发空军世界行军速度+3%/级，与喷气推进相加；不提高战场移动速度', baseCost: { steel: 220, oil: 80, rare: 20 },    growth: 1.6, cat: 'def', airSpdBonus: 3, slots: 1 },
-      transit:      { name: '战地兵站',   desc: '本城粮食、钢铁、石油、稀矿自然产量+3%/级；不影响黄金税收或野地采集', baseCost: { steel: 160, food: 80 },            growth: 1.6, cat: 'res', resBonus: 3, slots: 1 },
-      hospital:     { name: '战地医院', desc: '支撑医疗技术研发并提供伤兵营入口；医院等级不直接提高伤兵比例、治疗速度或降低费用', baseCost: { steel: 240, food: 160, rare: 20 }, growth: 1.6, cat: 'army', slots: 1 },
-      liaison:      { name: '联络中心', desc: '联防雷达建设及雷达预警等科研的配套前置；不直接解锁外交权限或增加情报明细',       baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, cat: 'core', slots: 1 },
-      exchange:     { name: '军需物资中转站', desc: '转换四种基础资源并进行市场交易；每级提高兑换比例与挂单数，降低交易税率',   baseCost: { steel: 180, food: 100, gold: 100 }, growth: 1.5, cat: 'res', slots: 1 }
+      farm:         { name: '农田',     desc: '每小时产出粮食',            cat: 'res', produces: 'food'},
+      refinery:     { name: '炼钢厂',   desc: '每小时产出钢铁',            cat: 'res', produces: 'steel'},
+      oilfield:     { name: '石油基地', desc: '每小时产出石油',            cat: 'res', produces: 'oil'},
+      raremine:     { name: '稀矿厂',   desc: '每小时产出稀矿',            cat: 'res', produces: 'rare'},
+      depot:        { name: '军需仓库', desc: '每级为粮食、钢铁、石油、稀矿各提供1000掠夺保护额度，可叠加仓储技术；不增加生产或库存上限', cat: 'res'},
+      lab:          { name: '军工科技研发中心', desc: '升级解锁更多科技，并提高可研究等级上限；不加速科研', cat: 'core'},
+      radar:        { name: '城防雷达', desc: '地图扫描半径每级增加1格，支撑侦察与雷达预警科研；本城基本来袭提醒无需此建筑，建筑不直接增加战斗属性或联防覆盖', cat: 'core'},
+      guild_radar:  { name: '联防雷达', desc: '开启后，敌对行军路线经过覆盖区且威胁团友即预警，无需等待部队进入；覆盖半径每级1格，情报明细由雷达预警科技决定。无需加入军团即可建造和开启，未入团时暂无区域军情', cat: 'core'},
+      wall:         { name: '城防',   desc: '征服战须先清除守军再破墙；每级墙体生命+250000、防御+20，四类工事共享容量+3000', cat: 'def'},
+      apron:        { name: '战备机场', desc: '本城出发空军世界行军速度+3%/级，与喷气推进相加；不提高战场移动速度', cat: 'def'},
+      transit:      { name: '战地兵站',   desc: '本城粮食、钢铁、石油、稀矿自然产量+3%/级；不影响黄金税收或野地采集', cat: 'res'},
+      hospital:     { name: '战地医院', desc: '支撑医疗技术研发并提供伤兵营入口；医院等级不直接提高伤兵比例、治疗速度或降低费用', cat: 'army'},
+      liaison:      { name: '联络中心', desc: '联防雷达建设及雷达预警等科研的配套前置；不直接解锁外交权限或增加情报明细',       cat: 'core'},
+      exchange:     { name: '军需物资中转站', desc: '转换四种基础资源并进行市场交易；每级提高兑换比例与挂单数，降低交易税率',   cat: 'res'}
     },
 
     forts: {
-      bunker:   { name: '碉堡', history: '二战防御体系中的固定掩体；英国曾在海岸部署碉堡，并配合反坦克障碍和铁丝网构筑防线。', desc: '坚固掩体,反步兵,近程高血防', atkGround: 8, atkAir: 1, atkSea: 1, atkFort: 1,  def: 24, hp: 260, range: 1050, spd: 0, cost: { steel: 80, oil: 0,  rare: 0  }, strongVs: 'infantry', cat: 'fort', autoAdvance: false },
-      howitzer: { name: '榴弹炮', history: '二战时期炮兵火力支援的重要装备类别；英军25磅炮兼具野战炮与榴弹炮用途，可采用高仰角射击。', desc: '远程压制,反步兵与建筑',     atkGround: 30, atkAir: 1, atkSea: 28, atkFort: 30, def: 6,  hp: 80,  range: 1850, spd: 0, cost: { steel: 60, oil: 10, rare: 5  }, strongVs: 'infantry', cat: 'fort', autoAdvance: false },
-      antitank: { name: '反坦克炮', history: '二战时期用于对抗坦克的专用火炮。英军先后使用6磅和17磅反坦克炮，6磅炮在步兵单位中服役至战争结束。', desc: '穿甲火力,反装甲',           atkGround: 42, atkAir: 1, atkSea: 36, atkFort: 15, def: 8,  hp: 80,  range: 1850, spd: 0, cost: { steel: 70, oil: 10, rare: 10 }, strongVs: 'ltank',    cat: 'fort', autoAdvance: false },
-      flak:     { name: '防空炮', history: '二战时期应对空袭的重要防御装备。博福斯防空炮由美国、澳大利亚等盟国广泛生产，用于对空防御。', desc: '对空火力,反空军',           atkGround: 12, atkAir: 63, atkSea: 10, atkFort: 1, def: 8,  hp: 80,  range: 1850, spd: 0, cost: { steel: 55, oil: 15, rare: 15 }, strongVs: 'fighter',  cat: 'fort', autoAdvance: false }
+      bunker:   { name: '碉堡', history: '二战防御体系中的固定掩体；英国曾在海岸部署碉堡，并配合反坦克障碍和铁丝网构筑防线。', desc: '坚固掩体,反步兵,近程高血防', strongVs: 'infantry', cat: 'fort', autoAdvance: false },
+      howitzer: { name: '榴弹炮', history: '二战时期炮兵火力支援的重要装备类别；英军25磅炮兼具野战炮与榴弹炮用途，可采用高仰角射击。', desc: '远程压制,反步兵与建筑',     strongVs: 'infantry', cat: 'fort', autoAdvance: false },
+      antitank: { name: '反坦克炮', history: '二战时期用于对抗坦克的专用火炮。英军先后使用6磅和17磅反坦克炮，6磅炮在步兵单位中服役至战争结束。', desc: '穿甲火力,反装甲',           strongVs: 'ltank',    cat: 'fort', autoAdvance: false },
+      flak:     { name: '防空炮', history: '二战时期应对空袭的重要防御装备。博福斯防空炮由美国、澳大利亚等盟国广泛生产，用于对空防御。', desc: '对空火力,反空军',           strongVs: 'fighter',  cat: 'fort', autoAdvance: false }
     },
 
     // 与服务端 BattleRules 对应的编成说明；战斗由服务端结算。
@@ -94,24 +90,24 @@ window.Game = window.Game || {};
     // 2026-10-29人口定稿：重火力5，主力舰20/100；完整对照见 docs/balance/unit-population-costs-20261029.md。
     units: {
       // 普通步兵可少量自携物资，仍按战斗兵种执行作战指令；卡车负责大宗搬运。
-      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  atkGround: 10, atkAir: 5, atkSea: 5, atkFort: 3,   def: 15,  hp: 120, spd: 2, range: 160, food: 1,  marchOil: 0,  marchFood: 1,  pop: 1, build: 'factory',  cost: { food: 10, steel: 30,  oil: 2,   rare: 1  }, strongVs: null,           branch: 'land', logistic: false, load: 10 },
-      truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  atkGround: 2, atkAir: 1, atkSea: 1, atkFort: 1,   def: 5.5, hp: 150, spd: 4, range: 0,   food: 2,  marchOil: 2,  marchFood: 1,  pop: 1, build: 'factory',  cost: { food: 20, steel: 50,  oil: 15,  rare: 0  }, strongVs: null,           branch: 'land', logistic: true, load: 500, autoAdvance: false },
-      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', atkGround: 18, atkAir: 33.5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 5, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 270, oil: 60, rare: 20 }, strongVs: null, branch: 'land' },
-      recon_car: { name: '侦查装甲车-灰狗（M8）', history: '美国｜M8灰狗六轮装甲侦察车，配备主炮塔和无线电，用于侦察、警戒与地面作战支援。', cat: 'arm', atkGround: 18, atkAir: 5, atkSea: 45, atkFort: 36, def: 33, hp: 360, spd: 5, range: 300, food: 4, marchOil: 3, marchFood: 2, pop: 2, build: 'factory', cost: { food: 40, steel: 270, oil: 60, rare: 20 }, strongVs: null, branch: 'land' },
-      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', atkGround: 33, atkAir: 10, atkSea: 55, atkFort: 45, def: 53, hp: 270, spd: 4, range: 220, food: 5, marchOil: 4, marchFood: 2, pop: 2, build: 'lightfactory', cost: { food: 50, steel: 360, oil: 80, rare: 25 }, strongVs: 'armored', branch: 'land' },
-      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的高机动重型坦克（速度4），用于快速突破防线与阵地掩护。', cat: 'arm', atkGround: 50, atkAir: 15, atkSea: 65, atkFort: 50, def: 63.5, hp: 385, spd: 4, range: 320, food: 8, marchOil: 7, marchFood: 3, pop: 3, build: 'heavyfactory', cost: { food: 80, steel: 675, oil: 120, rare: 50 }, strongVs: 'ltank', branch: 'land' },
-      assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', atkGround: 34, atkAir: 30, atkSea: 65, atkFort: 167, def: 28, hp: 200, spd: 2, range: 750, food: 4, marchOil: 5, marchFood: 2, pop: 3, build: 'factory', cost: { food: 40, steel: 200, oil: 50, rare: 25 }, strongVs: 'bunker', branch: 'land' },
-      rocket: { name: '反坦克火箭-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', atkGround: 100, atkAir: 11.5, atkSea: 25, atkFort: 179, def: 28, hp: 150, spd: 3, range: 1600, food: 5, marchOil: 4, marchFood: 3, pop: 5, build: 'factory', cost: { food: 100, steel: 550, oil: 450, rare: 120 }, strongVs: 'htank', branch: 'land' },
+      infantry:  { name: '步兵-加兰德步枪兵（M1）', history: '美国｜装备M1加兰德半自动步枪的步兵，二战美军的代表性步兵装备。',     cat: 'inf',  build: 'factory',  strongVs: null,           branch: 'land', logistic: false, },
+      truck:     { name: '卡车-十轮大卡（CCKW-353）', history: '美国｜GMC六轮驱动运输卡车，承担盟军兵员与物资运输。',     cat: 'inf',  build: 'factory',  strongVs: null,           branch: 'land', logistic: true, autoAdvance: false },
+      armored: { name: '装甲车-猎鹿犬防空型（T17E2）', history: '美国制造、英军使用｜猎鹿犬的双联重机枪防空型，为地面部队提供机动掩护。', cat: 'arm', build: 'factory', strongVs: null, branch: 'land' },
+      recon_car: { name: '侦查装甲车-灰狗（M8）', history: '美国｜M8灰狗六轮装甲侦察车，配备主炮塔和无线电，用于侦察、警戒与地面作战支援。', cat: 'arm', build: 'factory', strongVs: null, branch: 'land' },
+      ltank: { name: '轻型坦克-斯图亚特（M5A1）', history: '美国｜斯图亚特系列轻型坦克，以机动侦察与步兵支援为主要任务。', cat: 'arm', build: 'lightfactory', strongVs: 'armored', branch: 'land' },
+      htank: { name: '重型坦克-斯大林（IS-2）', history: '苏联｜装备122毫米主炮的高机动重型坦克（速度4），用于快速突破防线与阵地掩护。', cat: 'arm', build: 'heavyfactory', strongVs: 'ltank', branch: 'land' },
+      assault: { name: '突击炮-自行加榴炮（ISU-152）', history: '苏联｜装备152毫米加榴炮的重型自行火炮，用于摧毁工事和提供突击支援。', cat: 'arm', build: 'factory', strongVs: 'bunker', branch: 'land' },
+      rocket: { name: '反坦克火箭-喀秋莎（BM-13）', history: '苏联｜车载多管火箭炮，1941年投入作战，以密集齐射实施火力覆盖。', cat: 'arm', build: 'factory', strongVs: 'htank', branch: 'land' },
       // 侦察机归入空军基地，避免军工厂承担空军产能。
-      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  atkGround: 1, atkAir: 4, atkSea: 1, atkFort: 1,   def: 13,  hp: 70.5,spd: 9,range: 200, food: 3,  marchOil: 8,  marchFood: 1,  pop: 1, build: 'airport',  cost: { food: 30, steel: 60,  oil: 30,  rare: 15 }, strongVs: null,           branch: 'air', autoAdvance: false },
-      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', atkGround: 30, atkAir: 10, atkSea: 125, atkFort: 188, def: 5.5, hp: 150, spd: 6, range: 180, food: 4, marchOil: 1, marchFood: 2, pop: 1, build: 'factory', cost: { food: 80, steel: 100, oil: 40, rare: 20 }, strongVs: 'howitzer', branch: 'land' },
-      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', atkGround: 12, atkAir: 64, atkSea: 75, atkFort: 5, def: 30, hp: 150, spd: 8, range: 350, food: 5, marchOil: 10, marchFood: 2, pop: 2, build: 'airport', cost: { food: 50, steel: 220, oil: 90, rare: 55 }, strongVs: 'bomber', branch: 'air' },
-      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', atkGround: 56, atkAir: 12, atkSea: 95, atkFort: 429, def: 22, hp: 195, spd: 6, range: 300, food: 7, marchOil: 22, marchFood: 4, pop: 5, build: 'airport', cost: { food: 70, steel: 350, oil: 150, rare: 90 }, strongVs: 'htank', branch: 'air' },
-      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  atkGround: 1, atkAir: 1, atkSea: 1, atkFort: 1,   def: 10,  hp: 220, spd: 6, range: 0,   food: 5,  marchOil: 16, marchFood: 3,  pop: 3, build: 'airport',  cost: { food: 50, steel: 180, oil: 80, rare: 30 }, strongVs: null,           branch: 'air', logistic: true, load: 800, autoAdvance: false },
-      destroyer: { name: '驱逐舰-弗莱彻级（Fletcher）', history: '美国｜二战主力舰队驱逐舰，承担护航、防空、反潜与水面作战。', cat: 'nav', atkGround: 44, atkAir: 59, atkSea: 47, atkFort: 35, def: 50, hp: 555, spd: 5, range: 400, food: 7, marchOil: 15, marchFood: 6, pop: 10, build: 'shipyard', cost: { food: 70, steel: 450, oil: 160, rare: 80 }, strongVs: 'sub', branch: 'sea' },
-      sub: { name: '潜艇-小鲨鱼级（Gato）', history: '美国｜二战远洋柴电潜艇，以鱼雷攻击敌方舰船并执行海上破交。', cat: 'nav', atkGround: 1, atkAir: 1, atkSea: 66, atkFort: 1, def: 20, hp: 395, spd: 3, range: 100, food: 6, marchOil: 9, marchFood: 4, pop: 8, build: 'shipyard', cost: { food: 60, steel: 300, oil: 80, rare: 60 }, strongVs: 'battleship', branch: 'sea' },
-      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', atkGround: 91, atkAir: 100, atkSea: 185, atkFort: 108, def: 100, hp: 1050, spd: 4, range: 1600, food: 12, marchOil: 35, marchFood: 15, pop: 20, build: 'shipyard', cost: { food: 2000, steel: 11000, oil: 9000, rare: 2400 }, strongVs: 'destroyer', branch: 'sea' },
-      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', atkGround: 82, atkAir: 125, atkSea: 100, atkFort: 110, def: 120, hp: 1300, spd: 4, range: 1900, food: 15, marchOil: 42, marchFood: 22, pop: 100, build: 'shipyard', cost: { food: 4000, steel: 22000, oil: 18000, rare: 4800 }, strongVs: 'bomber', branch: 'sea' }
+      scout:     { name: '侦察机-闪电侦察型（F-5）', history: '美国｜由P-38闪电改装的照相侦察机，以航空摄影获取战场情报。',   cat: 'air',  build: 'airport',  strongVs: null,           branch: 'air', autoAdvance: false },
+      special: { name: '特种兵-英国突击队（Commando）', history: '英国｜1940年组建的突袭部队，接受渗透、爆破与两栖突击训练。', cat: 'inf', build: 'factory', strongVs: 'howitzer', branch: 'land' },
+      fighter: { name: '战斗机-野马（P-51）', history: '美国｜北美航空研制的战斗机，二战中承担远程护航与制空任务。', cat: 'air', build: 'airport', strongVs: 'bomber', branch: 'air' },
+      bomber: { name: '轰炸机-飞行堡垒（B-17G）', history: '美国｜波音四发重型轰炸机，主要执行编队轰炸并以多处机枪阵位自卫。', cat: 'air', build: 'airport', strongVs: 'htank', branch: 'air' },
+      transport: { name: '运输机-空中列车（C-47）', history: '美国｜由DC-3发展而来的军用运输机，执行空运、空投与伞兵运输。',   cat: 'air',  build: 'airport',  strongVs: null,           branch: 'air', logistic: true, autoAdvance: false },
+      destroyer: { name: '驱逐舰-弗莱彻级（Fletcher）', history: '美国｜二战主力舰队驱逐舰，承担护航、防空、反潜与水面作战。', cat: 'nav', build: 'shipyard', strongVs: 'sub', branch: 'sea' },
+      sub: { name: '潜艇-小鲨鱼级（Gato）', history: '美国｜二战远洋柴电潜艇，以鱼雷攻击敌方舰船并执行海上破交。', cat: 'nav', build: 'shipyard', strongVs: 'battleship', branch: 'sea' },
+      battleship: { name: '战列舰-衣阿华级（Iowa）', history: '美国｜装备406毫米主炮的高速战列舰，承担舰队作战与对岸炮击。', cat: 'nav', build: 'shipyard', strongVs: 'destroyer', branch: 'sea' },
+      carrier: { name: '航母-埃塞克斯级（Essex）', history: '美国｜二战舰队航空母舰，以舰载机执行制空、对海与对地打击。', cat: 'nav', build: 'shipyard', strongVs: 'bomber', branch: 'sea' }
     },
 
     // 日军专属兵种名称与历史原型（应用于 NPC 日寇城与流寇据点，属性与盟军完全一致）
@@ -136,31 +132,30 @@ window.Game = window.Game || {};
     },
 
     techs: {
-      military_theory: { name: '军事理论', branch: '军事', desc: '普通军校刷新整批出现五星名将的概率每级增加0.3个百分点，满级额外增加3个百分点；与军校基础概率相加，每批最多1名五星，不改变已生成名单或道具保底。', max: 10, labReq: 2, baseCost: { steel: 300, food: 240 }, growth: 1.8, affect: 'academy_chance' },
-      wall_reinforcement: { name: '城墙加固', branch: '军事', desc: '当前城墙生命与防御 +5%/级，最高各 +50%；无城墙时不产生属性，不强化驻军或城防工事。', max: 10, labReq: 2, baseCost: { steel: 320, food: 160, rare: 30 }, growth: 1.8, affect: 'wall_stats' },
-      unit_refit: { name: '武器装备', branch: '军事', desc: 'Lv.1—10逐级解锁陆上防护、航空轻舰防护、陆上武器载荷、航空武器载荷、通信调度、机动节油、陆上专用防护、大型舰船防护、定向反制、高级火控配方；对应设施按配方独立要求Lv.2/4/6/8/10。制造并配装后才获得装备效果。', max: 10, labReq: 2, baseCost: { steel: 300, oil: 100, rare: 50 }, growth: 2, affect: 'unit_recipes' },
-      prisoner_education: { name: '战俘收编', branch: '后勤', desc: '讨伐其他玩家并获胜后，按敌方各兵种损失数量计算战俘。俘获比例每级增加 0.1 个百分点，最高 1%，不足 1 个向下取整。需战俘营有空位，敌方已回收的伤兵不能被俘获。', max: 10, labReq: 3, baseCost: { steel: 320, food: 220 }, growth: 1.8, affect: 'capture_permille' },
-      attack_tech:   { name: '攻击科技',   branch: '军事', desc: '全军攻击 +5%/级，最高 +50%',       max: 10, labReq: 1, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'atk_all' },
-      defense_tech:  { name: '防御科技',   branch: '军事', desc: '全军防御 +5%/级，最高 +50%',       max: 10, labReq: 2, baseCost: { steel: 240, food: 120 }, growth: 1.7, affect: 'def_all' },
-      weapon_range:  { name: '武器射程',   branch: '军事', desc: '全军武器射程 +5%/级，最高 +50%',   max: 10, labReq: 2, baseCost: { steel: 280, food: 140, rare: 20 }, growth: 1.8, affect: 'range_all' },
-      cmd_hp:        { name: '军队生命',   branch: '军事', desc: '军队生命 +5%/级，最高 +50%',       max: 10, labReq: 3, baseCost: { steel: 300, food: 160, rare: 30 }, growth: 1.8, affect: 'hp_all' },
+      military_theory: { name: '军事理论', branch: '军事', desc: '普通军校刷新整批出现五星名将的概率每级增加0.3个百分点，满级额外增加3个百分点；与军校基础概率相加，每批最多1名五星，不改变已生成名单或道具保底。', affect: 'academy_chance' },
+      wall_reinforcement: { name: '城墙加固', branch: '军事', desc: '当前城墙生命与防御 +5%/级，最高各 +50%；无城墙时不产生属性，不强化驻军或城防工事。', affect: 'wall_stats' },
+      prisoner_education: { name: '战俘收编', branch: '后勤', desc: '讨伐其他玩家并获胜后，按敌方各兵种损失数量计算战俘。俘获比例每级增加 0.1 个百分点，最高 1%，不足 1 个向下取整。需战俘营有空位，敌方已回收的伤兵不能被俘获。', affect: 'capture_permille' },
+      attack_tech:   { name: '攻击科技',   branch: '军事', desc: '全军攻击 +5%/级，最高 +50%', affect: 'atk_all' },
+      defense_tech:  { name: '防御科技',   branch: '军事', desc: '全军防御 +5%/级，最高 +50%', affect: 'def_all' },
+      weapon_range:  { name: '武器射程',   branch: '军事', desc: '全军武器射程 +5%/级，最高 +50%', affect: 'range_all' },
+      cmd_hp:        { name: '军队生命',   branch: '军事', desc: '军队生命 +5%/级，最高 +50%', affect: 'hp_all' },
       // 行动火力独立于武器攻击，攻守双方的主动、余伤和反击共用同一科技规则。
-      fire_density:  { name: '火力密度', branch: '军事', desc: '全军行动火力 +5%/级，最高 +50%；与攻击科技独立相乘，主动攻击、余伤攻击和反击均生效。', max: 10, labReq: 3, baseCost: { steel: 300, food: 160, rare: 30 }, growth: 1.8, affect: 'firepower_all' },
-      log_load:      { name: '负重科技',   branch: '后勤', desc: '所有兵种负重 +5%/级，最高 +50%；与装备负重相乘，运输机运力同样生效。', max: 10, labReq: 2, baseCost: { steel: 200, food: 100 }, growth: 1.6, affect: 'load' },
-      arm_engine:    { name: '燃烧引擎',   branch: '机动', desc: '陆军世界行军与战场移动速度 +5%/级，最高 +50%，包含步兵与车辆',     max: 10, labReq: 3, baseCost: { steel: 320, oil: 120, rare: 40 }, growth: 1.8, affect: 'spd_arm' },
-      air_engine:    { name: '喷气推进',   branch: '机动', desc: '空军世界行军与战场移动速度 +5%/级，最高 +50%；战备机场只额外加成世界行军',         max: 10, labReq: 4, baseCost: { steel: 360, oil: 160, rare: 70 }, growth: 1.9, affect: 'spd_air' },
-      nav_engine:    { name: '舰船动力',   branch: '机动', desc: '海军世界行军与战场移动速度 +5%/级，最高 +50%',         max: 10, labReq: 5, baseCost: { steel: 400, oil: 200, rare: 100 }, growth: 2.0, affect: 'spd_nav' },
-      prod_food: { name: '粮食产量', branch: '后勤', desc: '城内粮食产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_food' },
-      prod_steel: { name: '钢铁产量', branch: '后勤', desc: '城内钢铁产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_steel' },
-      prod_oil: { name: '石油产量', branch: '后勤', desc: '城内石油产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_oil' },
-      prod_rare: { name: '稀矿产量', branch: '后勤', desc: '城内稀矿产量 +5%/级，最高 +50%，不影响野地采集。', max: 10, labReq: 1, baseCost: { steel: 80, food: 40 }, growth: 1.8, affect: 'res_rare' },
-      log_warehouse: { name: '仓储技术',   branch: '后勤', desc: '本城军需仓库掠夺保护额度 +5%/级，最高 +50%；不增加资源储量上限。', max: 10, labReq: 2, baseCost: { steel: 280, food: 140 }, growth: 1.7, affect: 'cap' },
-      log_food:      { name: '军需补给',   branch: '后勤', desc: '养兵耗粮减少 5%/级，最高减少 50%。', max: 10, labReq: 3, baseCost: { steel: 360, food: 200 }, growth: 1.8, affect: 'food_save' },
-      log_train:     { name: '训练加速',   branch: '后勤', desc: '兵种生产速度 +5%/级，最高 +50%，与生产设施的速度加成相加。征召数量仍受平民人口与资源限制。', max: 10, labReq: 2, baseCost: { steel: 300, food: 180 }, growth: 1.8, affect: 'train' },
-      log_build:     { name: '建筑加速',   branch: '后勤', desc: '建筑新建和升级的资源消耗、基础工期均减少 5%/级，满级各减少 50%。', max: 10, labReq: 2, baseCost: { steel: 340, food: 160 }, growth: 1.8, affect: 'build' },
-      log_medical:   { name: '医疗技术',   branch: '后勤', desc: '战损部队可回收为伤兵的比例每级增加 5 个百分点，本科技最高提供 50%，可叠加参战军官的急救技能。伤兵需在 7 天内消耗黄金或钻石治疗后归队。', max: 10, labReq: 3, baseCost: { steel: 320, food: 220 }, growth: 1.8, affect: 'medical' },
-      recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦查交火时，双方各按自身等级每级增加5点先手值，最高50点，每个交火回合生效；不增加地图扫描半径。成功侦查后城市情报Lv.1—10依次解锁：城防类型、城防数量等级、精确守军、守城将领、建筑等级、驻城将领人数、账号科技、可掠夺资源测算、驻城将领档案、战力评估。野地Lv.1起可查看精确守军。', max: 10, labReq: 1, baseCost: { steel: 180, oil: 60 }, growth: 1.6, affect: 'recon' },
-      recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '拦截敌方侦查的首回合，守方每级增加2点先手值，最高20点。Lv.1—10依次解锁来源玩家与行动、出发坐标、军种构成、兵力区间、兵种名称、精确总兵力、精确编成、带兵将领、科技装备、司令官加成。不公开带兵将领的有效属性和技能。需对应侦查部队驻防才能拦截。', max: 10, labReq: 2, baseCost: { steel: 240, oil: 100, rare: 20 }, growth: 1.7, affect: 'radar' },
+      fire_density:  { name: '火力密度', branch: '军事', desc: '全军行动火力 +5%/级，最高 +50%；与攻击科技独立相乘，主动攻击、余伤攻击和反击均生效。', affect: 'firepower_all' },
+      log_load:      { name: '负重科技',   branch: '后勤', desc: '所有兵种负重 +5%/级，最高 +50%；运输机运力同样生效。', affect: 'load' },
+      arm_engine:    { name: '燃烧引擎',   branch: '机动', desc: '陆军世界行军与战场移动速度 +5%/级，最高 +50%，包含步兵与车辆', affect: 'spd_arm' },
+      air_engine:    { name: '喷气推进',   branch: '机动', desc: '空军世界行军与战场移动速度 +5%/级，最高 +50%；战备机场只额外加成世界行军', affect: 'spd_air' },
+      nav_engine:    { name: '舰船动力',   branch: '机动', desc: '海军世界行军与战场移动速度 +5%/级，最高 +50%', affect: 'spd_nav' },
+      prod_food: { name: '粮食产量', branch: '后勤', desc: '城内粮食产量 +5%/级，最高 +50%，不影响野地采集。', affect: 'res_food' },
+      prod_steel: { name: '钢铁产量', branch: '后勤', desc: '城内钢铁产量 +5%/级，最高 +50%，不影响野地采集。', affect: 'res_steel' },
+      prod_oil: { name: '石油产量', branch: '后勤', desc: '城内石油产量 +5%/级，最高 +50%，不影响野地采集。', affect: 'res_oil' },
+      prod_rare: { name: '稀矿产量', branch: '后勤', desc: '城内稀矿产量 +5%/级，最高 +50%，不影响野地采集。', affect: 'res_rare' },
+      log_warehouse: { name: '仓储技术',   branch: '后勤', desc: '本城军需仓库掠夺保护额度 +5%/级，最高 +50%；不增加资源储量上限。', affect: 'cap' },
+      log_food:      { name: '军需补给',   branch: '后勤', desc: '养兵耗粮减少 5%/级，最高减少 50%。', affect: 'food_save' },
+      log_train:     { name: '训练加速',   branch: '后勤', desc: '兵种生产速度 +5%/级，最高 +50%，与生产设施的速度加成相加。征召数量仍受平民人口与资源限制。', affect: 'train' },
+      log_build:     { name: '建筑加速',   branch: '后勤', desc: '建筑新建和升级的资源消耗、基础工期均减少 5%/级，满级各减少 50%。', affect: 'build' },
+      log_medical:   { name: '医疗技术',   branch: '后勤', desc: '战损部队可回收为伤兵的比例每级增加 5 个百分点，本科技最高提供 50%，可叠加参战军官的急救技能。伤兵需在 7 天内消耗黄金或钻石治疗后归队。', affect: 'medical' },
+      recon_level:   { name: '侦察技术',   branch: '侦察', desc: '侦查交火时，双方各按自身等级每级增加5点先手值，最高50点，每个交火回合生效；不增加地图扫描半径。成功侦查后城市情报Lv.1—10依次解锁：城防类型、城防数量等级、精确守军、守城将领、建筑等级、驻城将领人数、账号科技、可掠夺资源测算、驻城将领档案、战力评估。野地Lv.1起可查看精确守军。', affect: 'recon' },
+      recon_radar:   { name: '雷达预警',   branch: '侦察', desc: '拦截敌方侦查的首回合，守方每级增加2点先手值，最高20点。Lv.1—10依次解锁来源玩家与行动、出发坐标、军种构成、兵力区间、兵种名称、精确总兵力、精确编成、带兵将领、战斗科技、司令官加成。不公开带兵将领的有效属性和技能。需对应侦查部队驻防才能拦截。', affect: 'radar' },
     },
     officerNames: [
       // 中国远征军及抗日名将
@@ -189,109 +184,59 @@ window.Game = window.Game || {};
       rarefactory:{ name: '稀矿厂', res: 'rare',   icon: 'img/map/wild-rarefactory-integrated.webp' }
     },
 
-    zones: {
-      normandy: {
-        name: '诺曼底战役',
-        desc: '滩头登陆,撕开大西洋壁垒。',
-        unlock: null,
-        stages: [
-          { id: 'no_1', name: '奥马哈滩头', enemy: { infantry: 40 },                                          reward: { food: 200, steel: 300, oil: 150, rare: 30,  gold: 50,  exp: 30 } },
-          { id: 'no_2', name: '滨海小镇',   enemy: { infantry: 60 },                                           reward: { food: 240, steel: 360, oil: 180, rare: 40,  gold: 60,  exp: 50 } },
-          { id: 'no_3', name: '桥头堡',     enemy: { armored: 10, ltank: 6 },                                   reward: { food: 300, steel: 460, oil: 240, rare: 60,  gold: 80,  exp: 80 } },
-          { id: 'no_4', name: '敌军反扑',   enemy: { ltank: 14, assault: 6, fighter: 8 },                     reward: { food: 380, steel: 580, oil: 320, rare: 90,  gold: 110, exp: 120 } },
-          { id: 'no_5', name: '司令部突袭', enemy: { htank: 8, assault: 10, bomber: 6, destroyer: 4 },        reward: { food: 500, steel: 800, oil: 460, rare: 140, gold: 160, exp: 180 } }
-        ]
-      },
-      africa: {
-        name: '北非战场',
-        desc: '黄沙漫天,坦克洪流对决。',
-        unlock: { zone: 'normandy', stage: 3 },
-        stages: [
-          { id: 'af_1', name: '沙漠哨所',   enemy: { ltank: 10 },                                             reward: { food: 360, steel: 560, oil: 320, rare: 80,  gold: 90,  exp: 100 } },
-          { id: 'af_2', name: '补给线截击', enemy: { ltank: 16, assault: 8 },                                 reward: { food: 440, steel: 680, oil: 400, rare: 100, gold: 120, exp: 140 } },
-          { id: 'af_3', name: '装甲对决',   enemy: { htank: 10, assault: 10, fighter: 10 },                   reward: { food: 540, steel: 820, oil: 500, rare: 130, gold: 160, exp: 180 } },
-          { id: 'af_4', name: '海岸炮台',   enemy: { assault: 12, battleship: 3, destroyer: 6 },              reward: { food: 660, steel: 1000, oil: 620, rare: 170, gold: 210, exp: 230 } },
-          { id: 'af_5', name: '隆美尔之影', enemy: { htank: 16, rocket: 8, bomber: 10, sub: 4 },              reward: { food: 880, steel: 1320, oil: 820, rare: 230, gold: 300, exp: 320 } }
-        ]
-      },
-      eastern: {
-        name: '东线战场',
-        desc: '凛冬将至,钢铁洪流碰撞。',
-        unlock: { zone: 'africa', stage: 3 },
-        stages: [
-          { id: 'es_1', name: '边境遭遇',   enemy: { infantry: 100, ltank: 20 },                             reward: { food: 600, steel: 900, oil: 560, rare: 140, gold: 160, exp: 180 } },
-          { id: 'es_2', name: '钢铁洪流',   enemy: { htank: 20, assault: 12 },                                reward: { food: 720, steel: 1080, oil: 680, rare: 180, gold: 200, exp: 230 } },
-          { id: 'es_3', name: '库尔斯克',   enemy: { htank: 28, rocket: 10, fighter: 16, bomber: 8 },        reward: { food: 880, steel: 1320, oil: 840, rare: 230, gold: 260, exp: 300 } },
-          { id: 'es_4', name: '城市巷战',   enemy: { infantry: 200, assault: 16, special: 12 },                  reward: { food: 1040, steel: 1560, oil: 1000, rare: 290, gold: 330, exp: 380 } },
-          { id: 'es_5', name: '柏林外围',   enemy: { htank: 36, rocket: 16, fighter: 20, bomber: 12, battleship: 4, special: 20 }, reward: { food: 1400, steel: 2100, oil: 1340, rare: 400, gold: 480, exp: 520 } }
-        ]
-      },
-      pacific: {
-        name: '太平洋战场',
-        desc: '海天之间,谁主沉浮。',
-        unlock: { zone: 'eastern', stage: 3 },
-        stages: [
-          { id: 'pa_1', name: '环礁侦察',   enemy: { scout: 10, special: 8, fighter: 16, sub: 4 },                       reward: { food: 800, steel: 1200, oil: 800, rare: 200, gold: 220, exp: 220 } },
-          { id: 'pa_2', name: '航母编队',   enemy: { fighter: 24, bomber: 12, carrier: 1, destroyer: 6, special: 12 },    reward: { food: 1000, steel: 1500, oil: 1000, rare: 260, gold: 300, exp: 300 } },
-          { id: 'pa_3', name: '夜袭港口',   enemy: { sub: 12, battleship: 4, destroyer: 8, special: 16 },                 reward: { food: 1200, steel: 1800, oil: 1200, rare: 320, gold: 380, exp: 380 } },
-          { id: 'pa_4', name: '决战中途',   enemy: { carrier: 3, fighter: 40, bomber: 20, battleship: 6, special: 24 },   reward: { food: 1500, steel: 2250, oil: 1500, rare: 420, gold: 500, exp: 480 } },
-          { id: 'pa_5', name: '东京湾',     enemy: { carrier: 6, battleship: 10, fighter: 60, bomber: 30, special: 40 },  reward: { food: 2200, steel: 3300, oil: 2200, rare: 640, gold: 800, exp: 700 } }
-        ]
-      }
-    },
+    zones: {},
 
     world: {
       size: 800,
       quadrantSize: 400,
       gapSize: 0,
       viewRadius: 8,
-      marchSecPerGrid: 18,
       banditNames: ['寇'],
-      banditLevels: [
-        { lv: 1, army: { infantry: 20 }, reward: { food: 80, steel: 120, oil: 60, rare: 10, gold: 15 } },
-        { lv: 2, army: { infantry: 40 }, reward: { food: 120, steel: 180, oil: 90, rare: 15, gold: 20 } },
-        { lv: 3, army: { infantry: 50, armored: 8 }, reward: { food: 180, steel: 260, oil: 140, rare: 25, gold: 30 } },
-        { lv: 4, army: { infantry: 55, armored: 10, ltank: 10 }, reward: { food: 240, steel: 360, oil: 200, rare: 40, gold: 45 } },
-        { lv: 5, army: { infantry: 60, armored: 10, ltank: 12, htank: 8, assault: 6, fighter: 6 }, reward: { food: 320, steel: 480, oil: 280, rare: 60, gold: 70 } },
-        { lv: 6, army: { infantry: 70, armored: 12, ltank: 15, htank: 12, assault: 8, rocket: 8, fighter: 10, bomber: 6 }, reward: { food: 440, steel: 660, oil: 400, rare: 90, gold: 100 } },
-        { lv: 7, army: { infantry: 75, armored: 15, ltank: 18, htank: 16, assault: 12, rocket: 12, fighter: 15, bomber: 8, special: 8 }, reward: { food: 600, steel: 900, oil: 560, rare: 130, gold: 150 } },
-        { lv: 8, army: { infantry: 85, armored: 20, ltank: 20, htank: 20, assault: 15, rocket: 15, fighter: 20, bomber: 10, special: 12 }, reward: { food: 800, steel: 1200, oil: 760, rare: 180, gold: 220 } }
-      ].map(function (level) {
-        // 与服务端陆地 NPC 资源倍率一致；战斗经验和概率钻石均在结算时独立处理。
-        var army = {}, reward = {};
-        Object.keys(level.army).forEach(function (unit) { army[unit] = level.army[unit] * 3; });
-        Object.keys(level.reward).forEach(function (resource) {
-          reward[resource] = level.reward[resource] * (resource === 'rare' ? 45 : resource === 'gold' ? 15 : 30);
-        });
-        return { lv: level.lv, army: army, reward: reward };
-      }),
       playerCityNames: ['钢铁洪流', '虎式之巢', '苍穹之眼', '深海利剑', '雷霆要塞', '孤狼营地', '铁血堡垒', '风暴前线', '暗夜哨站', '烈焰军团']
     },
+    // 推荐仅用于介绍搭配思路，不限制技能的自由组合。
+    officerSkillCombinations: [
+      { direction: '持续攻坚', skills: ['ranging', 'pierce', 'suppress'], tactics: '锁定高价值目标，越打越有利' },
+      { direction: '残阵反打', skills: ['last_stand', 'counter', 'barrier'], tactics: '保住剩余兵力，承受攻击后反扑' },
+      { direction: '远程牵制', skills: ['smoke', 'blitz', 'ranging'], tactics: '利用机动维持距离，持续校射' },
+      { direction: '阵地消耗', skills: ['bulwark', 'borrow_armor', 'reprisal'], tactics: '扛住攻击，在周期回合集中反攻' },
+      { direction: '多目标清理', skills: ['ricochet', 'execution', 'frenzy'], tactics: '分散压低兵力，再集中清残' },
+      { direction: '突破追击', skills: ['blitz', 'execution', 'pursuit'], tactics: '歼灭前排后快速扩大战果' }
+    ],
+
     officerSkills: {
-      frenzy:   { name: '全军冲锋', icon: 'img/skills/frenzy.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级，最高50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击', max: 5, cat: 'atk' },
-      bulwark:  { name: '坚守阵地', icon: 'img/skills/bulwark.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+10%/级，最高50%，仅本回合生效；与借甲御敌不能同时学习，历史兼有时仅坚守阵地生效', max: 5, cat: 'def' },
-      blitz:    { name: '闪电突击', icon: 'img/skills/blitz.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），战场移动速度+6%/级，最高30%，仅本回合生效；新版玩家城市战按各将领所属编队独立起算，首次接战不追溯机动或重排先手，后续生效回合影响机动与先手。野地、侦察、演习及历史战斗沿用首次接战影响同射程先手的原规则。行动顺序按射程优先、同射程速度优先；射程与速度均相同时，奇数回合进攻方先手、偶数回合防守方先手', max: 5, cat: 'spd' },
-      suppress: { name: '火力压制', icon: 'img/skills/suppress.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），降低敌方自身攻击力6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用，不削减师夷长技追加的攻击', max: 5, cat: 'debuff' },
-      pierce:   { name: '破甲打击', icon: 'img/skills/pierce.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御6%/级，最高30%，仅本回合生效，主动攻击、余伤攻击与反击均适用', max: 5, cat: 'pierce' },
-      leadership:{ name: '三军统帅',icon: 'img/skills/leadership.svg',desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
-      supply:   { name: '三军统帅', icon: 'img/skills/supply.svg', desc: '指挥官任命时，带兵上限额外+4%/级，最高20%', max: 5, cat: 'mil' },
-      medic:    { name: '战地急救', icon: 'img/skills/medic.svg', desc: '战后伤兵额外回收+3%/级，最高15%', max: 5, cat: 'medic' },
-      harvest:  { name: '屯田增产', icon: 'img/skills/harvest.svg', desc: '市长任命时，基础资源产出额外+10%/级', max: 5, cat: 'logi' },
-      construct:{ name: '工程营造', icon: 'img/skills/construct.svg', desc: '市长任命时，建筑工期缩短4%/级，最高20%', max: 5, cat: 'logi' },
-      finance:  { name: '精明理财', icon: 'img/skills/finance.svg', desc: '市长任命时，黄金税收产出额外+4%/级', max: 5, cat: 'know' },
-      research: { name: '格物致知', icon: 'img/skills/research.svg', desc: '市长任命时，科研速度提升4%/级',     max: 5, cat: 'know' },
-      ration:   { name: '军屯自给', icon: 'img/skills/ration.svg', desc: '市长任命时，全城养兵耗粮降低16%/级，最高80%', max: 5, cat: 'logi' },
-      counter:  { name: '绝境反击', icon: 'img/skills/counter.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击存活且射程允许时，以当前剩余兵力总伤害的20%/级反击，最高100%；按反击兵种自身对应领域攻击与专项倍率结算，不继承来袭方倍率', max: 5, cat: 'def' },
-      learn:    { name: '师夷长技', icon: 'img/skills/learn.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；主动攻击时借用交火阶段开始时存活同名敌军对应攻击的6%/级，单次最高为敌军对应攻击的30%；参考值含攻击科技与军官综合军事属性，不复制专项倍率或临时技能，反击不生效', max: 5, cat: 'atk' },
-      borrow_armor: { name: '借甲御敌', icon: 'img/skills/borrow-armor.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击时借用交火阶段开始时存活同名敌军防御的6%/级，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技，不包含军官属性或技能；与坚守阵地不能同时学习，历史兼有时仅坚守阵地生效', max: 5, cat: 'def' }
+      frenzy:   { name: '全军冲锋', icon: 'img/skills/frenzy.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+50%，仅本回合生效；主动攻击、余伤攻击与反击均适用，不放大师夷长技追加的攻击', cat: 'atk' },
+      bulwark:  { name: '坚守阵地', icon: 'img/skills/bulwark.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军防御力额外+50%，仅本回合生效', cat: 'def' },
+      blitz:    { name: '闪电突击', icon: 'img/skills/blitz.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），战场移动速度+30%，仅本回合生效；新版玩家城市战按各将领所属编队独立起算，首次接战不追溯机动或重排先手，后续生效回合影响机动与先手。野地、侦察、演习及历史战斗沿用首次接战影响同射程先手的原规则。行动顺序按射程优先、同射程速度优先；射程与速度均相同时，奇数回合进攻方先手、偶数回合防守方先手', cat: 'spd' },
+      suppress: { name: '火力压制', icon: 'img/skills/suppress.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），降低敌方自身攻击力30%，仅本回合生效，主动攻击、余伤攻击与反击均适用，不削减师夷长技追加的攻击', cat: 'debuff' },
+      pierce:   { name: '破甲打击', icon: 'img/skills/pierce.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用', cat: 'pierce' },
+      leadership:{ name: '三军统帅',icon: 'img/skills/leadership.svg',desc: '指挥官任命时，带兵上限额外+20%', cat: 'mil' },
+      supply:   { name: '三军统帅', icon: 'img/skills/supply.svg', desc: '指挥官任命时，带兵上限额外+20%', cat: 'mil' },
+      medic:    { name: '战地急救', icon: 'img/skills/medic.svg', desc: '战后伤兵额外回收+15%', cat: 'medic' },
+      harvest:  { name: '屯田增产', icon: 'img/skills/harvest.svg', desc: '市长任命时，基础资源产出额外+50%', cat: 'logi' },
+      construct:{ name: '工程营造', icon: 'img/skills/construct.svg', desc: '市长任命时，建筑工期缩短20%', cat: 'logi' },
+      finance:  { name: '精明理财', icon: 'img/skills/finance.svg', desc: '市长任命时，黄金税收产出额外+20%', cat: 'know' },
+      research: { name: '格物致知', icon: 'img/skills/research.svg', desc: '市长任命时，科研速度提升20%', cat: 'know' },
+      ration:   { name: '军屯自给', icon: 'img/skills/ration.svg', desc: '市长任命时，全城养兵耗粮降低80%', cat: 'logi' },
+      counter:  { name: '绝境反击', icon: 'img/skills/counter.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击存活且射程允许时，以当前剩余兵力总伤害的100%反击；按反击兵种自身对应领域攻击与专项倍率结算，不继承来袭方倍率', cat: 'def' },
+      learn:    { name: '师夷长技', icon: 'img/skills/learn.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；主动攻击时借用交火阶段开始时存活同名敌军对应攻击的30%，单次最高为敌军对应攻击的30%；参考值含攻击科技与军官综合军事属性，不复制专项倍率或临时技能，反击不生效', cat: 'atk' },
+      borrow_armor: { name: '借甲御敌', icon: 'img/skills/borrow-armor.svg', desc: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）；受击时借用交火阶段开始时存活同名敌军防御的30%，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技，不包含军官属性或技能', cat: 'def' },
+      ranging: { name: '三轮校射', icon: 'img/skills/ranging.svg', desc: '同一兵种连续三个回合主动命中同一编队的同一兵种，第三次攻击额外造成40%伤害；换目标或中断攻击清零，反击不计数', cat: 'atk' },
+      barrier: { name: '战地屏障', icon: 'img/skills/barrier.svg', desc: '首次接战回合及此后每隔两个回合，各兵种获得当前总生命值10%的屏障；先吸收伤害再结算伤亡，仅本回合有效，不恢复士兵', cat: 'def' },
+      last_stand: { name: '背水奋战', icon: 'img/skills/last-stand.svg', desc: '每回合开始时，本编队某兵种剩余数量低于其开战数量50%，该兵种自身攻击额外+20%；主动攻击和反击均适用，不放大师夷长技追加攻击', cat: 'atk' },
+      execution: { name: '残阵收割', icon: 'img/skills/execution.svg', desc: '攻击前目标剩余数量不高于其所属编队本兵种开战数量30%时，本次伤害额外+25%；每次切换目标重新判断', cat: 'atk' },
+      smoke: { name: '烟幕遮断', icon: 'img/skills/smoke.svg', desc: '首次接战回合及此后每隔两个回合，各兵种首次主动命中的目标，下一回合战场移动速度降低25%；多个烟幕取最高值，不影响射程、先手或大地图行军', cat: 'debuff' },
+      reprisal: { name: '蓄势反攻', icon: 'img/skills/reprisal.svg', desc: '首次接战回合及此后每隔两个回合，各兵种首次主动攻击追加此前两个回合实际承伤的10%；追加伤害不超过本次普通攻击伤害40%，触发后清空，屏障吸收不计入', cat: 'atk' },
+      ricochet: { name: '跳弹射击', icon: 'img/skills/ricochet.svg', desc: '首次接战回合及此后每隔两个回合，各兵种首次主动攻击后，向射程内另一合法敌军追加15%攻击强度的跳弹；优先距主目标最近者，按第二目标独立结算，不连锁触发追加效果', cat: 'atk' },
+      pursuit: { name: '乘胜追击', icon: 'img/skills/pursuit.svg', desc: '参与歼灭占敌方所属编队开战总人口至少5%的兵种后，下一回合移动速度+30%，首次主动攻击伤害+15%；同回合只触发一次，不影响大地图行军', cat: 'spd' }
     },
     items: {
       expBook:   { name: '经验书',   icon: 'img/items/exp-book.svg', desc: '军官使用,获得10000经验',          cat: 'officer' },
       expBookAdv:{ name: '高级经验书',icon: 'img/items/exp-book-adv.svg', desc: '每本提供100000经验，可批量使用', cat: 'officer' },
       expBookRapid: { name: '极速经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供500000经验，可批量使用', cat: 'officer' },
       expBookMax:{ name: '满级经验书',icon: 'img/items/exp-book-max.svg', desc: '使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点', cat: 'officer' },
-      skillBook: { name: '普通技能书', icon: 'img/items/skill-book.svg', desc: '军官使用，随机学习一个未掌握且不互斥的技能，初始等级受军官星级影响', cat: 'officer' },
-      universalSkillBook: { name: '通用技能书', icon: 'img/items/universal-skill-book.svg', desc: '从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级', cat: 'officer' },
+      skillBook: { name: '普通技能书', icon: 'img/items/skill-book.svg', desc: '军官使用，随机学习一个未掌握的技能，直接获得满级技能', cat: 'officer' },
+      universalSkillBook: { name: '通用技能书', icon: 'img/items/universal-skill-book.svg', desc: '从技能池自选一个未掌握的技能，直接获得满级技能，无需升级', cat: 'officer' },
       loyaltyBox:{ name: '忠诚宝箱', icon: 'img/items/loyalty-box.svg', desc: '军官使用,忠诚度+20',              cat: 'officer' },
       renameCard:{ name: '军官改名卡', icon: 'img/items/rename-card.svg', desc: '为军官更换新名字',              cat: 'officer' },
       cityRenameCard:{ name: '城市改名卡', icon: 'img/items/city-rename-card.svg', desc: '为一座城市更换新名字',        cat: 'util' },
@@ -320,14 +265,14 @@ window.Game = window.Game || {};
       stage_gift_6: { name: '横扫千军礼包', icon: '🎁', desc: '主线第6阶段通关大奖：粮钢油各500万、稀矿150万、黄金20万、钻石2000、24时加速符×2、高级经验书×5', cat: 'resource', isBox: true },
       stage_gift_7: { name: '威震四海礼包', icon: '🎁', desc: '主线第7阶段通关大奖：粮钢油各1500万、稀矿500万、黄金50万、钻石5000、48时加速符×2、元帅军事装备箱×1', cat: 'resource', isBox: true },
       stage_gift_8: { name: '三军统帅大礼包', icon: '👑', desc: '主线第8阶段终极大奖：粮钢油各5000万、稀矿1500万、黄金150万、钻石10000、72时加速符×3、满级经验书×2', cat: 'resource', isBox: true },
-      speedUp10m: { name: '10分加速符',icon: 'img/items/speedup-10m.svg', desc: '立即缩短10分钟建筑/造兵时间',     cat: 'util', seconds: 600   },
-      speedUp1h:  { name: '1时加速符', icon: 'img/items/speedup-1h.svg', desc: '立即缩短1小时建筑/造兵时间',     cat: 'util', seconds: 3600  },
-      speedUp5h:  { name: '5时加速符', icon: 'img/items/speedup-5h.svg', desc: '立即缩短5小时建筑/造兵时间',     cat: 'util', seconds: 18000 },
-      speedUp12h: { name: '12时加速符',icon: 'img/items/speedup-12h.svg', desc: '立即缩短12小时建筑/造兵时间',    cat: 'util', seconds: 43200 },
-      speedUp24h: { name: '24时加速符',icon: 'img/items/speedup-24h.svg', desc: '立即缩短24小时建筑/造兵时间',    cat: 'util', seconds: 86400 },
-      speedUp36h: { name: '36时加速符',icon: 'img/items/speedup-36h.svg', desc: '立即缩短36小时建筑/造兵时间',    cat: 'util', seconds: 129600},
-      speedUp48h: { name: '48时加速符',icon: 'img/items/speedup-48h.svg', desc: '立即缩短48小时建筑/造兵时间',    cat: 'util', seconds: 172800},
-      speedUp72h: { name: '72时加速符',icon: 'img/items/speedup-72h.svg', desc: '立即缩短72小时建筑/造兵时间',    cat: 'util', seconds: 259200},
+      speedUp10m: { name: '10分加速符',icon: 'img/items/speedup-10m.svg', desc: '立即缩短10分钟建筑/造兵时间',     cat: 'util'},
+      speedUp1h:  { name: '1时加速符', icon: 'img/items/speedup-1h.svg', desc: '立即缩短1小时建筑/造兵时间',     cat: 'util'},
+      speedUp5h:  { name: '5时加速符', icon: 'img/items/speedup-5h.svg', desc: '立即缩短5小时建筑/造兵时间',     cat: 'util'},
+      speedUp12h: { name: '12时加速符',icon: 'img/items/speedup-12h.svg', desc: '立即缩短12小时建筑/造兵时间',    cat: 'util'},
+      speedUp24h: { name: '24时加速符',icon: 'img/items/speedup-24h.svg', desc: '立即缩短24小时建筑/造兵时间',    cat: 'util'},
+      speedUp36h: { name: '36时加速符',icon: 'img/items/speedup-36h.svg', desc: '立即缩短36小时建筑/造兵时间',    cat: 'util'},
+      speedUp48h: { name: '48时加速符',icon: 'img/items/speedup-48h.svg', desc: '立即缩短48小时建筑/造兵时间',    cat: 'util'},
+      speedUp72h: { name: '72时加速符',icon: 'img/items/speedup-72h.svg', desc: '立即缩短72小时建筑/造兵时间',    cat: 'util'},
       shield2h: { name: '2小时护盾', icon: 'img/items/shield-2h.svg', desc: '本城2小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', cat: 'util' },
       shield: { name: '8小时护盾', icon: 'img/items/shield-8h.svg', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', cat: 'util' },
       shield12h: { name: '12小时护盾', icon: 'img/items/shield-12h.svg', desc: '本城12小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', cat: 'util' },
@@ -341,9 +286,9 @@ window.Game = window.Game || {};
       warSpeedOrder: { name: '宣战加速令', icon: 'img/items/march-ord.svg', desc: '缩短本城宣战备战，基础50%，学识提高效果，最高80%，总备战至少30分钟', cat: 'util' },
       populationOrder: { name: '人口动员令', icon: 'img/items/population-order.svg', desc: '使用后立即增加500空闲人口,不超过人口上限', cat: 'util' },
       emergencyPopulationOrder: { name: '紧急人口动员令', icon: 'img/items/emergency-population-order.svg', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', cat: 'util' },
-      mobilizationOrder: { name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成', cat: 'util' },
-      advancedMobilizationOrder: { name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成', cat: 'util' },
-      rapidMobilizationOrder: { name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成', cat: 'util' },
+      mobilizationOrder: { name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号各城市出征带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成', cat: 'util' },
+      advancedMobilizationOrder: { name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号各城市出征带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成', cat: 'util' },
+      rapidMobilizationOrder: { name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号各城市出征带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成', cat: 'util' },
 
     },
     historicalOfficers: [
@@ -394,23 +339,23 @@ window.Game = window.Game || {};
 
     // 累计声望、累计剿寇胜场与含主城的城市上限均与 MilitaryRankDef 一致；只用于展示，实际授衔及建城以服务端为准。
     militaryRanks: [
-      { tier: 1,  name: '列兵',   prestige: 0,       baseCap: 25000,  cityCap: 1, npcVictories: 0, certificatePrice: 0 },
-      { tier: 2,  name: '上等兵', prestige: 10000,     baseCap: 50000, cityCap: 2, npcVictories: 10, certificatePrice: 20 },
-      { tier: 3,  name: '下士',   prestige: 100000,     baseCap: 75000, cityCap: 3, npcVictories: 50, certificatePrice: 40 },
-      { tier: 4,  name: '中士',   prestige: 300000,    baseCap: 100000, cityCap: 4, npcVictories: 110, certificatePrice: 60 },
-      { tier: 5,  name: '上士',   prestige: 500000,    baseCap: 125000, cityCap: 4, npcVictories: 200, certificatePrice: 80 },
-      { tier: 6,  name: '军士长', prestige: 1000000,    baseCap: 150000, cityCap: 5, npcVictories: 300, certificatePrice: 100 },
-      { tier: 7,  name: '准尉',   prestige: 1500000,    baseCap: 175000, cityCap: 5, npcVictories: 450, certificatePrice: 150 },
-      { tier: 8,  name: '少尉',   prestige: 2000000,    baseCap: 200000, cityCap: 6, npcVictories: 650, certificatePrice: 200 },
-      { tier: 9,  name: '中尉',   prestige: 2600000,   baseCap: 225000, cityCap: 6, npcVictories: 900, certificatePrice: 300 },
-      { tier: 10, name: '上尉',   prestige: 3300000,   baseCap: 250000, cityCap: 6, npcVictories: 1200, certificatePrice: 400 },
-      { tier: 11, name: '少校',   prestige: 4100000,   baseCap: 300000, cityCap: 7, npcVictories: 1600, certificatePrice: 600 },
-      { tier: 12, name: '中校',   prestige: 5000000,   baseCap: 350000, cityCap: 7, npcVictories: 2100, certificatePrice: 800 },
-      { tier: 13, name: '上校',   prestige: 6000000,  baseCap: 400000, cityCap: 7, npcVictories: 2700, certificatePrice: 1000 },
-      { tier: 14, name: '大校',   prestige: 7000000,  baseCap: 450000, cityCap: 7, npcVictories: 3400, certificatePrice: 1200 },
-      { tier: 15, name: '少将',   prestige: 8000000,  baseCap: 500000, cityCap: 8, npcVictories: 4200, certificatePrice: 1500 },
-      { tier: 16, name: '中将',   prestige: 9000000, baseCap: 550000, cityCap: 8, npcVictories: 5100, certificatePrice: 2000 },
-      { tier: 17, name: '上将',   prestige: 10000000, baseCap: 600000, cityCap: 8, npcVictories: 6100, certificatePrice: 2500 }
+      { tier: 1,  name: '列兵',   },
+      { tier: 2,  name: '上等兵', },
+      { tier: 3,  name: '下士',   },
+      { tier: 4,  name: '中士',   },
+      { tier: 5,  name: '上士',   },
+      { tier: 6,  name: '军士长', },
+      { tier: 7,  name: '准尉',   },
+      { tier: 8,  name: '少尉',   },
+      { tier: 9,  name: '中尉',   },
+      { tier: 10, name: '上尉',   },
+      { tier: 11, name: '少校',   },
+      { tier: 12, name: '中校',   },
+      { tier: 13, name: '上校',   },
+      { tier: 14, name: '大校',   },
+      { tier: 15, name: '少将',   },
+      { tier: 16, name: '中将',   },
+      { tier: 17, name: '上将',   }
     ]
   };
 
@@ -486,7 +431,7 @@ window.Game = window.Game || {};
     G.DATA.items['skillBook_' + skillId] = {
       name: skill.name + '技能书',
       icon: 'img/items/skill-book.svg',
-      desc: '军官使用，直接学习「' + skill.name + '」Lv.1',
+      desc: '军官使用，直接学习「' + skill.name + '」满级',
       cat: 'officer',
       skillId: skillId
     };
@@ -616,6 +561,5 @@ window.Game = window.Game || {};
         if (item.equipmentSet) G.DATA.items[item.id] = { name: item.name, icon: item.icon, desc: item.desc, cat: 'officer', isBox: true };
       });
     }
-    G.DATA.items.officerPreparationParts = { name: '军备零件', icon: '🧰', cat: 'officer', desc: '用于军官部位整备；完成军备日常和周常获得' };
   }
 })(window.Game);

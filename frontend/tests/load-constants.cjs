@@ -29,6 +29,7 @@ function ensureConstants(context) {
   if (!context.window.Game.wildGatherProgress) vm.runInContext(gatherSource, context, { filename: 'gather-progress.js' });
   if (!context.window.Game.wildAbandonReason) vm.runInContext(abandonSource, context, { filename: 'wild-abandon.js' });
   if (!context.window.Game.iconHtml) vm.runInContext(icons, context, { filename: 'icons.js' });
+  require('./server-gameplay.cjs').install(context);
 }
 
 module.exports = ensureConstants;

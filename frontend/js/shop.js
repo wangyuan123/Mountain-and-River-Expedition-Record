@@ -9,31 +9,16 @@ window.Game = window.Game || {};
   // 商城商品数据：基于游戏仓库道具 & 军事战争题材扩展
   var SHOP_CATS = G.Constants.shopCategories;
 
-  // 指定技能书与 data.js 的技能表保持同步，旧 supply 仅为兼容别名，不单独上架。
-  var SPECIFIC_SKILL_BOOKS = Object.keys(G.DATA.officerSkills).filter(function (skillId) {
-    return skillId !== 'supply';
-  }).map(function (skillId) {
-    var skill = G.DATA.officerSkills[skillId];
-    return {
-      id: 'skillBook_' + skillId,
-      cat: 'officer',
-      name: skill.name + '技能书',
-      icon: 'img/items/skill-book.svg',
-      desc: '选择军官使用，直接学习「' + skill.name + '」Lv.1',
-      price: 160,
-      stock: null,
-      tag: '指定'
-    };
-  });
-
-  // 凭证按军衔定义派生，保留原有仓库 key；购买仅入仓，正式授衔仍核验四项条件。
-  var RANK_CERTIFICATES = G.DATA.militaryRanks.filter(function (rank) { return rank.tier > 1; }).map(function (rank) {
-    var id = 'rank_certificate_' + rank.tier;
-    var item = G.DATA.items[id];
-    return { id: id, cat: 'rank', name: item.name, icon: item.icon, desc: item.desc,
-      price: rank.certificatePrice, rankTier: rank.tier, stock: null, tag: '晋升' };
-  });
-  var SHOP_ITEMS = G.Constants.shopItems.concat(SPECIFIC_SKILL_BOOKS, RANK_CERTIFICATES);
+  /** 商品目录在认证快照安装后读取，避免启动时缓存空装备目录或旧价格。 */
+  function shopItems() {
+    var prices = G.ServerRules.value('catalog', {}).shopPrices || {};
+    var ranks = G.DATA.militaryRanks.filter(function (rank) { return rank.tier > 1; }).map(function (rank) {
+      var id = 'rank_certificate_' + rank.tier, item = G.DATA.items[id] || {};
+      return { id: id, cat: 'rank', name: item.name, icon: item.icon, desc: item.desc,
+        price: prices[id], rankTier: rank.tier, stock: null, tag: '晋升' };
+    });
+    return G.Constants.shopItems.concat(ranks).filter(function (item) { return prices[item.id] != null; });
+  }
 
   function esc(s) {
     if (typeof G.escapeHtml === 'function') return G.escapeHtml(s);
@@ -46,47 +31,17 @@ window.Game = window.Game || {};
 
   /** 新手礼包开启后仍保留零库存键，账号刷新或换城市不会重新获得限购资格。 */
   function alreadyPurchased(item) {
-    return item.id === 'newbiePack' && Object.prototype.hasOwnProperty.call(Core.state.items || {}, item.id);
+    return (G.ServerRules.value('shop', {})[item.id] || {}).purchased === true;
   }
 
   /** 已授衔或已有库存的凭证不可再购；最终校验由服务端账号锁内完成。 */
   function certificateUnavailableReason(item) {
-    if (!item.rankTier) return '';
-    var tier = (Core.state.player || {}).militaryRank || 1;
-    if (item.rankTier <= tier) return '已获军衔';
-    return Number((Core.state.items || {})[item.id]) > 0 ? '已持有' : '';
+    return (G.ServerRules.value('shop', {})[item.id] || {}).certificateReason || '';
   }
 
-  /** 计算加速符与护盾的折合小时单价与立省比例，直观呈现性价比。 */
-  function itemEfficiencyText(it) {
-    if (!it || !it.id) return '';
-    var speedMatch = it.id.match(/^speedUp(\d+)(m|h)$/);
-    if (speedMatch) {
-      var num = parseInt(speedMatch[1], 10);
-      var unit = speedMatch[2];
-      var hours = unit === 'm' ? num / 60 : num;
-      var rate = (it.price / hours).toFixed(1).replace(/\.0$/, '');
-      if (hours >= 5) {
-        var baseRate = 100;
-        var savePct = Math.round((1 - (it.price / hours) / baseRate) * 100);
-        return '折合 ' + rate + '钻/时 · 省' + savePct + '%';
-      }
-      return '折合 ' + rate + '钻/时';
-    }
-    var shieldMatch = it.id.match(/^shield(\d+)?h?$/);
-    if (shieldMatch) {
-      var sHours = it.id === 'shield' ? 8 : parseInt(shieldMatch[1], 10);
-      if (sHours) {
-        var sRate = (it.price / sHours).toFixed(1).replace(/\.0$/, '');
-        if (sHours >= 8) {
-          var sBaseRate = 30;
-          var sSavePct = Math.round((1 - (it.price / sHours) / sBaseRate) * 100);
-          return '折合 ' + sRate + '钻/时 · 省' + sSavePct + '%';
-        }
-        return '折合 ' + sRate + '钻/时';
-      }
-    }
-    return '';
+  /** 性价比文案由服务端目录统一生成。 */
+  function itemEfficiencyText(item) {
+    return (G.ServerRules.value('catalog', {}).shopEfficiency || {})[item.id] || '';
   }
 
   var Shop = {
@@ -160,7 +115,7 @@ window.Game = window.Game || {};
 
     /** 从晋升条件直达对应凭证，不沿用之前的商城搜索或筛选条件。 */
     openRankCertificate: function (tier) {
-      var item = RANK_CERTIFICATES.find(function (entry) { return entry.rankTier === tier; });
+      var item = shopItems().find(function (entry) { return entry.rankTier === tier; });
       if (!item) return;
       this.curCat = 'rank';
       this.subCat = 'all';
@@ -180,10 +135,57 @@ window.Game = window.Game || {};
       Core.render();
     },
 
+    /** 只读展示所选装备箱的固定内容，独立弹窗避免展开清单挤高商城卡片。 */
+    showEquipmentDetails: function (id) {
+      var item = shopItems().find(function (entry) { return entry.id === id && entry.equipmentSet; });
+      var set = item && G.Constants.equipmentSets[item.equipmentSet];
+      if (!set || typeof document === 'undefined' || !document.body) return;
+      var existing = document.getElementById('shopEquipmentDetailModal');
+      if (existing) existing.remove();
+      var opener = document.activeElement;
+      var mask = document.createElement('div');
+      mask.id = 'shopEquipmentDetailModal';
+      mask.className = 'modal-mask';
+      var html = '<section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="shopEquipmentDetailTitle">' +
+        '<div class="modal-title"><span id="shopEquipmentDetailTitle">' + esc(item.name) + '详情</span>' +
+          '<button type="button" class="modal-close-btn" id="shopEquipmentDetailCloseX" aria-label="关闭装备详情">✕</button></div>' +
+        '<div class="modal-body"><p>' + esc(item.desc) + '</p><h3>十二件装备清单</h3><ol>';
+      set.keys.forEach(function (key) {
+        var equipment = G.Constants.equipmentItems[key];
+        html += '<li><strong>' + esc(equipment.name) + ' ×1</strong><p>' + esc(equipment.desc) + '</p></li>';
+      });
+      html += '</ol><h3>套装共鸣</h3><p>同套装备达到对应件数时激活，各档效果累计叠加。</p>';
+      for (var stage = 0; stage < 4; stage++) {
+        html += '<p>' + ((stage + 1) * 3) + '件追加：' + esc(G.Constants.equipmentBranches[set.branch]) + '+' +
+          set.config.resonance_increment_main[stage] + '，全属性+' + set.config.resonance_increment_all[stage] + '</p>';
+      }
+      mask.innerHTML = html + '</div><div class="modal-foot"><button type="button" class="btn" id="shopEquipmentDetailClose">关闭</button></div></section>';
+      var close = function () {
+        mask.remove();
+        if (opener && opener.isConnected !== false && typeof opener.focus === 'function') opener.focus();
+      };
+      var closeX = mask.querySelector('#shopEquipmentDetailCloseX');
+      var closeButton = mask.querySelector('#shopEquipmentDetailClose');
+      closeX.onclick = close;
+      closeButton.onclick = close;
+      mask.addEventListener('click', function (event) { if (event.target === mask) close(); });
+      mask.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') { event.preventDefault(); close(); }
+        // 键盘焦点留在弹窗内，关闭后返回原详情入口，不落入遮罩后的购买按钮。
+        if (event.key === 'Tab' && event.shiftKey && document.activeElement === closeX) {
+          event.preventDefault(); closeButton.focus();
+        } else if (event.key === 'Tab' && !event.shiftKey && document.activeElement === closeButton) {
+          event.preventDefault(); closeX.focus();
+        }
+      });
+      document.body.appendChild(mask);
+      closeX.focus();
+    },
+
     items: function () {
       var self = this;
       var kw = (self.keyword || '').trim().toLowerCase();
-      return SHOP_ITEMS.filter(function (it) {
+      return shopItems().filter(function (it) {
         if (self.curCat !== 'all' && it.cat !== self.curCat) return false;
 
         // 军官二级分类筛选
@@ -225,8 +227,8 @@ window.Game = window.Game || {};
         return;
       }
       var it = null;
-      for (var i = 0; i < SHOP_ITEMS.length; i++) {
-        if (SHOP_ITEMS[i].id === id) { it = SHOP_ITEMS[i]; break; }
+      for (var i = 0; i < shopItems().length; i++) {
+        if (shopItems()[i].id === id) { it = shopItems()[i]; break; }
       }
       if (!it) return;
       if (certificateUnavailableReason(it)) {
@@ -249,7 +251,7 @@ window.Game = window.Game || {};
       if (existingModal) existingModal.remove();
 
       var owned = (s.items && s.items[it.id]) || 0;
-      var maxAffordable = Math.min(999, Math.max(1, Math.floor(diamond / it.price)));
+      var maxAffordable = Math.max(1, (G.ServerRules.value('shop', {})[it.id] || {}).maxAffordable || 0);
       var count = 1;
       var isOneOff = (it.rankTier || it.id === 'newbiePack' || (it.stock && it.stock === 1));
 
@@ -258,8 +260,11 @@ window.Game = window.Game || {};
       mask.className = 'modal-mask shop-buy-mask';
 
       var renderModalContent = function () {
-        var totalCost = it.price * count;
-        var canAfford = diamond >= totalCost;
+        var quote = G.ServerRules.cachedPreview({ action: 'shop', id: it.id, count: count }, function () {
+          if (mask.isConnected !== false) renderModalContent();
+        });
+        var totalCost = quote ? quote.cost : '…';
+        var canAfford = quote && quote.allowed;
         var isHighValue = totalCost >= 500;
 
         var html = '<div class="modal-card shop-buy-dialog" role="dialog" aria-modal="true">' +
@@ -298,7 +303,7 @@ window.Game = window.Game || {};
         html += '<div class="shop-buy-summary">' +
             '<div class="summary-line"><span>总计费用：</span><b class="total-diamond">💎 ' + totalCost + '</b></div>' +
             '<div class="summary-line"><span>当前拥有钻石：</span><span>💎 ' + diamond + '</span></div>' +
-            '<div class="summary-line"><span>购买后剩余：</span><span>💎 ' + (canAfford ? (diamond - totalCost) : '不足') + '</span></div>' +
+            '<div class="summary-line"><span>购买后剩余：</span><span>💎 ' + (quote ? quote.remaining : '待报价') + '</span></div>' +
           '</div>' +
           '</div>' +
           '<div class="modal-foot">' +
@@ -380,8 +385,8 @@ window.Game = window.Game || {};
 
     buy: function (id, count) {
       var it = null;
-      for (var i = 0; i < SHOP_ITEMS.length; i++) {
-        if (SHOP_ITEMS[i].id === id) { it = SHOP_ITEMS[i]; break; }
+      for (var i = 0; i < shopItems().length; i++) {
+        if (shopItems()[i].id === id) { it = shopItems()[i]; break; }
       }
       if (!it) return;
       if (certificateUnavailableReason(it)) {
@@ -401,16 +406,7 @@ window.Game = window.Game || {};
       var s = Core.state;
       var r = s.resources || (s.resources = {});
       var diamond = r.diamond != null ? r.diamond : 0;
-      var totalCost = it.price * buyCount;
-      if (diamond < totalCost) {
-        if (typeof document !== 'undefined' && typeof document.createElement === 'function' && document.body) {
-          this.promptRecharge(it.name, totalCost, diamond);
-        } else {
-          G.toast('钻石不足,无法购买');
-        }
-        return;
-      }
-
+      // 购买只提交商品与数量，余额、单价和整笔费用由后端事务重算。
       // 调用后端 API 持久化购买
       G.API.shopBuy(id, buyCount).then(function (resp) {
         if (resp && resp.success === false) {
@@ -586,7 +582,7 @@ window.Game = window.Game || {};
         var it = list[j];
         var purchased = alreadyPurchased(it);
         var certificateReason = certificateUnavailableReason(it);
-        var canBuy = diamond >= it.price && !purchased && !certificateReason;
+        var canBuy = !!(G.ServerRules.value('shop', {})[it.id] || {}).allowed;
         var tagHtml = it.tag ? '<span class="shop-tag">' + it.tag + '</span>' : '';
         var stockHtml = '';
         if (it.rankTier) {
@@ -607,11 +603,7 @@ window.Game = window.Game || {};
         h += effHtml;
         h += '<div class="shop-card-owned"><span class="shop-owned">已有: ' + owned + '</span></div>';
         if (it.equipmentSet) {
-          var set = G.Constants.equipmentSets[it.equipmentSet];
-          h += '<details><summary>查看十二件清单与共鸣</summary>';
-          set.keys.forEach(function (key) { var d = G.Constants.equipmentItems[key]; h += '<p>' + d.name + ' ×1 · ' + d.desc + '</p>'; });
-          for (var stage = 0; stage < 4; stage++) h += '<p>' + ((stage + 1) * 3) + '件追加：' + G.Constants.equipmentBranches[set.branch] + '+' + set.config.resonance_increment_main[stage] + '，全属性+' + set.config.resonance_increment_all[stage] + '</p>';
-          h += '</details>';
+          h += '<button type="button" class="link-act" aria-haspopup="dialog" aria-label="查看' + esc(it.name) + '详情" onclick="Game.Shop.showEquipmentDetails(\'' + it.id + '\')">查看详情</button>';
         }
         h += '<div class="shop-card-foot">';
         h += '<span class="shop-price">💎 ' + it.price + '</span>';

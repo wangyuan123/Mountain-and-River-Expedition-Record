@@ -75,7 +75,7 @@ public final class ForumDtos {
             Integer replyCount,
             Integer likeCount,
             Integer tipCount,
-            Integer tipTotalGold,
+            Long tipTotalGold,
             Boolean isPinned,
             Boolean isEssence,
             Boolean isLocked,

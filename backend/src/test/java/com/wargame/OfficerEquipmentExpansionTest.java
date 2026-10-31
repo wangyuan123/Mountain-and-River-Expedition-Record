@@ -7,9 +7,7 @@ import com.wargame.service.*;
 import com.wargame.util.GameClock;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.time.*;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OfficerEquipmentExpansionTest extends BaseServiceTest {
@@ -22,7 +20,7 @@ class OfficerEquipmentExpansionTest extends BaseServiceTest {
     @Autowired DepotService depot;
     @Autowired PlayerPowerService power;
 
-    @Test void powerUsesEquippedSetResonanceAndPreparation() {
+    @Test void powerUsesFixedSetBonusesAndIgnoresLegacyPreparation() {
         Long player = createTestPlayer().getId();
         Officer commander = officer(player, 100);
         commander.setRole("commander");
@@ -38,9 +36,9 @@ class OfficerEquipmentExpansionTest extends BaseServiceTest {
         var equipped = power.calculate(player).get(player);
         assertTrue(equipped.formationPower() > before.formationPower());
         String slot = OfficerEquipmentDef.setItems("marshal_military").get(0).slot();
-        progress.setPreparation(player, commander.getId(), slot, 5);
+        legacyProgress(player, "prep/" + commander.getId() + "/" + slot, 5);
         var prepared = power.calculate(player).get(player);
-        assertTrue(prepared.formationPower() > equipped.formationPower());
+        assertEquals(equipped.formationPower(), prepared.formationPower());
     }
 
     @Test void mayorKnowledgeFromEquipmentAndSetResonanceAppliesToActualTax() throws Exception {
@@ -67,6 +65,10 @@ class OfficerEquipmentExpansionTest extends BaseServiceTest {
         item.setPlayerId(player); item.setItemKey(key); item.setCount(amount); item.setUpdatedAt(GameClock.now()); items.saveAndFlush(item);
     }
     private void giveSet(Long player, String set) { OfficerEquipmentDef.setItems(set).forEach(d -> give(player, d.key(), 1)); }
+    private void legacyProgress(Long player, String key, int amount) {
+        var row = new OfficerEquipmentProgress(); row.setPlayerId(player); row.setProgressKey(key); row.setAmount(amount);
+        progressRows.saveAndFlush(row);
+    }
     private int count(Long player, String key) { return items.findByPlayerIdAndItemKey(player, key).map(PlayerItem::getCount).orElse(0); }
 
     @Test void everyBoxAwardsExactlyTwelveDistinctSlotsAndCannotBeReused() {
@@ -127,56 +129,50 @@ class OfficerEquipmentExpansionTest extends BaseServiceTest {
         assertEquals(1, count(p, "recruit_defense_weapon"));
     }
 
-    @Test void preparationIsDeterministicRetrySafeAndFollowsOfficerSlotAcrossTierAndBranch() {
+    @Test void legacyPreparationCannotChangeFixedAttributesOrEquipmentViews() {
         Long p = createTestPlayer().getId(); var o = officer(p, 100);
-        giveResources(p, 1000, 1000, 1000, 1000, 200000); give(p, OfficerEquipmentProgressService.PARTS, 4000);
         giveSet(p, "marshal_military"); gear.equipSet(p, o.getId(), "marshal_military");
-        for (String slot : OfficerEquipmentDef.SLOTS) for (int level = 0; level < 5; level++) assertEquals(true, gear.prepare(p, o.getId(), slot, level).get("success"));
-        assertEquals(332, gear.attributes(o).military()); assertEquals(122, gear.attributes(o).defense());
-        assertEquals(400, count(p, OfficerEquipmentProgressService.PARTS));
-        assertEquals(20000, resourcesRepository.findByPlayerIdAndCitySlot(p, 0).orElseThrow().getGold());
-        assertEquals(false, gear.prepare(p, o.getId(), "weapon", 4).get("success"));
+        for (String slot : OfficerEquipmentDef.SLOTS) legacyProgress(p, "prep/" + o.getId() + "/" + slot, 5);
+        assertEquals(272, gear.attributes(o).military()); assertEquals(122, gear.attributes(o).defense());
+        var equipped = worn.findByPlayerId(p).stream().filter(e -> e.getSlot().equals("weapon")).findFirst().orElseThrow();
+        var view = gear.equipmentView(equipped);
+        assertEquals(30, view.get("military"));
+        assertFalse(view.containsKey("preparation")); assertFalse(view.containsKey("effectivePreparation"));
         give(p, "recruit_defense_weapon", 1); gear.equip(p, o.getId(), "recruit_defense_weapon");
-        assertEquals(5, progress.preparation(p, o.getId()).get("weapon"));
-        var low = worn.findByPlayerId(p).stream().filter(e -> e.getSlot().equals("weapon")).findFirst().orElseThrow();
-        assertEquals(1, gear.equipmentView(low, progress.preparation(p, o.getId())).get("effectivePreparation"));
+        assertEquals(5, gear.equipmentView(worn.findByPlayerId(p).stream().filter(e -> e.getSlot().equals("weapon")).findFirst().orElseThrow()).get("defense"));
         gear.unequip(p, o.getId(), "all"); assertEquals(100, gear.attributes(o).military());
-        var second = officer(p, 100); giveSet(p, "marshal_military"); gear.equipSet(p, second.getId(), "marshal_military");
-        assertEquals(272, gear.attributes(second).military());
-    }
-
-    @Test void preparationLevelAndFundsFailuresDoNotChargeAndAttributesEndpointIncludesDefense() {
-        Long p = createTestPlayer().getId(); var o = officer(p, 1); give(p, OfficerEquipmentProgressService.PARTS, 100);
-        assertEquals(false, gear.prepare(p, o.getId(), "helmet", 0).get("success"));
-        assertEquals(100, count(p, OfficerEquipmentProgressService.PARTS));
-        giveResources(p, 100, 100, 100, 100, 10000);
-        assertEquals(true, gear.prepare(p, o.getId(), "helmet", 0).get("success"));
-        assertEquals(false, gear.prepare(p, o.getId(), "helmet", 0).get("success"));
-        assertEquals(false, gear.prepare(p, o.getId(), "helmet", 1).get("success"));
-        assertEquals(80, count(p, OfficerEquipmentProgressService.PARTS));
-        giveSet(p, "recruit_defense"); gear.equipSet(p, o.getId(), "recruit_defense");
+        giveSet(p, "marshal_military"); gear.equipSet(p, o.getId(), "marshal_military");
+        assertEquals(272, gear.attributes(o).military());
         assertEquals(gear.attributes(o).defense(), officerService.computeAttributes(p, o.getId()).get("defense"));
-        assertEquals(131, gear.attributes(o).defense());
     }
 
-    @Test void taskEventsAreDeduplicatedDailyCapAndWeeklyResetUseBeijingTime() throws Exception {
-        Long p = createTestPlayer().getId(); AtomicLong clock = new AtomicLong(Instant.parse("2026-10-18T16:00:00Z").toEpochMilli());
-        try (var ignored = GameClock.use(clock::get)) {
-            for (int day = 0; day < 5; day++) {
-                clock.set(Instant.parse("2026-10-18T16:00:00Z").toEpochMilli() + day * 86400000L);
-                progress.event(p, "train", "train-" + day, 50); progress.event(p, "train", "train-" + day, 50);
-                assertEquals(false, progress.claim(p, "train").get("success"));
-                progress.event(p, "train", "second-" + day, 50);
-                progress.event(p, "wild", "wild-" + day, 1); progress.event(p, "gather", "gather-" + day, 1); progress.event(p, "develop", "develop-" + day, 1);
-                for (String task : List.of("train", "wild", "gather")) assertEquals(true, progress.claim(p, task).get("success"));
-                assertEquals(false, progress.claim(p, "wild").get("success"));
-                assertEquals(false, progress.claim(p, "develop").get("success"));
-            }
-            assertEquals(true, progress.claim(p, "weekly").get("success"));
-            assertEquals(false, progress.claim(p, "weekly").get("success")); assertEquals(840, count(p, OfficerEquipmentProgressService.PARTS));
-            clock.set(Instant.parse("2026-10-25T16:00:00Z").toEpochMilli());
-            assertEquals(0, progress.state(p).get("weeklyProgress")); assertEquals(false, progress.claim(p, "weekly").get("success"));
+    @Test void retiredPreparationAndTaskRequestsNeverChargeOrAwardMaterials() {
+        Long p = createTestPlayer().getId(); var o = officer(p, 100);
+        giveResources(p, 100, 100, 100, 100, 200000); give(p, "officerPreparationParts", 4000);
+        legacyProgress(p, "daily/2026-10-30/train", 100);
+        legacyProgress(p, "week/2026-10-26", 15);
+        for (int i = 0; i < 2; i++) {
+            assertEquals(false, gear.prepare(p, o.getId(), "weapon", 0).get("success"));
+            for (String task : List.of("train", "wild", "gather", "develop", "weekly")) assertEquals(false, progress.claim(p, task).get("success"));
         }
+        assertEquals(4000, count(p, "officerPreparationParts"));
+        assertEquals(200000, resourcesRepository.findByPlayerIdAndCitySlot(p, 0).orElseThrow().getGold());
+        assertTrue(progressRows.findByPlayerIdAndProgressKeyStartingWith(p, "prep/").isEmpty());
+        var state = progress.state(p);
+        for (String key : List.of("parts", "daily", "dailyClaims", "weeklyProgress", "weeklyClaimed")) assertFalse(state.containsKey(key));
+        assertFalse(((Map<?, ?>) gameStateService.getGameState(p).get("items")).containsKey("officerPreparationParts"));
+        assertFalse(com.wargame.model.constants.ItemDef.ITEMS.containsKey("officerPreparationParts"));
+    }
+
+    @Test void marshalAchievementsRequireFixedSetsAndNoPreparation() {
+        Long p = createTestPlayer().getId();
+        for (String branch : OfficerEquipmentDef.BRANCHES) {
+            var o = officer(p, 100); giveSet(p, "marshal_" + branch);
+            assertEquals(true, gear.equipSet(p, o.getId(), "marshal_" + branch).get("success"));
+        }
+        var awards = (List<Map<String, Object>>) progress.state(p).get("achievements");
+        assertTrue(awards.stream().filter(a -> List.of("first", "branches", "marshal", "empire").contains(a.get("id"))).allMatch(a -> a.get("unlocked").equals(true)));
+        assertTrue(awards.stream().noneMatch(a -> List.of("prepared3", "prepared5").contains(a.get("id"))));
     }
 
     @Test void presetsDoNotDuplicateEquipmentAndAchievementCollectionPersistsAfterUnequip() {
@@ -192,24 +188,13 @@ class OfficerEquipmentExpansionTest extends BaseServiceTest {
         assertEquals(0, count(p, "recruit_military_weapon"));
     }
 
-    @Test void constructionDailyRequiresAnActualUpgradeRatherThanDemolitionOrAnUnchangedLevel() {
-        for (String type : List.of("farm", "lab")) {
-            Long p = createTestPlayer("construction-daily-" + type, 30).getId();
-            createBuilding(p, type, 2);
-            long now = GameClock.now();
-            createConstruction(p, type, 1, now - 1000, now - 1, 0);
-            buildService.completeUpgrade(p, now);
-            assertEquals(false, progress.claim(p, "develop").get("success"), "降级不能推进军备日常");
-            createConstruction(p, type, 1, now - 1000, now - 1, 0);
-            buildService.completeUpgrade(p, now);
-            assertEquals(false, progress.claim(p, "develop").get("success"), "相同等级不能推进军备日常");
-            createConstruction(p, type, 0, now - 1000, now - 1, 0);
-            buildService.completeUpgrade(p, now);
-            assertEquals(false, progress.claim(p, "develop").get("success"), "拆除不能推进军备日常");
-            createConstruction(p, type, 1, now - 1000, now - 1, 0);
-            buildService.completeUpgrade(p, now);
-            assertEquals(true, progress.claim(p, "develop").get("success"), type + "实际完成新建应推进军备日常");
-            assertEquals(40, count(p, OfficerEquipmentProgressService.PARTS));
-        }
+    @Test void trainingAndConstructionNoLongerCreateMaterialTaskProgress() {
+        Long p = createTestPlayer().getId();
+        long now = GameClock.now();
+        createConstruction(p, "farm", 1, now - 1000, now - 1, 0);
+        buildService.completeUpgrade(p, now);
+        assertTrue(progressRows.findByPlayerIdAndProgressKeyStartingWith(p, "daily/").isEmpty());
+        assertTrue(progressRows.findByPlayerIdAndProgressKeyStartingWith(p, "event/").isEmpty());
+        assertEquals(0, count(p, "officerPreparationParts"));
     }
 }

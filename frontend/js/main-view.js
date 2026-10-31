@@ -298,22 +298,19 @@ window.Game = window.Game || {};
   function fortSummaryStats() {
     var s = Core.state || {};
     var buildings = s.buildings || {};
-    var wall = (D.buildings && D.buildings.wall) || {};
     var wallLevel = Math.max(0, Number(buildings.wall) || 0);
-    var capacityPerLevel = Number(wall.fortCapPerLevel) || 3000;
-    var fortCapacity = wallLevel * capacityPerLevel;
+    var fortCapacity = G.ServerRules.value('fortCap', 0);
     var totalForts = 0;
     var forts = s.forts || {};
     Object.keys(D.forts || {}).forEach(function (id) { totalForts += Number(forts[id]) || 0; });
-    var wallLevelForStats = Math.min(10, wallLevel);
     // 总览读取当前城墙与账号加固科技；工事共享容量不受加固科技影响。
-    var reinforcement = Core.wallMul();
+
     return {
       wallLevel: wallLevel,
       totalForts: totalForts,
       fortCapacity: fortCapacity,
-      wallHp: wallLevelForStats * (Number(wall.wallHpPerLevel) || 250000) * reinforcement,
-      wallDefense: Math.round(wallLevelForStats * (Number(wall.wallDefensePerLevel) || 20) * reinforcement)
+      wallHp: G.ServerRules.value('wall', {}).maxHp || 0,
+      wallDefense: G.ServerRules.value('wall', {}).defense || 0
     };
   }
 
@@ -365,9 +362,9 @@ window.Game = window.Game || {};
       ? '<img class="unit-detail-icon" src="' + esc(rawIcon) + '" alt="' + esc(unit.name) + '" />'
       : '<span class="unit-detail-icon unit-detail-icon-text">' + esc(rawIcon || '⚔') + '</span>';
     var role = (D.combatRoles && D.combatRoles[id]) || (unit && unit.desc) || '暂无战斗定位说明';
-    var battleSpd = (unit.spd || 0) * 50;
-    var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
-    var marchSec = (secPerGrid / (unit.spd || 1)).toFixed(1).replace(/\.0$/, '');
+    var motion = ((G.ServerRules.value('catalog', {}).unitMotion || {})[id]) || {};
+    var battleSpd = motion.battleDistance;
+    var marchSec = motion.marchSecondsPerGrid == null ? '待同步' : motion.marchSecondsPerGrid.toFixed(1).replace(/\.0$/, '');
     var spdTip = fort ? '固定城防工事，不进行战场机动或大地图行军' : '战场单回合机动：' + battleSpd + ' 距离（基速档位 ' + (unit.spd || 0) + '）；大地图基础行军：' + marchSec + '秒/格';
     var stats = [
       ['对地攻击', unit.atkGround], ['对空攻击', unit.atkAir], ['对海攻击', unit.atkSea], ['对工事攻击', unit.atkFort],
@@ -650,7 +647,7 @@ window.Game = window.Game || {};
       var s = Core.state || {};
       var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
       var financeBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
-      var taxRate = Math.floor(Core.civilianPopulation() * ((s.tax != null ? s.tax : 30) / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
+      var taxRate = ((s.resourceRates || {}).productionPerHour || {}).gold || 0;
       var salary = Core.officerSalaryPerHour ? Core.officerSalaryPerHour() : 0;
       detail =
         '<div class="res-detail-section-title">黄金收支</div>' +
@@ -827,16 +824,12 @@ window.Game = window.Game || {};
       var sliderEl = modal.querySelector('#popTaxSlider');
       if (sliderEl) sliderEl.style.setProperty('--p', taxVal + '%');
 
-      var prevFinanceBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
-      var prevGold = Math.round(civ * (taxVal / 100.0) * (1 + mayorKnow / 100.0) * (1 + prevFinanceBonus) * 2);
-      modal.querySelector('#popPrevGold').textContent = '+' + G.fmt(prevGold) + '/h';
-
-      var targetMorale = Math.max(0, Math.min(100, 100 - taxVal - resent));
-      modal.querySelector('#popPrevMorale').textContent = targetMorale;
-
-      var targetEffCap = cap <= 0 ? 0 : Math.max(10, Math.round(cap * Math.min(1.0, targetMorale / 70.0)));
-      var pct = cap > 0 ? Math.round(targetEffCap / cap * 100) : 100;
-      modal.querySelector('#popPrevCap').textContent = G.fmt(targetEffCap) + ' / ' + G.fmt(cap) + ' (' + pct + '%)';
+      var preview = (G.ServerRules.value('economy', {}).taxes || [])[taxVal];
+      if (!preview) return;
+      modal.querySelector('#popPrevGold').textContent = '+' + G.fmt(preview.goldPerHour) + '/h';
+      modal.querySelector('#popPrevMorale').textContent = preview.targetMorale;
+      var pct = cap > 0 ? Math.round(preview.effectiveCapacity / cap * 100) : 100;
+      modal.querySelector('#popPrevCap').textContent = G.fmt(preview.effectiveCapacity) + ' / ' + G.fmt(cap) + ' (' + pct + '%)';
 
       var warnEl = modal.querySelector('#popTaxWarn');
       if (taxVal > 50) {
@@ -926,7 +919,7 @@ window.Game = window.Game || {};
       }
 
       // Costs
-      var goldCost = Math.max(1000, Math.min(10000, civ * 2));
+      var goldCost = G.ServerRules.value('economy', {}).appeaseGoldCost;
       var currentGold = r.gold || 0;
       var currentDiamond = r.diamond || 0;
       modal.querySelector('#appeaseGoldCost').textContent = G.fmt(goldCost);
@@ -963,7 +956,7 @@ window.Game = window.Game || {};
       emergencyBadge.textContent = '拥有紧急动员令: ' + emergencyOrders + ' 张';
       emergencyBadge.className = 'pop-recruit-badge' + (emergencyOrders > 0 ? ' has-items' : '');
       var emergencyBtn = modal.querySelector('#popEmergencyRecruitBtn');
-      var emergencyAdded = Math.min(Math.floor(cap * 30 / 100), Math.max(0, cap - civ));
+      var emergencyAdded = G.ServerRules.value('economy', {}).emergencyPopulationOrderAdded;
       emergencyBtn.textContent = emergencyOrders > 0 ? '紧急召集 (+' + G.fmt(emergencyAdded) + ')' : '获取紧急动员令 (去商城)';
       emergencyBtn.className = 'btn ' + (emergencyOrders > 0 ? 'ok' : 'sub') + ' pop-recruit-action-btn';
       [quickBtnEl, mainRecruitBtn, emergencyBtn].forEach(function (btn) {
@@ -1018,7 +1011,7 @@ window.Game = window.Game || {};
 
       recruitInFlight = true;
       refreshModal();
-      var expectedAdded = Math.min(emergency ? Math.floor(cap * 30 / 100) : 500, Math.max(0, cap - civ));
+      var expectedAdded = G.ServerRules.value('economy', {})[emergency ? 'emergencyPopulationOrderAdded' : 'populationOrderAdded'];
 
       G.API.depotUse(itemId, null, null).then(function (resp) {
         if (resp && resp.success === false) {
@@ -1161,12 +1154,13 @@ window.Game = window.Game || {};
       h += G.Vip.renderHomeCard(s);
     }
 
-    var netFood = Core.foodProductionPerHour() - Core.foodPerHour();
+    if (G.PlayGuide) h += '<p><button type="button" class="btn sm" onclick="Game.PlayGuide.openRewards()">待领取奖励</button></p>';
+    var netFood = Core.resourceNetRate('food');
     var netSteel = Core.produceOf('refinery');
     var netOil = Core.produceOf('oilfield');
     var netRare = Core.produceOf('raremine');
     var financeBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
-    var goldRate = Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
+    var goldRate = ((s.resourceRates || {}).productionPerHour || {}).gold || 0;
     var cap = Core.capacity();
     var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: cap.gold };
     var nets = { food: netFood, steel: netSteel, oil: netOil, rare: netRare, gold: goldRate };
@@ -1189,7 +1183,7 @@ window.Game = window.Game || {};
     var sArmy = (Core.state && Core.state.army) || {};
     for (var ak in sArmy) totArmy += sArmy[ak] || 0;
     var cmd2 = Core.getOfficerByRole('commander');
-    h += '<span class="army-summary-strength">可用兵力 <b class="home-army-tot" style="color:var(--accent)">' + G.fmt(totArmy) + '</b> / ' + G.fmt(Core.armyCap()) + '</span>';
+    h += '<span class="army-summary-strength">可用兵力 <b class="home-army-tot" style="color:var(--accent)">' + G.fmt(totArmy) + '</b> · 单队出征上限 ' + G.fmt(Core.armyCap()) + '</span>';
     h += '<span class="army-summary-commander"><span class="army-summary-commander-label">指挥官:</span> <b>' + (cmd2 ? G.escapeHtml(cmd2.name) : '未任命') + '</b></span>';
     h += '<span class="army-go">详情 &gt;</span>';
     h += '</div>';
@@ -1211,17 +1205,18 @@ window.Game = window.Game || {};
     modules.army = h;
     h = '';
 
-    h += '<div class="zone-head">' + homeModuleHandle('resources') + '<span class="zone-title"><img class="home-overview-icon" src="' + D.resources.gold.icon + '" alt="" aria-hidden="true" draggable="false"/> 资源</span></div>';
+    h += '<div class="zone-head">' + homeModuleHandle('resources') + '<span class="zone-title"><img class="home-overview-icon" src="' + D.resources.gold.icon + '" alt="" aria-hidden="true" draggable="false"/> 本城资源</span></div>';
+    if (G.PlayGuide) h += G.PlayGuide.foodOutlook();
     h += '<div class="res-grid">';
     var resKeys = G.Constants.resourceKeysWithGold;
     for (var ri = 0; ri < resKeys.length; ri++) {
       var rk = resKeys[ri];
       var rinfo = D.resources[rk];
       var cur = r[rk] || 0;
-      var maxR = caps[rk] || (rk === 'gold' ? 20000000 : 999999);
+      var maxR = caps[rk];
       var net = Core.resourceNetRate ? Core.resourceNetRate(rk) : (nets[rk] || 0);
       var sign = net >= 0 ? '+' : '';
-      var isCapped = cur >= maxR;
+      var isCapped = maxR != null && cur >= maxR;
       var titleText = (rinfo.name || rk) + ' 当前: ' + G.fmt(cur) + (isCapped ? ' (已达生产容量' + (net === 0 ? '，停止产出' : '，' + sign + G.fmt(net) + '/h') + ')' : ' (' + sign + G.fmt(net) + '/h)');
       var rateClass = net < 0 ? ' neg' : (isCapped && net === 0 ? ' capped' : '');
       h += '<div class="res-card" data-res-card="' + rk + '" role="button" tabindex="0" title="' + titleText + '" onclick="Game.Main.showResourceDetail(\'' + rk + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){Game.Main.showResourceDetail(\'' + rk + '\');event.preventDefault();}">';
@@ -1748,12 +1743,12 @@ window.Game = window.Game || {};
     }
 
     // 4. 资源卡片更新 (粮/钢/油/稀/金)
-    var netFood = Core.foodProductionPerHour() - Core.foodPerHour();
+    var netFood = Core.resourceNetRate('food');
     var netSteel = Core.produceOf('refinery');
     var netOil = Core.produceOf('oilfield');
     var netRare = Core.produceOf('raremine');
     var financeBonus = Core.mayorSkillBonus ? Core.mayorSkillBonus('finance') : 0;
-    var goldRate = Math.floor(Core.civilianPopulation() * (s.tax / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
+    var goldRate = ((s.resourceRates || {}).productionPerHour || {}).gold || 0;
     var cap = Core.capacity();
     var caps = { food: cap.food, steel: cap.steel, oil: cap.oil, rare: cap.rare, gold: cap.gold };
     var nets = { food: netFood, steel: netSteel, oil: netOil, rare: netRare, gold: goldRate };
@@ -1764,10 +1759,10 @@ window.Game = window.Game || {};
       var card = v.querySelector('.res-card[data-res-card="' + rk + '"]');
       if (!card) continue;
       var cur = r[rk] || 0;
-      var maxR = caps[rk] || (rk === 'gold' ? 20000000 : 999999);
+      var maxR = caps[rk];
       var net = Core.resourceNetRate ? Core.resourceNetRate(rk) : (nets[rk] || 0);
       var sign = net >= 0 ? '+' : '';
-      var isCapped = cur >= maxR;
+      var isCapped = maxR != null && cur >= maxR;
 
       var curEl = card.querySelector('.res-cur');
       if (curEl) {

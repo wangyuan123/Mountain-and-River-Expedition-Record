@@ -10,7 +10,7 @@ import com.wargame.repository.ArmyProductionQueueRepository;
 import com.wargame.repository.OfficerEquipmentRepository;
 import com.wargame.service.ArmyService;
 import com.wargame.service.BattleService;
-import com.wargame.service.UnitEquipmentRecon;
+import com.wargame.service.ReconCombat;
 import com.wargame.service.WorldTerrainService;
 import com.wargame.util.JsonUtil;
 import org.junit.jupiter.api.*;
@@ -68,8 +68,9 @@ class ReconArmoredCarTest extends BaseServiceTest {
         marchService.processMarches(player.getId(), march.getArriveAt());
         Map<String, Object> attack = report();
         Map<String, Object> defense = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
-        Map<String, Object> initiative = Map.of("version", UnitEquipmentRecon.INITIATIVE_RULES_VERSION,
-                "attackerReconLevel", 4, "defenderReconLevel", 2, "defenderRadarLevel", 3);
+        Map<String, Object> initiative = Map.of("version", ReconCombat.INITIATIVE_RULES_VERSION,
+                "attackerReconLevel", 4, "defenderReconLevel", 2, "defenderRadarLevel", 3,
+                "defenderRadarBonus", 6, "description", "侦查先手按有效速度加5倍自身侦察技术等级比较；守方雷达仅首回合每级加2点。同值时奇数回合出征方先手，偶数回合守方先手。");
         assertEquals(initiative, attack.get("reconInitiative"));
         assertEquals(initiative, defense.get("reconInitiative"));
         int speed = UnitDef.UNITS.get(unit).spd();
@@ -137,7 +138,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
         // 首回合实际战损核对总属性只计一次，且无需等到第3回合才能参与。
         var stats = UnitDef.UNITS.get(unit);
         double base = "scout".equals(unit) ? stats.atkAir() : stats.atkGround();
-        int enemy = 1000 - (int) Math.floor(1000 * base * 1.88 * 1.5 / (stats.hp() + stats.def() * 1.77 * 1.3)) - 1;
+        int enemy = 1000 - (int) Math.floor(1000 * base * 1.88 * 1.5 / (stats.hp() + stats.def() * 1.77 * 1.5)) - 1;
         int own = 1000 - (int) Math.floor(enemy * base * 1.55 / (stats.hp() + stats.def() * 1.43)) - 1;
         assertTrue(logs.get(0).toString().startsWith("第1回合：我方剩余" + own + "，敌方剩余" + enemy));
         String defenseLog = ((List<?>) defense.get("combatLog")).get(0).toString();
@@ -190,7 +191,7 @@ class ReconArmoredCarTest extends BaseServiceTest {
         March march = marchService.createDispatch(player.getId(), request(Map.of(unit, 100)));
         marchService.processMarches(player.getId(), march.getArriveAt());
         assertNull(((Map<?, ?>) report().get("commanders")).get("attacker"));
-        var baseline = UnitEquipmentRecon.resolve(unit, 100, Map.of(unit, 100), Map.of(), Map.of(), CommandBonus.NONE, CommandBonus.NONE, 0, 0, 0);
+        var baseline = ReconCombat.resolve(unit, 100, Map.of(unit, 100), Map.of(), Map.of(), CommandBonus.NONE, CommandBonus.NONE, 0, 0, 0);
         assertEquals(baseline.ownAlive(), ((Map<?, ?>) report().get("mySurvivors")).get(unit));
         assertTrue(((List<?>) report().get("combatLog")).stream().noneMatch(log -> log.toString().contains("将领加成")));
     }

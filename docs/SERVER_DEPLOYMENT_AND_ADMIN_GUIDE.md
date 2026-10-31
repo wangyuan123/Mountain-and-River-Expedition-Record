@@ -461,9 +461,9 @@ npm run dev
 
 浏览器访问 `http://localhost:5173`。本机 Vite 不需要暴露给公网，也不需要在服务器安装 Node.js。
 
-### 3. 登录后修改初始管理员密码
+### 3. 初始化管理员与修改密码
 
-全新数据库默认管理员为 `admin / admin123456`。已有数据库沿用原密码，更新部署不会重置。
+历史公开的默认口令已停用，全新数据库不再提供可用默认密码。首次部署请在服务器私有 `.env` 中设置 `WARGAME_ADMIN_BOOTSTRAP_USERNAME=admin` 和 `WARGAME_ADMIN_BOOTSTRAP_PASSWORD`（12—64 字符、至多 72 个 UTF-8 字节的独立随机密码），再重新运行部署。只初始化不存在的账号或替换历史固定口令，已有自定义管理员密码不会被重置。初始化后删除环境中的初始化密码。后台凭据升级后需重新登录，具体规则及可信代理、限流配置见 [后台凭据与统一请求防护](AUTH_REQUEST_SECURITY.md)。
 
 当前管理端没有“头像 → 修改密码”的页面入口。后端已提供改密接口。可以在管理端登录后，通过浏览器开发者工具 Console 执行下面代码：它会弹窗索取旧、新密码，使用已登录的管理员 Token 调用本机代理，不把密码写进代码示例。
 
@@ -486,7 +486,8 @@ npm run dev
   if (!response.ok || result.success !== true) {
     throw new Error(result.error || result.message || '修改失败');
   }
-  alert('修改成功，请退出后使用新密码重新登录');
+  localStorage.removeItem('admin_token');
+  alert('修改成功，全部后台会话已失效，请使用新密码重新登录');
 })();
 ```
 

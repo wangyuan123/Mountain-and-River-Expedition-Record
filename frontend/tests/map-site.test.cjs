@@ -23,7 +23,7 @@ function setup() {
   c.window = c;
   vm.createContext(c);
   require('./load-constants.cjs')(c);
-  for (const file of ['map-camera.js', 'map-layout.js', 'world-map.js']) {
+  for (const file of ['map-camera.js', 'map-layout.js', 'map-ocean.js', 'map-terrain.js', 'world-map.js']) {
     let source = fs.readFileSync(path.join(__dirname, '../js', file), 'utf8');
     source = source.replace('  var instance = null, camera = null, owner = \'\', mode = \'map\'', '  var instance = null, camera = null, owner = \'token:1\', mode = \'map\'');
     source = source.replace('  G.WorldMap={', '  G.TestMapView=MapView;\n  G.WorldMap={');
@@ -162,4 +162,30 @@ test('loadSite displays blue [建立城市] button and toggles form when valid',
   assert.equal(posted.data.x, 50);
   assert.equal(posted.data.y, 60);
   assert.equal(posted.data.name, '胜利新城');
+});
+
+test('screenshot sites use the drawn plain and forest instead of the founding classifier', async () => {
+  const { c, v } = setup();
+  c.Image = class {
+    set src(value) { this.onload(); }
+  };
+  await c.Game.MapTerrain.loadMeadows();
+  v.camera.size = 800;
+  for (let cy = 16; cy <= 17; cy++) for (let cx = 0; cx <= 1; cx++) {
+    c.Game.MapTerrain.updateChunk(cx, cy, [], 800);
+  }
+  c.Game.API.client.get = async url => {
+    const x = Number(new URL(url, 'https://example.test').searchParams.get('x'));
+    return { x, y: 272, coastal: false, cityType: x === 7 ? '丘陵' : '平原', valid: false, reason: '城市数量已达军衔上限' };
+  };
+  v.loadSite(7, 272);
+  await new Promise(setImmediate);
+  assert.match(v.detail.innerHTML, /平原 · \(7, 272\)/);
+  assert.doesNotMatch(v.detail.innerHTML, /丘陵 ·/);
+  v.loadSite(8, 272);
+  await new Promise(setImmediate);
+  assert.match(v.detail.innerHTML, /森林 · \(8, 272\)/);
+  assert.match(v.detail.innerHTML, /当前不可建城：城市数量已达军衔上限/);
+  assert.match(v.detail.innerHTML, /data-map="teleport-city"/);
+  assert.doesNotMatch(v.detail.innerHTML, /data-map="found-city"/);
 });

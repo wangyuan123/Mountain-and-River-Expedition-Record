@@ -1,5 +1,7 @@
 server:
   port: 8080
+  # 来源地址由 ClientIpResolver 按可信代理白名单解析，容器不得先无条件消费转发头。
+  forward-headers-strategy: none
 
 # === SECURITY NOTE ============================================================
 # 生产部署必须通过环境变量覆盖以下敏感字段, 不能用默认值:
@@ -30,6 +32,7 @@ jwt:
   # 默认仅供本地 dev 启动; 启动时 [SECURITY] 警告会打印, 生产务必覆盖
   secret: ${WARGAME_JWT_SECRET:dev-only-do-not-use-in-prod-please-override-me-now!!}
   expiration: ${WARGAME_JWT_EXPIRATION:86400000}  # 24 hours in milliseconds
+  admin-expiration: ${WARGAME_ADMIN_JWT_EXPIRATION:7200000}  # 管理后台默认 2 小时
 
 game:
   email:
@@ -46,7 +49,6 @@ game:
     daily-limit: ${WARGAME_MAIL_DAILY_LIMIT:1000}
     queue-limit: ${WARGAME_MAIL_QUEUE_LIMIT:1000}
     support-url: ${WARGAME_SUPPORT_URL:}
-    trusted-proxies: ${WARGAME_MAIL_TRUSTED_PROXIES:}
   bot:
     enabled: ${WARGAME_BOT_ENABLED:true}
     poll-interval: ${WARGAME_BOT_POLL_INTERVAL:5000}
@@ -58,6 +60,18 @@ game:
     page-size: ${WARGAME_RADAR_PAGE_SIZE:50}
   security:
     allowed-origins: ${WARGAME_ALLOWED_ORIGINS:http://localhost:8081,http://127.0.0.1:8081,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}
+    # 旧邮箱代理变量作为迁移兼容；新配置统一作用于限流、注册登录、邮箱与审计。
+    trusted-proxies: ${WARGAME_TRUSTED_PROXIES:${WARGAME_MAIL_TRUSTED_PROXIES:}}
+    admin-bootstrap-username: ${WARGAME_ADMIN_BOOTSTRAP_USERNAME:admin}
+    admin-bootstrap-password: ${WARGAME_ADMIN_BOOTSTRAP_PASSWORD:}
+    rate-limit:
+      ip-per-minute: ${WARGAME_RATE_IP_PER_MINUTE:1200}
+      ip-writes-per-minute: ${WARGAME_RATE_IP_WRITES_PER_MINUTE:300}
+      account-per-minute: ${WARGAME_RATE_ACCOUNT_PER_MINUTE:600}
+      account-writes-per-minute: ${WARGAME_RATE_ACCOUNT_WRITES_PER_MINUTE:120}
+      websocket-per-ip-per-minute: ${WARGAME_RATE_WS_PER_IP_PER_MINUTE:60}
+      admin-login-per-ip-per-minute: ${WARGAME_RATE_ADMIN_LOGIN_PER_IP_PER_MINUTE:20}
+      admin-login-per-account-per-quarter-hour: ${WARGAME_RATE_ADMIN_LOGIN_PER_ACCOUNT_PER_QUARTER_HOUR:10}
   server:
     id: ${WARGAME_SERVER_ID:jiangsu-1}
     name: ${WARGAME_SERVER_NAME:公测一区}

@@ -39,6 +39,7 @@ import java.util.random.RandomGenerator;
  */
 @Service
 public class OfficerService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
     @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
 
     @jakarta.persistence.PersistenceContext
@@ -61,7 +62,15 @@ public class OfficerService {
     private final com.wargame.service.quest.QuestService questService;
 
     /** 军官属性上限 - 对应 JS G.ATTR_MAX */
-    private static final int ATTR_MAX = 219;
+    public static final int ATTR_MAX = 219;
+
+    /** 随队资格共用于状态预览和事务内派遣校验，浏览器不再重建岗位或忙碌规则。 */
+    public static String dispatchReason(String role, boolean marching) {
+        if ("commander_in_chief".equals(role)) return "请先解除司令官任命再出征";
+        if ("mayor".equals(role) || "commander".equals(role)) return "请先解除市长或指挥官任命再出征";
+        if (marching || "march".equals(role)) return "军官正在执行行军任务";
+        return "";
+    }
     /** 军官等级上限 - 对应 JS G.OFFICER_MAX_LEVEL */
     private static final int OFFICER_MAX_LEVEL = OfficerExperienceRules.MAX_LEVEL;
     /** 军校刷新费用 - 对应 JS refreshAcademy 中 var cost = 200（约 6.7 小时黄金产出） */
@@ -182,8 +191,10 @@ public class OfficerService {
     //  recruit - 对应 JS G.Officer.recruit
     // ================================================================
 
+    /** 先按旧军官名单结清本城经济，招募费和新工资只从本次操作时刻生效。 */
     @Transactional
     public Map<String, Object> recruit(Long playerId, int officerIdx) {
+        economy.settleEconomyBeforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         Academy academy = academyRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
@@ -204,7 +215,7 @@ public class OfficerService {
         int star = o.get("star") != null ? ((Number) o.get("star")).intValue() : 1;
 
         // JS: var cost = o.star * 80
-        int cost = star * RECRUIT_COST_PER_STAR;
+        int cost = recruitCost(star);
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < cost) {
             result.put("success", false);
@@ -262,6 +273,7 @@ public class OfficerService {
     /** 每城每职只任命一人；司令部落成后解锁司令官，行军军官不能改任。 */
     @Transactional
     public Map<String, Object> appoint(Long playerId, Long officerId, String role) {
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
@@ -328,6 +340,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> dismiss(Long playerId, Long officerId) {
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         equipmentProgress.lockPlayer(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
@@ -394,7 +407,7 @@ public class OfficerService {
         // JS: var cost = (o.star || 1) * 50 + (o.level || 1) * 2
         int star = officer.getStar() != null ? officer.getStar() : 1;
         int level = officer.getLevel() != null ? officer.getLevel() : 1;
-        int cost = star * 50 + level * 2;
+        int cost = rewardCost(star, level);
 
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < cost) {
@@ -424,9 +437,11 @@ public class OfficerService {
     //  learnSkill - 对应 JS G.Officer.learnSkill
     // ================================================================
 
+    /** 普通书从未掌握的技能中随机学习，各技能可自由组合。 */
     @Transactional
     public Map<String, Object> learnSkill(Long playerId, Long officerId) {
         playerRepository.lockById(playerId).orElseThrow();
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
@@ -459,7 +474,7 @@ public class OfficerService {
 
         List<String> pool = new ArrayList<>();
         for (String sid : GameData.OFFICER_SKILLS.keySet()) {
-            if (!owned.contains(sid) && owned.stream().noneMatch(existing -> OfficerSkillDef.conflictsWith(existing, sid))) {
+            if (!owned.contains(sid)) {
                 pool.add(sid);
             }
         }
@@ -474,10 +489,8 @@ public class OfficerService {
         String pickId = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
         OfficerSkillDef pickInfo = GameData.OFFICER_SKILLS.get(pickId);
 
-        // JS: var lv = 1 + Math.floor(Math.random() * Math.max(1, o.star))
-        int star = officer.getStar() != null ? officer.getStar() : 1;
-        int lv = 1 + ThreadLocalRandom.current().nextInt(Math.max(1, star));
-        if (lv > pickInfo.max()) lv = pickInfo.max();
+        // 军官星级不再决定技能强度，随机学习也直接获得原满级效果。
+        int lv = pickInfo.max();
 
         if (playerItemRepository.tryConsume(playerId, "skillBook", 1, GameClock.now()) == 0) {
             result.put("success", false);
@@ -494,7 +507,7 @@ public class OfficerService {
         officerRepository.save(officer);
 
         result.put("success", true);
-        result.put("message", "学习成功: " + pickInfo.name() + " Lv." + lv + " (消耗1本普通技能书)");
+        result.put("message", "学习成功: " + pickInfo.name() + " 满级 (消耗1本普通技能书)");
         result.put("skillId", pickId);
         result.put("skillName", pickInfo.name());
         result.put("level", lv);
@@ -503,7 +516,7 @@ public class OfficerService {
 
     /**
      * 使用指定技能书为军官学习对应技能。
-     * 指定书固定授予 Lv.1，且继续执行技能槽上限、重复技能和技能互斥校验。
+     * 指定书固定授予满级技能，且继续执行技能槽上限和重复技能校验，各技能可自由组合。
      *
      * @param playerId 玩家 ID
      * @param officerId 要学习技能的军官 ID
@@ -516,15 +529,16 @@ public class OfficerService {
         return learnChosenSkill(playerId, officerId, itemId, skillId, false);
     }
 
-    /** 通用书只能从正式池学习新技能 Lv.1，不接受历史别名，也不能升级已有技能。 */
+    /** 通用书只能从正式池学习新的满级技能，不接受历史别名，也不能升级已有技能。 */
     @Transactional
     public Map<String, Object> learnUniversalSkill(Long playerId, Long officerId, String skillId) {
         return learnChosenSkill(playerId, officerId, "universalSkillBook", skillId, true);
     }
 
-    /** 在玩家写锁内校验、扣书并写入技能；两类指定学习共享槽位、重复与互斥规则。 */
+    /** 在玩家写锁内校验、扣书并写入技能；两类指定学习共享槽位与重复校验，各技能可自由组合。 */
     private Map<String, Object> learnChosenSkill(Long playerId, Long officerId, String itemId, String skillId, boolean universal) {
         playerRepository.lockById(playerId).orElseThrow();
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         OfficerSkillDef skill = skillId == null ? null : GameData.OFFICER_SKILLS.get(skillId);
@@ -542,27 +556,9 @@ public class OfficerService {
         }
 
         List<Map<String, Object>> skills = parseSkills(officer.getSkills());
-        if (skills.size() >= MAX_SKILLS) {
-            result.put("success", false);
-            result.put("message", "技能已满3个，请先废弃一个");
-            return result;
-        }
-
-        for (Map<String, Object> owned : skills) {
-            Object ownedId = owned.get("id");
-            if (ownedId == null) continue;
-            OfficerSkillDef ownedSkill = OfficerSkillDef.getSkill(ownedId.toString());
-            String canonicalId = ownedSkill != null ? ownedSkill.key() : ownedId.toString();
-            if (skillId.equals(canonicalId)) {
-                result.put("success", false);
-                result.put("message", officer.getName() + " 已掌握「" + skill.name() + "」");
-                return result;
-            }
-            if (OfficerSkillDef.conflictsWith(canonicalId, skillId)) {
-                result.put("success", false);
-                result.put("message", "「" + skill.name() + "」与已掌握技能互斥");
-                return result;
-            }
+        String reason = skillLearningReason(skills, skillId);
+        if (!reason.isEmpty()) {
+            result.put("success", false); result.put("message", reason); return result;
         }
 
         String bookName = universal ? "通用技能书" : skill.name() + "技能书";
@@ -575,76 +571,24 @@ public class OfficerService {
 
         Map<String, Object> learned = new LinkedHashMap<>();
         learned.put("id", skillId);
-        learned.put("lv", 1);
+        learned.put("lv", skill.max());
         skills.add(learned);
         officer.setSkills(JsonUtil.toJson(skills));
         officerRepository.save(officer);
 
         result.put("success", true);
         result.put("message", universal
-                ? officer.getName() + " 已学会「" + skill.name() + "」Lv.1 (消耗1本" + bookName + ")"
-                : "学习成功: " + skill.name() + " Lv.1 (消耗1本" + bookName + ")");
+                ? officer.getName() + " 已学会「" + skill.name() + "」满级 (消耗1本" + bookName + ")"
+                : "学习成功: " + skill.name() + " 满级 (消耗1本" + bookName + ")");
         result.put("skillId", skillId);
         result.put("skillName", skill.name());
-        result.put("level", 1);
+        result.put("level", skill.max());
         return result;
     }
 
-    /**
-     * 消耗一本当前技能对应的指定技能书，将已有技能提升一级；满级或书不匹配时不扣道具。
-     * 历史 supply 技能使用 leadership 的指定书升级，但保留原技能 ID。
-     *
-     * @param playerId 玩家 ID
-     * @param officerId 军官 ID
-     * @param skillIdx 技能在军官技能列表中的索引
-     * @param itemId 要消耗的指定技能书 ID
-     * @return 升级结果及升级后的等级
-     */
-    @Transactional
+    /** 兼容缓存客户端：技能升级已取消，拒绝旧请求且不消耗任何书籍。 */
     public Map<String, Object> upgradeSkill(Long playerId, Long officerId, int skillIdx, String itemId) {
-        playerRepository.lockById(playerId).orElseThrow();
-        if (garrisonFood != null) garrisonFood.beforeChange(playerId);
-        Map<String, Object> result = new LinkedHashMap<>();
-        Officer officer = findOfficerForSkillChange(playerId, officerId);
-        if (officer == null) {
-            result.put("success", false);
-            result.put("message", "军官不存在");
-            return result;
-        }
-
-        List<Map<String, Object>> skills = parseSkills(officer.getSkills());
-        if (skillIdx < 0 || skillIdx >= skills.size()) {
-            result.put("success", false);
-            result.put("message", "技能不存在");
-            return result;
-        }
-        Map<String, Object> owned = skills.get(skillIdx);
-        OfficerSkillDef skill = OfficerSkillDef.getSkill(String.valueOf(owned.get("id")));
-        if (skill == null || !("skillBook_" + skill.key()).equals(itemId)) {
-            result.put("success", false);
-            result.put("message", "请选择同类型的指定技能书");
-            return result;
-        }
-        Object levelValue = owned.get("lv");
-        int level = levelValue instanceof Number ? ((Number) levelValue).intValue() : 0;
-        if (level < 1 || level >= skill.max()) {
-            result.put("success", false);
-            result.put("message", level >= skill.max() ? "技能已满级" : "技能等级无效");
-            return result;
-        }
-        if (playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now()) == 0) {
-            result.put("success", false);
-            result.put("message", skill.name() + "技能书不足");
-            return result;
-        }
-
-        owned.put("lv", level + 1);
-        officer.setSkills(JsonUtil.toJson(skills));
-        officerRepository.save(officer);
-        result.put("success", true);
-        result.put("message", skill.name() + "升级至 Lv." + (level + 1) + " (消耗1本" + skill.name() + "技能书)");
-        result.put("level", level + 1);
-        return result;
+        return new LinkedHashMap<>(Map.of("success", false, "message", "技能已统一为满级，无需升级"));
     }
 
     // ================================================================
@@ -654,6 +598,7 @@ public class OfficerService {
     @Transactional
     public Map<String, Object> abandonSkill(Long playerId, Long officerId, int skillIdx) {
         playerRepository.lockById(playerId).orElseThrow();
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
@@ -697,6 +642,7 @@ public class OfficerService {
     /** 定额经验书支持批量加经验，仍由玩家另行升级；满级书每次只扣一本并直接升满。 */
     @Transactional
     public Map<String, Object> useExpBook(Long playerId, Long officerId, String itemId, int count) {
+        economy.settleEconomyBeforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         Officer officer = findOfficer(playerId, officerId);
@@ -790,6 +736,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> levelUp(Long playerId, Long officerId, boolean all) {
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         Officer officer = findOfficer(playerId, officerId);
@@ -810,13 +757,8 @@ public class OfficerService {
         int upgraded = 0;
 
         if (all) {
-            while (level < OFFICER_MAX_LEVEL) {
-                long need = OfficerExperienceRules.expNeeded(level);
-                if (curExp < need) break;
-                curExp -= need;
-                level++;
-                upgraded++;
-            }
+            var growth = OfficerExperienceRules.preview(level, curExp);
+            level = growth.level(); curExp = growth.exp(); upgraded = growth.upgraded();
         } else {
             long need = OfficerExperienceRules.expNeeded(level);
             if (curExp >= need) {
@@ -858,6 +800,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> assignAttr(Long playerId, Long officerId, String attr, int points) {
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         if (points <= 0) {
@@ -920,6 +863,13 @@ public class OfficerService {
             officer.setKnowledge(newVal);
         }
 
+        // 记录真实加点方向，洗点不再按星级猜测出生资质。
+        switch (attr) {
+            case "military" -> officer.setAssignedMilitary(officer.getAssignedMilitary() + actualAdd);
+            case "defense" -> officer.setAssignedDefense(officer.getAssignedDefense() + actualAdd);
+            case "logistics" -> officer.setAssignedLogistics(officer.getAssignedLogistics() + actualAdd);
+            case "knowledge" -> officer.setAssignedKnowledge(officer.getAssignedKnowledge() + actualAdd);
+        }
         officer.setAttrPoints(available - actualAdd);
         officerRepository.save(officer);
 
@@ -938,6 +888,7 @@ public class OfficerService {
 
     @Transactional
     public Map<String, Object> wash(Long playerId, Long officerId) {
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
         Officer officer = findOfficer(playerId, officerId);
@@ -947,62 +898,33 @@ public class OfficerService {
             return result;
         }
 
+        int refund = officer.assignedPoints();
+        if (refund == 0) {
+            return Map.of("success", false, "message", officer.isLegacyAttrAllocation()
+                    ? "历史加点未记录方向，保留原有属性；此后分配的点数均可重置"
+                    : "没有已分配的属性点，无需洗点");
+        }
         int cost = 200;
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res == null || getGold(res) < cost) {
-            result.put("success", false);
-            result.put("message", "黄金不足(需 " + cost + " 黄金)");
-            return result;
+            return Map.of("success", false, "message", "黄金不足(需 200 黄金)");
         }
-
         setGold(res, getGold(res) - cost);
         resourcesRepository.save(res);
-
-        int star = officer.getStar() != null ? officer.getStar() : 1;
-        int level = officer.getLevel() != null ? officer.getLevel() : 1;
-        int totalPoints = Math.max(0, level - 1);
-
-        if (star >= 5) {
-            int curMil = officer.getMilitary() != null ? officer.getMilitary() : 0;
-            int curDef = officer.getDefense() != null ? officer.getDefense() : 0;
-            int curLog = officer.getLogistics() != null ? officer.getLogistics() : 0;
-            int curKno = officer.getKnowledge() != null ? officer.getKnowledge() : 0;
-            int maxVal = Math.max(Math.max(curMil, curDef), Math.max(curLog, curKno));
-            int mainBase = 120;
-            if (curMil == maxVal) {
-                officer.setMilitary(mainBase);
-                officer.setDefense(75);
-                officer.setLogistics(75);
-                officer.setKnowledge(75);
-            } else if (curDef == maxVal) {
-                officer.setDefense(mainBase);
-                officer.setMilitary(75);
-                officer.setLogistics(75);
-                officer.setKnowledge(75);
-            } else if (curLog == maxVal) {
-                officer.setLogistics(mainBase);
-                officer.setMilitary(75);
-                officer.setDefense(75);
-                officer.setKnowledge(75);
-            } else {
-                officer.setKnowledge(mainBase);
-                officer.setMilitary(75);
-                officer.setDefense(75);
-                officer.setLogistics(75);
-            }
-        } else {
-            int base = 30 + star * 12;
-            officer.setMilitary(base);
-            officer.setDefense(base);
-            officer.setLogistics(base);
-            officer.setKnowledge(base);
-        }
-
+        officer.setMilitary(officer.getMilitary() - officer.getAssignedMilitary());
+        officer.setDefense(officer.getDefense() - officer.getAssignedDefense());
+        officer.setLogistics(officer.getLogistics() - officer.getAssignedLogistics());
+        officer.setKnowledge(officer.getKnowledge() - officer.getAssignedKnowledge());
+        officer.setAssignedMilitary(0);
+        officer.setAssignedDefense(0);
+        officer.setAssignedLogistics(0);
+        officer.setAssignedKnowledge(0);
+        int totalPoints = (officer.getAttrPoints() == null ? 0 : officer.getAttrPoints()) + refund;
         officer.setAttrPoints(totalPoints);
         officerRepository.save(officer);
 
         result.put("success", true);
-        result.put("message", officer.getName() + " 洗点成功！属性恢复初始值，返还 " + totalPoints + " 点可分配属性点");
+        result.put("message", officer.getName() + " 洗点成功！保留军官资质，返还 " + refund + " 点可分配属性点");
         result.put("attrPoints", totalPoints);
         result.put("military", officer.getMilitary());
         result.put("defense", officer.getDefense());
@@ -1098,13 +1020,26 @@ public class OfficerService {
     public Map<String, Object> computeAttributes(Long playerId, Long officerId) {
         var officer = findOfficer(playerId, officerId);
         if (officer == null) return new LinkedHashMap<>(Map.of("success", false, "message", "军官不存在"));
-        var a = equipmentService.attributes(officer); var prep = equipmentProgress.preparation(playerId, officerId);
+        var a = equipmentService.attributes(officer);
         return new LinkedHashMap<>(Map.of("success", true, "military", a.military(), "defense", a.defense(),
-                "logistics", a.logistics(), "knowledge", a.knowledge(), "bonuses", a.bonuses(), "preparation", prep,
-                "equipment", a.equipment().stream().map(e -> equipmentService.equipmentView(e, prep)).toList()));
+                "logistics", a.logistics(), "knowledge", a.knowledge(), "bonuses", a.bonuses(),
+                "equipment", a.equipment().stream().map(e -> equipmentService.equipmentView(e)).toList()));
     }
 
     /** 军校整批出现一名五星的概率：每级增加 0.3%，1 级 0.3%，10 级满级 3%。 */
+    public static int recruitCost(int star) { return star * RECRUIT_COST_PER_STAR; }
+    public static int rewardCost(int star, int level) { return star * 50 + level * 2; }
+
+    /** 技能自由组合，仅限制槽位和重复；预览与指定学习共用。 */
+    public static String skillLearningReason(List<Map<String, Object>> owned, String skillId) {
+        if (owned.size() >= MAX_SKILLS) return "技能已满3个，请先废弃一个";
+        for (var skill : owned) {
+            var definition = OfficerSkillDef.getSkill(Objects.toString(skill.get("id"), ""));
+            if (skillId.equals(definition == null ? skill.get("id") : definition.key())) return "已掌握";
+        }
+        return "";
+    }
+
     public static double academyFiveStarBatchChance(int academyLevel) {
         return AcademyRecruitmentRules.fiveStarBatchChance(academyLevel, 0);
     }
@@ -1248,7 +1183,7 @@ public class OfficerService {
 
         String sid = pool.get(rng.nextInt(pool.size()));
         OfficerSkillDef skDef = GameData.OFFICER_SKILLS.get(sid);
-        int lv = Math.min(skDef.max(), 1 + rng.nextInt(Math.max(1, star)));
+        int lv = skDef.max();
 
         Map<String, Object> sk = new LinkedHashMap<>();
         sk.put("id", sid);

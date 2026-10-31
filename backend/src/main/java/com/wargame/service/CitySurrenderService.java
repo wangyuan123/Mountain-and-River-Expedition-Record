@@ -1,19 +1,29 @@
 package com.wargame.service;
 
 import com.wargame.util.GameClock;
-import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 /** Diplomatic player-city transfer. Battle conquest is deliberately not used here. */
 @Service
 public class CitySurrenderService {
+    @org.springframework.beans.factory.annotation.Autowired private jakarta.persistence.EntityManager em;
+    @org.springframework.beans.factory.annotation.Autowired private CityCapacityService capacity;
+    @org.springframework.beans.factory.annotation.Autowired private CityFreezeService freeze;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
+    @org.springframework.beans.factory.annotation.Autowired private CityScope scope;
+    private static final Logger log = LoggerFactory.getLogger(CitySurrenderService.class);
     public static final long RESPONSE_WINDOW_MS = 24L * 60L * 60L * 1000L;
     public static final long TRANSFER_WINDOW_MS = 24L * 60L * 60L * 1000L;
     private static final String PENDING = "PENDING";
@@ -33,27 +43,33 @@ public class CitySurrenderService {
     private final CityConquestService cityConquest;
     private final AccountService accounts;
     private final WebSocketPushService push;
+    private final TransactionTemplate settlement;
 
     public CitySurrenderService(CitySurrenderOfferRepository offers, PlayerCityRepository cities,
                                 PlayerRepository players,
                                 MarchRepository marches, MarketOrderRepository marketOrders,
                                 ResourcesRepository resources, MailService mail,
                                 CityConquestService cityConquest, AccountService accounts,
-                                WebSocketPushService push) {
+                                WebSocketPushService push, PlatformTransactionManager transactionManager) {
         this.offers = offers; this.cities = cities; this.players = players;
         this.marches = marches; this.marketOrders = marketOrders; this.resources = resources;
         this.mail = mail; this.cityConquest = cityConquest; this.accounts = accounts; this.push = push;
+        this.settlement = new TransactionTemplate(transactionManager);
+        this.settlement.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     @Transactional
     public Map<String, Object> offer(Long initiatorId, Long cityId) {
         long now = GameClock.now();
-        PlayerCity city = cities.findForUpdate(cityId).orElseThrow(() -> new IllegalArgumentException("目标城市不存在"));
+        PlayerCity city = cities.findById(cityId).orElseThrow(() -> new IllegalArgumentException("目标城市不存在"));
         if (city.getOwnerId() == null || city.getCitySlot() == null) throw new IllegalArgumentException("只能向真实玩家城市提出劝降");
         if (initiatorId.equals(city.getOwnerId())) throw new IllegalArgumentException("不能向自己的城市提出劝降");
+        Long defenderId = city.getOwnerId();
+        Map<Long, Player> lockedPlayers = lockPair(initiatorId, defenderId);
+        city = lockCity(cityId);
+        if (!defenderId.equals(city.getOwnerId())) throw new IllegalArgumentException("目标城市归属已变化，请重新发起");
         if (city.getReadyAt() != null && city.getReadyAt() > now) throw new IllegalArgumentException("目标城市尚未建成");
         if (city.isSurrenderFrozen(now)) throw new IllegalArgumentException("目标城市正在移交中");
-        Map<Long, Player> lockedPlayers = lockPair(initiatorId, city.getOwnerId());
         Player initiator = lockedPlayers.get(initiatorId);
         Player defender = lockedPlayers.get(city.getOwnerId());
         if (!defender.accountActive()) throw new IllegalArgumentException("守方账号不可用");
@@ -69,10 +85,7 @@ public class CitySurrenderService {
                 .orElseGet(() -> cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(initiatorId).stream()
                         .map(PlayerCity::getWorldId).filter(Objects::nonNull).findFirst().orElse(null));
         if (!Objects.equals(initiatorWorld, city.getWorldId())) throw new IllegalArgumentException("双方不在同一世界");
-        int cap = MilitaryRankDef.getCityCap(initiator.getMilitaryRank());
-        long owned = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(initiatorId).size();
-        long reserved = offers.countReservedCitySlots(initiatorId);
-        if (owned + reserved >= cap) throw new IllegalArgumentException("接收方城市名额不足");
+        if (!capacity.hasRoom(initiatorId, null)) throw new IllegalArgumentException("接收方城市名额不足");
 
         CitySurrenderOffer offer = new CitySurrenderOffer();
         offer.setWorldId(city.getWorldId()); offer.setInitiatorId(initiatorId); offer.setDefenderId(defender.getId());
@@ -97,8 +110,11 @@ public class CitySurrenderService {
 
     @Transactional
     public Map<String, Object> respond(Long defenderId, Long offerId, String decision) {
-        CitySurrenderOffer offer = offers.findForUpdate(offerId).orElseThrow(() -> new IllegalArgumentException("劝降邀请不存在"));
+        CitySurrenderOffer offer = offers.findById(offerId).orElseThrow(() -> new IllegalArgumentException("劝降邀请不存在"));
         if (!defenderId.equals(offer.getDefenderId())) throw new IllegalArgumentException("无权处理该劝降邀请");
+        // 所有接受及兑现入口先锁账号，防止另一邀请持有预留锁等待同一账号而死锁。
+        Map<Long, Player> locked = lockPair(defenderId, offer.getInitiatorId());
+        offer = lockOffer(offer);
         long now = GameClock.now();
         if (!PENDING.equals(offer.getStatus())) return dto(offer, defenderId);
         if (now >= offer.getResponseExpiresAt()) {
@@ -106,10 +122,9 @@ public class CitySurrenderService {
             return dto(offer, defenderId);
         }
         if (!"accept".equalsIgnoreCase(decision) && !"reject".equalsIgnoreCase(decision)) throw new IllegalArgumentException("答复必须是 accept 或 reject");
-        Map<Long, Player> locked = lockPair(defenderId, offer.getInitiatorId());
         Player defender = locked.get(defenderId);
         Player initiator = locked.get(offer.getInitiatorId());
-        PlayerCity city = cities.findForUpdate(offer.getCityId()).orElseThrow(() -> new IllegalArgumentException("目标城市不存在"));
+        PlayerCity city = lockCity(offer.getCityId());
         if (!defenderId.equals(city.getOwnerId())) { cancelLocked(offer, city, now, "目标城市归属已变化"); return dto(offer, defenderId); }
         if ("reject".equalsIgnoreCase(decision)) {
             offer.setStatus(REJECTED); offers.save(offer);
@@ -118,6 +133,8 @@ public class CitySurrenderService {
             return dto(offer, defenderId);
         }
         ensureAcceptable(offer, city, initiator, defender, now);
+        // 冻结从接受时刻开始，必须先兑现此前已产生的经济及到期队列。
+        try (var ignored = scope.enter(city)) { economy.settleEconomyBeforeChange(defenderId); }
         closeMarketOrders(defenderId, city.getCitySlot(), now);
         offer.setStatus(ACCEPTED); offer.setAcceptedAt(now); offer.setTransferDeadlineAt(now + TRANSFER_WINDOW_MS);
         city.setSurrenderOfferId(offer.getId()); city.setSurrenderRecipientId(initiator.getId()); city.setSurrenderFrozenAt(now);
@@ -145,33 +162,53 @@ public class CitySurrenderService {
     public void settleDue() {
         long now = GameClock.now();
         for (CitySurrenderOffer offer : offers.findPendingDue(now, PageRequest.of(0, 100))) {
-            try { expire(offer.getId(), now); } catch (Exception ignored) { }
+            // 同实例调用不会经过事务代理，每份邀请单独提交，失败不影响其余邀请。
+            try { settlement.executeWithoutResult(status -> expire(offer.getId(), now)); }
+            catch (Exception error) { log.error("劝降过期结算失败 offerId={}", offer.getId(), error); }
         }
         for (CitySurrenderOffer offer : offers.findAcceptedDue(now, PageRequest.of(0, 100))) {
-            try { complete(offer.getId(), now); } catch (Exception ignored) { }
+            try { settlement.executeWithoutResult(status -> complete(offer.getId(), now)); }
+            catch (Exception error) { log.error("归降移交结算失败 offerId={}", offer.getId(), error); }
         }
     }
 
     @Transactional
     public void expire(Long offerId, long now) {
-        CitySurrenderOffer offer = offers.findForUpdate(offerId).orElse(null);
-        if (offer != null && PENDING.equals(offer.getStatus()) && now >= offer.getResponseExpiresAt()) expireLocked(offer, now);
+        CitySurrenderOffer offer = offers.findById(offerId).orElse(null);
+        if (offer == null || !PENDING.equals(offer.getStatus()) || now < offer.getResponseExpiresAt()) return;
+        // 过期同样先锁账号，避免邀请状态变更与名额当前读持有的索引区间锁交叉等待。
+        new TreeSet<>(List.of(offer.getInitiatorId(), offer.getDefenderId()))
+                .forEach(id -> players.findById(id).ifPresent(p -> accounts.lockPlayer(id)));
+        offer = lockOffer(offer);
+        if (PENDING.equals(offer.getStatus()) && now >= offer.getResponseExpiresAt()) expireLocked(offer, now);
     }
 
     @Transactional
     public void complete(Long offerId, long now) {
-        CitySurrenderOffer offer = offers.findForUpdate(offerId).orElse(null);
+        CitySurrenderOffer offer = offers.findById(offerId).orElse(null);
         if (offer == null || !ACCEPTED.equals(offer.getStatus()) || now < offer.getTransferDeadlineAt()) return;
-        PlayerCity city = cities.findForUpdate(offer.getCityId()).orElse(null);
+        PlayerCity city = cities.findById(offer.getCityId()).orElse(null);
+        // 与接受和库存巡检保持同一锁顺序；异常归属也要锁现城主后再恢复该城时钟。
+        Set<Long> participants = new TreeSet<>(List.of(offer.getInitiatorId(), offer.getDefenderId()));
+        if (city != null && city.getOwnerId() != null) participants.add(city.getOwnerId());
+        Map<Long, Player> locked = new HashMap<>();
+        participants.forEach(id -> players.findById(id).ifPresent(p -> locked.put(id, accounts.lockPlayer(id))));
+        offer = lockOffer(offer);
+        if (!ACCEPTED.equals(offer.getStatus()) || now < offer.getTransferDeadlineAt()) return;
+        if (city != null) city = lockCity(city.getId());
         if (city == null || !offer.getDefenderId().equals(city.getOwnerId()) || !offer.getId().equals(city.getSurrenderOfferId())) {
             if (city != null) cancelLocked(offer, city, now, "目标城市归属已变化"); else cancelLocked(offer, null, now, "目标城市不存在");
             return;
         }
-        Map<Long, Player> locked = lockPair(offer.getInitiatorId(), offer.getDefenderId());
         Player initiator = locked.get(offer.getInitiatorId());
         Player defender = locked.get(offer.getDefenderId());
-        if (!initiator.accountActive() || !defender.accountActive()) {
+        if (initiator == null || defender == null || !initiator.accountActive() || !defender.accountActive()) {
             cancelLocked(offer, city, now, "参与账号已失效");
+            return;
+        }
+        // 历史异常预留也在此复核；失败恢复原城，不能使城市无限期冻结。
+        if (!capacity.hasRoom(initiator.getId(), offer.getId())) {
+            cancelLocked(offer, city, now, "接收方城市名额不足，城市已恢复原归属");
             return;
         }
         cityConquest.peacefulTransfer(initiator.getId(), city, now);
@@ -190,10 +227,7 @@ public class CitySurrenderService {
      * 新增运输、驻防或攻击在冻结期间抵达，造成移交资产不确定。
      */
     private void ensureAcceptable(CitySurrenderOffer offer, PlayerCity city, Player initiator, Player defender, long now) {
-        int cap = MilitaryRankDef.getCityCap(initiator.getMilitaryRank());
-        long owned = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(initiator.getId()).size();
-        long reserved = offers.countReservedCitySlots(initiator.getId());
-        if (owned + reserved >= cap) throw new IllegalArgumentException("接收方城市名额不足");
+        if (!capacity.hasRoom(initiator.getId(), null)) throw new IllegalArgumentException("接收方城市名额不足");
         if (city.isSurrenderFrozen(now)) throw new IllegalArgumentException("城市正在移交中");
         if (!marches.findUnfinishedMarchesTargetingPlayerCity(city.getId().toString()).isEmpty()) {
             throw new IllegalArgumentException("目标城市仍有在途行军");
@@ -228,8 +262,14 @@ public class CitySurrenderService {
 
     private void cancelLocked(CitySurrenderOffer offer, PlayerCity city, long now, String reason) {
         offer.setStatus(CANCELLED); offer.setCancelledAt(now); offer.setCancelReason(reason); offers.save(offer);
-        if (city != null) { city.setSurrenderOfferId(null); city.setSurrenderRecipientId(null); city.setSurrenderFrozenAt(null); city.setSurrenderTransferDeadlineAt(null); cities.save(city); }
-        for (Long playerId : List.of(offer.getInitiatorId(), offer.getDefenderId())) mail.sendSystem(playerId, "系统", "surrender", "【劝降已取消】" + offer.getCityName(), offer.getCityName() + "（" + offer.getCityX() + "," + offer.getCityY() + "）的劝降流程已取消，原因：" + reason + "。城市冻结状态已解除，未完成的移交不会执行。", List.of(), offer.getId());
+        if (city != null && Objects.equals(city.getSurrenderOfferId(), offer.getId())) {
+            freeze.resume(city, now);
+            city.setSurrenderOfferId(null); city.setSurrenderRecipientId(null); city.setSurrenderFrozenAt(null);
+            city.setSurrenderTransferDeadlineAt(null); cities.save(city);
+        }
+        for (Long playerId : List.of(offer.getInitiatorId(), offer.getDefenderId())) {
+            if (players.existsById(playerId)) mail.sendSystem(playerId, "系统", "surrender", "【劝降已取消】" + offer.getCityName(), offer.getCityName() + "（" + offer.getCityX() + "," + offer.getCityY() + "）的劝降流程已取消，原因：" + reason + "。城市冻结状态已解除，未完成的移交不会执行。", List.of(), offer.getId());
+        }
         finishMailRetention(offer);
     }
 
@@ -269,5 +309,20 @@ public class CitySurrenderService {
         Map<Long, Player> result = new HashMap<>();
         new TreeSet<>(List.of(first, second)).forEach(id -> result.put(id, accounts.lockPlayer(id)));
         return result;
+    }
+
+    /** 账号锁等待后刷新邀请，重复答复及到期任务只能兑现一次。 */
+    private CitySurrenderOffer lockOffer(CitySurrenderOffer offer) {
+        em.flush();
+        em.refresh(offer, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return offer;
+    }
+
+    /** 账号锁之后再刷新城市，锁等待前读到的冻结状态不能覆盖已经提交的移交。 */
+    private PlayerCity lockCity(Long id) {
+        PlayerCity city = cities.findById(id).orElseThrow(() -> new IllegalArgumentException("目标城市不存在"));
+        em.flush();
+        em.refresh(city, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return city;
     }
 }

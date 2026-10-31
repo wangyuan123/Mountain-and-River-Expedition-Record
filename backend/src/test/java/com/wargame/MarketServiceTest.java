@@ -165,6 +165,20 @@ public class MarketServiceTest {
     }
 
     @Test
+    void existingAmountPriceAndSlotCapsAreEnforcedWithoutChangingTheRules() {
+        assertThrows(IllegalArgumentException.class, () ->
+                marketService.createOrder(seller.getId(), 0, "food", 100_000_001, 1));
+        assertThrows(IllegalArgumentException.class, () ->
+                marketService.createOrder(seller.getId(), 0, "food", 1, 1_000_001));
+        for (int i = 0; i < marketService.getMarketOrderSlotCap(seller.getId(), 0); i++) {
+            assertNotNull(marketService.createOrder(seller.getId(), 0, "food", 1, 1_000_000));
+        }
+        assertThrows(IllegalArgumentException.class, () ->
+                marketService.createOrder(seller.getId(), 0, "food", 1, 1));
+        assertEquals(4993, resourcesRepository.findByPlayerIdAndCitySlot(seller.getId(), 0).orElseThrow().getFood());
+    }
+
+    @Test
     void testSystemExchange() {
         // 卖方交易所 Lv.5，兑换率 70%
         // 用 1000 粮食兑换石油 -> 获得 700 石油

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 function setup(prestige = 10000) {
   const calls = [], listeners = {}, timers = new Map(); let nextTimer = 1, token = 'one';
   const view = { innerHTML: '', scrollTop: 0, querySelector() { return this.innerHTML.includes('pvp-page') ? {} : null; } };
@@ -12,7 +12,7 @@ function setup(prestige = 10000) {
   let battle = { ...status, status: 'BATTLING', sessionId: 's', side: 'B', round: 1, mine: snapshot, enemy: snapshot, myArmy: { infantry: 100 }, enemyArmy: { infantry: 100 }, myPositions: { infantry: 0 }, enemyPositions: { infantry: 1000 }, initialDistance: 1000, loaded: true, draft: {}, revision: 0, deadlineAt: Date.now() + 12000 };
   let handler;
   const Game = {
-    Core: { route: 'pvp', state: { prestige }, views: {}, firepowerMul: tech => 1 + ((tech || {}).fire_density || 0) / 10 },
+    Core: { route: 'pvp', state: { prestige, gameplay: { pvpAllowed: prestige >= 10000 } }, views: {} },
     DATA: { units: { infantry: { name: '步兵', branch: 'land' }, truck: { name: '卡车', branch: 'land' } }, officerSkills: {} },
     escapeHtml: String, WS: { connected: true, on(name, fn) { listeners[name] = fn; } },
     Battle: { renderCommandBonusPanel() { return ''; }, tacticalMarkerRows() { return ['infantry']; }, renderTacticalRangeBeams() { return ''; }, renderTacticalMarkers(army, positions) { return '<span data-position="' + positions.infantry + '"></span>'; } },
@@ -20,7 +20,7 @@ function setup(prestige = 10000) {
       calls.push({ method, url, body, options }); if (handler) { const r = handler(method, url, body); if (r) return r; }
       if (url.includes('/status')) return Promise.resolve(JSON.parse(JSON.stringify(status)));
       if (url.includes('/battle?')) return Promise.resolve(JSON.parse(JSON.stringify(battle)));
-      if (url.includes('/lobby')) return Promise.resolve({ preset: { citySlot: 0, battlefield: 'LAND_AIR', army: { infantry: 100 }, commanderId: null, defaults }, presetVersion: 0, record: { wins: 0, losses: 0, draws: 0 }, status, reports: [], available: { cities: [{ slot: 0, name: '主城' }], army: { infantry: 100, truck: 30 }, cap: 1000, officers: [], chief: '无' } });
+      if (url.includes('/lobby')) return Promise.resolve({ preset: { citySlot: 0, battlefield: 'LAND_AIR', army: { infantry: 100 }, commanderId: null, defaults }, presetVersion: 0, record: { wins: 0, losses: 0, draws: 0 }, status, reports: [], available: { cities: [{ slot: 0, name: '主城' }], army: { infantry: 100, truck: 30 }, cap: 1000, defaultArmies: {LAND_AIR:{infantry:100,truck:30},SEA_AIR:{}}, officers: [], chief: '无' } });
       if (url.includes('/preset')) return Promise.resolve({ status, snapshot, presetVersion: 1 });
       if (url.includes('/queue')) { status = { ...status, status: 'QUEUED', version: 2, ticketId: 't', queuedAt: Date.now() - 123000, snapshot }; return Promise.resolve(status); }
       if (url.includes('/orders')) { battle = { ...battle, revision: body.revision, draft: body.orders, locked: body.lock, version: battle.version + 1 }; return Promise.resolve(battle); }
@@ -49,7 +49,7 @@ test('声望不足保留对战内容预览，蒙层锁定操作且不提交编�
 test('声望达到10000立即解除蒙层，保留原有编队并允许匹配', async () => {
   const s = setup(9999);
   await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
-  s.Game.Core.state.prestige = 10000;
+  s.Game.Core.state.prestige = 10000; s.Game.Core.state.gameplay.pvpAllowed = true;
   s.Game.Pvp.render(s.view);
   assert.doesNotMatch(s.view.innerHTML, /pvp-prestige-overlay|\binert\b/);
   assert.match(s.view.innerHTML, /value="100"/);
@@ -62,7 +62,7 @@ test('声望变动会刷新提示，低于门槛或状态未加载时重新锁�
   await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
   assert.doesNotMatch(s.view.innerHTML, /pvp-prestige-overlay/);
   for (const prestige of [9999, 2500, 0]) {
-    s.Game.Core.state.prestige = prestige;
+    s.Game.Core.state.prestige = prestige; s.Game.Core.state.gameplay.pvpAllowed = false;
     s.Game.Pvp.render(s.view);
     assert.match(s.view.innerHTML, /class="pvp-content" inert/);
     assert.ok(s.view.innerHTML.includes('当前声望：' + prestige + ' / 10000'));
@@ -170,7 +170,7 @@ test('fillMax distributes rounding remainder even when the last eligible unit is
   s.setHandler((method, url) => url.includes('/lobby') ? Promise.resolve({
     preset: { citySlot: 0, battlefield: 'LAND_AIR', army: {}, defaults: {} }, presetVersion: 0,
     record: {}, reports: [], status: s.status,
-    available: { cities: [{ slot: 0, name: '主城' }], army: { infantry: 100, truck: 30 }, cap: 101, officers: [], chief: '无' }
+    available: { cities: [{ slot: 0, name: '主城' }], army: { infantry: 100, truck: 30 }, cap: 101, defaultArmies: {LAND_AIR:{infantry:78,truck:23},SEA_AIR:{}}, officers: [], chief: '无' }
   }) : null);
   await s.Game.Pvp.start(); s.Game.Pvp.render(s.view); await settle();
   s.Game.Pvp.fillMax(); await s.Game.Pvp.savePreset();

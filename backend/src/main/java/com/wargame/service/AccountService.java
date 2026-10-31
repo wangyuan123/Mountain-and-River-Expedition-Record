@@ -194,6 +194,8 @@ public class AccountService {
                     guilds.save(guild);
                 } else {
                     em.createQuery("delete from GuildApplication a where a.guildId = :id").setParameter("id", guild.getId()).executeUpdate();
+                    em.createQuery("delete from GuildRelation r where r.guildLowId = :guild or r.guildHighId = :guild")
+                            .setParameter("guild", guild.getId()).executeUpdate();
                     members.delete(member);
                     members.flush();
                     guilds.delete(guild);
@@ -212,7 +214,11 @@ public class AccountService {
                         + "o.cancelReason = '参与账号已注销' where o.status in ('PENDING', 'ACCEPTED') "
                         + "and (o.initiatorId = :id or o.defenderId = :id)")
                 .setParameter("id", id).setParameter("now", now).executeUpdate();
-        for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipmentProgress", "OfficerEquipment", "ArmyProductionQueue", "ArmyPopulationBalance",
+        // 账号资产清除前关闭尚未成交的挂单，避免留下无法结算的卖方账户。
+        em.createQuery("update MarketOrder o set o.status = 'CANCELLED', o.completedAt = :time "
+                        + "where o.sellerId = :id and o.status = 'ACTIVE'")
+                .setParameter("id", id).setParameter("time", java.time.LocalDateTime.now()).executeUpdate();
+        for (String entity : List.of("GuildApplication", "GuildMember", "OfficerEquipmentProgress", "OfficerEquipment", "ArmyProductionQueue", "ArmyPopulationBalance",
                 "TechResearchQueue", "PrisonerUnit", "PrisonerOperation", "BattleSettlement", "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
                 "Resources", "CityState", "Academy", "PlayerItem", "RankGiftReward", "PlayerPowerSnapshot", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
             em.createQuery("delete from " + entity + " e where e.playerId = :id").setParameter("id", id).executeUpdate();
@@ -225,6 +231,7 @@ public class AccountService {
                 + "where w.occupiedBy = :id").setParameter("id", id).executeUpdate();
         em.createQuery("update Player p set p.warAgainstId = null, p.warAt = 0, p.warEndAt = 0, p.version = p.version + 1 "
                 + "where p.warAgainstId = :id").setParameter("id", id).executeUpdate();
+        em.createQuery("delete from PersonalWar w where w.playerLowId = :id or w.playerHighId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from PlayerCity c where c.ownerId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from RadarContact c where c.observerId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from RadarMonitor m where m.playerId = :id").setParameter("id", id).executeUpdate();

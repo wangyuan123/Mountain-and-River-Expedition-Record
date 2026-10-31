@@ -6,7 +6,6 @@ import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.service.CityScope;
 import com.wargame.service.EquipmentService;
-import com.wargame.service.OfficerEquipmentProgressService;
 import com.wargame.service.SpeedUpSupport;
 import com.wargame.service.TechService;
 import com.wargame.service.PrerequisiteService;
@@ -44,7 +43,7 @@ class TechServiceTest {
                     assertEquals(Math.max(tech.labReq(), target), required, tech.key() + " target " + target);
                 }
             }
-            assertEquals(Map.of(1, 6, 2, 10, 3, 6, 4, 1, 5, 1), counts);
+            assertEquals(Map.of(1, 6, 2, 9, 3, 6, 4, 1, 5, 1), counts);
         }
     }
 
@@ -57,7 +56,6 @@ class TechServiceTest {
     private CityScope cityScope;
     private OfficerRepository officerRepository;
     private EquipmentService equipmentService;
-    private OfficerEquipmentProgressService equipmentProgress;
     private TechService techService;
 
     @BeforeEach
@@ -71,7 +69,6 @@ class TechServiceTest {
         cityScope = mock(CityScope.class);
         officerRepository = mock(OfficerRepository.class);
         equipmentService = mock(EquipmentService.class);
-        equipmentProgress = mock(OfficerEquipmentProgressService.class);
 
         when(cityScope.slot(anyLong())).thenReturn(0);
         when(playerRepository.lockById(anyLong())).thenReturn(Optional.of(new Player()));
@@ -85,7 +82,7 @@ class TechServiceTest {
         csField.set(techService, cityScope);
         ReflectionTestUtils.setField(techService, "officerRepository", officerRepository);
         ReflectionTestUtils.setField(techService, "equipmentService", equipmentService);
-        ReflectionTestUtils.setField(techService, "equipmentProgress", equipmentProgress);
+        ReflectionTestUtils.setField(techService, "resourceEconomy", mock(com.wargame.service.TickService.class));
         when(equipmentService.attributes(any(Officer.class))).thenAnswer(invocation -> {
             Officer officer = invocation.getArgument(0);
             return new EquipmentService.Attributes(0, 0, 0,
@@ -292,7 +289,6 @@ class TechServiceTest {
         assertEquals(100 + 800, res.getSteel());
         assertEquals(100 + 400, res.getFood());
         verify(techResearchQueueRepository).delete(q);
-        verifyNoInteractions(equipmentProgress);
     }
 
     @ParameterizedTest
@@ -379,6 +375,5 @@ class TechServiceTest {
         assertTrue(messages.get(0).contains("Lv.2"));
         verify(technologyRepository).save(any(Technology.class));
         verify(techResearchQueueRepository).delete(q);
-        verify(equipmentProgress).event(playerId, "develop", "tech-77", 1);
     }
 }

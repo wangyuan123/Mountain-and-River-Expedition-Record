@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const root = path.resolve(__dirname, '..');
 
 function sandbox(extra = {}) {
@@ -31,6 +31,20 @@ function load(context, file) {
   if (file !== 'js/constants.js') require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
 }
+
+test('resource production and net rates use the server city economy despite military alerts', () => {
+  const context = sandbox(); load(context, 'js/data.js'); load(context, 'js/core.js');
+  const core = context.Game.Core;
+  core.state = {
+    resources: { gold: 20000000, steel: 1000 },
+    resourceRates: { productionPerHour: { steel: 1000 }, netPerHour: { gold: 0, steel: 1000, food: -75 } },
+    cityState: { newbieProtectionUntil: Date.now() + 100000 }, world: { incoming: [{ id: 1 }] }
+  };
+  assert.equal(core.resourceNetRate('gold'), 0);
+  assert.equal(core.resourceNetRate('food'), -75);
+  assert.equal(core.resourceNetRate('steel'), 1000);
+  assert.equal(core.cityProductionPerHour('refinery'), 1000);
+});
 
 test('academy ticks update quota and cooldown without replacing the candidate list', () => {
   const region = { innerHTML: '' };
@@ -287,17 +301,22 @@ test('resource buildings share fixed 35-slot capacity including new construction
   core.state = { buildings: { command: 10, farm: Array(35).fill(1), house: Array(20).fill(1) }, constructions: [] };
   assert.equal(core.groupSlotsCap('res'), 35);
   assert.equal(core.groupSlotsCap('army'), 35);
+  core.state.gameplay.groupSlots.res = {cap:35,used:35,remaining:0};
   assert.equal(core.groupSlotsRemaining('res'), 0);
   core.state.constructions = [{ id: 'refinery', slot: 0, targetLevel: 1 }];
+  core.state.gameplay.groupSlots.res = {cap:35,used:35,remaining:0};
   assert.equal(core.groupSlotsRemaining('res'), 0);
   core.state.constructions = [{ id: 'farm', slot: 0, targetLevel: 2 }];
+  core.state.gameplay.groupSlots.res = {cap:35,used:35,remaining:0};
   assert.equal(core.groupSlotsRemaining('res'), 0);
   const gridHtml = context.Game.Build.renderSlotGrid('res', core.state.constructions, core.state);
   assert.equal((gridHtml.match(/class="slot-card slot-card-(?:occupied|empty)/g) || []).length, 35);
   core.state.buildings = { command: 0, farm: Array(9).fill(1), refinery: Array(9).fill(1), oilfield: Array(9).fill(1), raremine: Array(9).fill(1) };
   core.state.constructions = [];
   assert.equal(core.groupSlotsCap('res'), 35);
+  core.state.gameplay.groupSlots.res = {cap:35,used:36,remaining:0};
   assert.equal(core.groupSlotsUsed('res'), 36);
+  core.state.gameplay.groupSlots.res = {cap:35,used:35,remaining:0};
   assert.equal(core.groupSlotsRemaining('res'), 0);
   for (const level of [0, 1, 5, 9, 10, 11]) {
     core.state.buildings.command = level;
@@ -314,6 +333,7 @@ test('military quota shares 35 slots while functional buildings remain single-in
   for (const file of ['js/data.js', 'js/core.js', 'js/build.js']) load(context, file);
   const { Core: core, DATA: data, Build: build } = context.Game;
   core.state = { buildings: { command: 10, house: Array(24).fill(1), factory: Array(5).fill(1), depot: Array(5).fill(1) }, constructions: [] };
+  core.state.gameplay.groupSlots.army = {cap:35,used:35,remaining:0};
   assert.equal(core.groupSlotsUsed('army'), 35);
   core.state.constructions = [{ id: 'radar', slot: null, targetLevel: 1 }];
   assert.equal(core.groupSlotsRemaining('army'), 0);
@@ -398,6 +418,7 @@ for (const route of ['buildArmy', 'buildRes']) {
     }
     assert.equal(G.Core.state.constructions.length, 1, '归零后等待服务端确认完工');
     G.Core.state.constructions[0].finishesAt = now + 301000;
+    G.Core.state.constructions[0].freeSpeedUpAt = now + 1000;
     G.Build.silentUpdateBuild({});
     assert.match(queue.innerHTML, /剩余 5分钟1秒/);
     assert.match(queue.innerHTML, /disabled/);
@@ -694,4 +715,25 @@ test('导航栏科技后包含军校Tab，点击直达军校招募界面并在�
   const view = { innerHTML: '' };
   G.Core.views.academy(view);
   assert.match(view.innerHTML, /军校 Lv\.1/);
+});
+
+test('battle lock ticks replace an open dispatch form even while editing and restore it on unlock', () => {
+  let refreshes = 0;
+  const state = { resources: {}, world: {}, cityBattleLocked: false };
+  const context = sandbox({ Game: { state, Core: { state, route: 'dispatch',
+    refreshTop() {}, refreshContent() { refreshes++; },
+    silentUpdate() { assert.fail('battle lock changes must refresh the dispatch form'); } } } });
+  context.document.activeElement = { tagName: 'INPUT' };
+  load(context, 'js/ws-client.js');
+  load(context, 'js/ws-handlers.js');
+  const tick = data => context.Game.WS.handleMessage(JSON.stringify({ type: 'tick', data }));
+  tick({ cityBattleLocked: true });
+  assert.equal(state.cityBattleLocked, true);
+  assert.equal(refreshes, 1);
+  tick({ resources: { food: 123 } });
+  assert.equal(state.cityBattleLocked, true);
+  assert.equal(refreshes, 1);
+  tick({ cityBattleLocked: false });
+  assert.equal(state.cityBattleLocked, false);
+  assert.equal(refreshes, 2);
 });

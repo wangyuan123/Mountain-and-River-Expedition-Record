@@ -1,9 +1,8 @@
 package com.wargame;
 
 import com.wargame.model.constants.UnitDef;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.service.BattleService;
-import com.wargame.service.UnitEquipmentRecon;
+import com.wargame.service.ReconCombat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,12 +17,12 @@ class ReconInitiativeRulesTest {
     private final BattleService battle = new BattleService(42);
     private final BattleService.TechCtx plain = new BattleService.TechCtx(Map.of(), Map.of(), 0, 0);
 
-    private UnitEquipmentRecon.Result resolve(String unit, int attackerLevel, int defenderLevel, int radar) {
-        return UnitEquipmentRecon.resolve(unit, 10000, Map.of(unit, 10000), battle, plain, plain,
+    private ReconCombat.Result resolve(String unit, int attackerLevel, int defenderLevel, int radar) {
+        return ReconCombat.resolve(unit, 10000, Map.of(unit, 10000), battle, plain, plain,
                 attackerLevel, defenderLevel, radar);
     }
 
-    private void assertFirst(UnitEquipmentRecon.Result result, int round, boolean attacker, int aValue, int dValue) {
+    private void assertFirst(ReconCombat.Result result, int round, boolean attacker, int aValue, int dValue) {
         assertTrue(result.log().get(round - 1).contains("本回合先手：" + (attacker ? "我方" : "敌方")
                 + "（我方" + aValue + " / 敌方" + dValue + "）"), result.log().get(round - 1));
     }
@@ -81,7 +80,7 @@ class ReconInitiativeRulesTest {
     @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
     void blitzCanChangeLaterInitiativeWhileRadarDoesNotRepeat(String unit) {
         var blitz = new BattleService.TechCtx(Map.of(), Map.of("blitz", 5), 0, 0);
-        var result = UnitEquipmentRecon.resolve(unit, 10000, Map.of(unit, 10000), battle, blitz, plain, 0, 0, 10);
+        var result = ReconCombat.resolve(unit, 10000, Map.of(unit, 10000), battle, blitz, plain, 0, 0, 10);
         int speed = UnitDef.UNITS.get(unit).spd(), boosted = (int) Math.round(speed * 1.3);
         assertFirst(result, 1, false, boosted, speed + 20);
         for (int round = 2; round <= 10; round++) {
@@ -91,12 +90,12 @@ class ReconInitiativeRulesTest {
     }
 
     @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
-    void chiefsAndEquipmentStillContributeToEffectiveSpeed(String unit) {
-        var gear = Map.of(UnitEquipmentEffects.key(unit, "battleSpeed"), 15);
+    void chiefSpeedBonusRemainsAndLegacyEquipmentIsIgnored(String unit) {
+        var gear = Map.of("@ue:" + unit + ":" + "battleSpeed", 15);
         var chief = new com.wargame.model.dto.CommandBonus(1L, "机动司令", 0, 0, 0, 200);
         var equipped = new BattleService.TechCtx(gear, Map.of(), 0, 0, chief);
-        var result = UnitEquipmentRecon.resolve(unit, 10000, Map.of(unit, 10000), battle, equipped, plain, 2, 2, 0);
-        int speed = UnitDef.UNITS.get(unit).spd(), boosted = (int) Math.round(speed * 1.15 * 1.2) + 10;
+        var result = ReconCombat.resolve(unit, 10000, Map.of(unit, 10000), battle, equipped, plain, 2, 2, 0);
+        int speed = UnitDef.UNITS.get(unit).spd(), boosted = (int) Math.round(speed * 1.2) + 10;
         for (int round = 1; round <= 10; round++) assertFirst(result, round, true, boosted, speed + 10);
     }
 
@@ -119,21 +118,21 @@ class ReconInitiativeRulesTest {
         for (int round = 2; round <= 10; round++) assertFirst(result, round, true, speed + 15, speed + 10);
     }
 
-    @Test void eliminatedFastEquipmentGroupDoesNotControlLaterInitiative() {
+    @Test void legacyEquipmentCannotChangeGroupInitiative() {
         Map<String, Integer> defense = new LinkedHashMap<>();
         defense.put("scout~fast", 1); defense.put("scout", 9999);
-        var gear = Map.of(UnitEquipmentEffects.key("scout~fast", "battleSpeed"), 15);
+        var gear = Map.of("@ue:" + "scout~fast" + ":" + "battleSpeed", 15);
         var defender = new BattleService.TechCtx(gear, Map.of(), 0, 0);
-        var result = UnitEquipmentRecon.resolve("scout", 10000, defense, battle, plain, defender, 2, 0, 0);
+        var result = ReconCombat.resolve("scout", 10000, defense, battle, plain, defender, 2, 0, 0);
         assertEquals(0, result.enemyAlive().get("scout~fast"));
-        assertFirst(result, 1, true, 19, 10);
+        assertFirst(result, 1, true, 19, 9);
         assertFirst(result, 2, true, 19, 9);
     }
 
     @Test void reportedScoutBattleEndsOnDefendersOpeningStrikeWithoutDefenderLosses() {
         var attacker = new BattleService.TechCtx(Map.of(), Map.of("blitz", 5, "pierce", 5, "frenzy", 5), 219, 165);
         var defender = new BattleService.TechCtx(Map.of(), Map.of("leadership", 5, "finance", 2), 120, 105);
-        var result = UnitEquipmentRecon.resolve("scout", 100, Map.of("scout", 999895), battle,
+        var result = ReconCombat.resolve("scout", 100, Map.of("scout", 999895), battle,
                 attacker, defender, 10, 10, 10);
         assertEquals(62, result.attackerInitiative());
         assertEquals(79, result.defenderInitiative());
@@ -147,7 +146,7 @@ class ReconInitiativeRulesTest {
     void overwhelmingFirstStrikePreventsEliminatedSideFromAttackingOrCountering(String unit) {
         var counter = new BattleService.TechCtx(Map.of(), Map.of("counter", 5), 0, 0);
         int speed = UnitDef.UNITS.get(unit).spd();
-        var defenderFirst = UnitEquipmentRecon.resolve(unit, 100, Map.of(unit, 1000000), battle,
+        var defenderFirst = ReconCombat.resolve(unit, 100, Map.of(unit, 1000000), battle,
                 counter, plain, 0, 0, 1);
         assertEquals(0, defenderFirst.ownAlive());
         assertEquals(1000000, defenderFirst.enemyAlive().get(unit));
@@ -155,7 +154,7 @@ class ReconInitiativeRulesTest {
         assertFirst(defenderFirst, 1, false, speed, speed + 2);
         assertFalse(defenderFirst.log().get(0).contains("绝境反击："));
 
-        var attackerFirst = UnitEquipmentRecon.resolve(unit, 1000000, Map.of(unit, 100), battle,
+        var attackerFirst = ReconCombat.resolve(unit, 1000000, Map.of(unit, 100), battle,
                 plain, counter, 1, 0, 0);
         assertEquals(1000000, attackerFirst.ownAlive());
         assertEquals(0, attackerFirst.enemyAlive().get(unit));
@@ -166,7 +165,7 @@ class ReconInitiativeRulesTest {
 
     @ParameterizedTest @ValueSource(strings = {"scout", "recon_car"})
     void weakerSideWithInitiativeDealsActualAttackDamageBeforeBeingEliminated(String unit) {
-        var result = UnitEquipmentRecon.resolve(unit, 100, Map.of(unit, 1000000), battle,
+        var result = ReconCombat.resolve(unit, 100, Map.of(unit, 1000000), battle,
                 plain, plain, 1, 0, 0);
         var stats = UnitDef.UNITS.get(unit);
         double attack = "scout".equals(unit) ? stats.atkAir() : stats.atkGround();

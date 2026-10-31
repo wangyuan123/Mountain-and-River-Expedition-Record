@@ -11,6 +11,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ArmyRecruitmentFoodTest extends BaseServiceTest {
+    private AutoCloseable clock;
+    @org.junit.jupiter.api.BeforeEach
+    void pinOperationTime() {
+        long now = System.currentTimeMillis();
+        clock = com.wargame.util.GameClock.use(() -> now);
+    }
+    @org.junit.jupiter.api.AfterEach
+    void restoreClock() throws Exception { clock.close(); }
+
+    @Override protected Player createTestPlayer(String name, int tax) {
+        Player player = super.createTestPlayer(name, tax);
+        player.setLastTick(com.wargame.util.GameClock.now());
+        return playerRepository.save(player);
+    }
+
     @Autowired ArmyService army;
     @Autowired ArmyProductionQueueRepository production;
 

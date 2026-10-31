@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const path = require('node:path');
 
 function setup() {
@@ -9,7 +9,8 @@ function setup() {
   const timers = new Map(), modals = [], calls = [], toasts = [], routes = [];
   const march = { id: 17, version: 4, returning: false, startAt: now - 120000, arriveAt: now + 1761000,
     fromX: 0, fromY: 105, targetX: 377, targetY: 248, targetKind: 'npc', targetName: '雇佣兵营 Lv.29',
-    action: 'scout', army: { scout: 50 }, outboundAccelerated: false, returnAccelerated: false };
+    action: 'scout', army: { scout: 50 }, outboundAccelerated: false, returnAccelerated: false,
+    acceleration: { allowed: true, expiresAt: now + 1731000 } };
   const state = { player: { id: 1, activeCityId: 1 }, items: { marchOrd: 3 }, world: { marches: [march], incoming: [] } };
   const document = { activeElement: null, getElementById() { return null; }, querySelectorAll() { return []; } };
   const body = { appendChild(mask) { modals.push(mask); mask.parentNode = body; },
@@ -32,7 +33,7 @@ function setup() {
         return { then(callback) {
           callback({ version: march.version, returning: march.returning, ratio: 0.5,
             commanderName: '未任命', knowledge: 0, baseRatio: 0.5, knowledgeBonus: 0, cap: 0.8,
-            confirmationToken: 'preview-token' });
+            afterAt: march.action==='intercept_scout' ? now + 60000 : now + 881000, savedMs: march.action==='intercept_scout' ? 60000 : 881000, confirmationToken: 'preview-token' });
           return { catch() {} };
         } };
       }, speedUpMarch(...args) {
@@ -77,6 +78,7 @@ test('alerts expose stage-specific acceleration and disable an already accelerat
   game.World.renderAlerts(view);
   assert.match(view.innerHTML, /加速回城/);
   march.returnAccelerated = true;
+  march.acceleration = { allowed: false, expiresAt: 0 };
   game.World.renderAlerts(view);
   assert.match(view.innerHTML, /disabled>已加速/);
   assert.doesNotMatch(view.innerHTML, /data-accelerate-id/);
@@ -85,16 +87,15 @@ test('alerts expose stage-specific acceleration and disable an already accelerat
   assert.doesNotMatch(view.innerHTML, /data-accelerate-id/);
 });
 
-test('only moving snapshots with version and more than thirty seconds remaining are eligible', () => {
+test('加速资格仅使用后端允许状态与截止时间，缺快照不在客户端重建限制', () => {
   const { game, march } = setup();
   const now = 1_000_000;
   assert.equal(game.World.canAccelerateMarch(march, now), true);
-  for (const patch of [{ stationed: true }, { inBattle: true }, { waitingForBattle: true }, { battleId: 9 },
-    { gathering: true }, { gatherStopped: true }, { version: undefined }, { startAt: now + 1 },
-    { arriveAt: now + 10000 }, { arriveAt: now - 1 }, { outboundAccelerated: true }]) {
-    assert.equal(game.World.canAccelerateMarch({ ...march, ...patch }, now), false, JSON.stringify(patch));
-  }
-  assert.equal(game.World.canAccelerateMarch({ ...march, returning: true, gathering: true, gatherStopped: true }, now), true);
+  assert.equal(game.World.canAccelerateMarch({ ...march, acceleration: undefined }, now), false);
+  assert.equal(game.World.canAccelerateMarch({ ...march, acceleration: { allowed: false, expiresAt: now + 5000 } }, now), false);
+  assert.equal(game.World.canAccelerateMarch({ ...march, acceleration: { allowed: true, expiresAt: now } }, now), false);
+  // 篡改本地推断所需的兵力/阶段不会改变服务器报价；执行接口仍会重新检查真实阶段。
+  assert.equal(game.World.canAccelerateMarch({ ...march, startAt: now + 1, gathering: true }, now), true);
 });
 
 test('confirmation previews target, inventory and exact screenshot example; cancellation spends nothing', () => {
@@ -208,7 +209,7 @@ test('interception acceleration shortens the displayed deployment countdown whil
   modal.nodes['[data-march-confirm]'].onclick();
   // 模拟 API 应用服务端快照：加速压缩部署时间轴，交火时间仍由敌军位置决定。
   Object.assign(f.march, { version: 5, startAt: now - 30000, deployAt: now + 60000,
-    readyAt: now + 65000, outboundAccelerated: true });
+    readyAt: now + 65000, outboundAccelerated: true, acceleration: { allowed: false, expiresAt: 0 } });
   f.calls[0].resolve({ success: true, message: '行军已加速' }); await flush();
   assert.match(view.innerHTML, /data-arrive-at="1060000"[^>]*>1分钟0秒<\/b> 后到位/);
   assert.match(view.innerHTML, /data-arrive-at="1180000"[^>]*>3分钟0秒<\/b> 后交火/);
@@ -219,7 +220,8 @@ test('interception acceleration shortens the displayed deployment countdown whil
 test('deployed interceptors show complete movement progress and retain a separate combat countdown', () => {
   const f = setup(), now = 1_000_000;
   Object.assign(f.march, { action: 'intercept_scout', startAt: now - 60000,
-    deployAt: now - 1000, readyAt: now + 4000, arriveAt: now + 30000, interceptionOpening: 'ambush' });
+    deployAt: now - 1000, readyAt: now + 4000, arriveAt: now + 30000, interceptionOpening: 'ambush',
+    acceleration: { allowed: false, expiresAt: 0 } });
   const view = { innerHTML: '', querySelectorAll: () => [] };
   f.game.World.renderAlerts(view);
   assert.match(view.innerHTML, /设伏准备/);
@@ -299,7 +301,7 @@ test('tier changes ignore stale previews and submit only the selected inventory 
   assert.equal(modal.nodes['[data-march-confirm]'].disabled, true);
   pending[1].resolve({ version: 4, returning: false, ratio: 0.25, itemKey: 'advancedMarchOrd',
     commanderName: '未任命', knowledge: 0, baseRatio: 0.25, knowledgeBonus: 0, cap: 0.55,
-    confirmationToken: 'advanced-token' });
+    afterAt:2321000, savedMs:440000, confirmationToken: 'advanced-token' });
   await flush();
   assert.equal(modal.nodes['[data-march-stock]'].textContent, '高级行军令：消耗 1 枚，库存 4 枚');
   assert.equal(modal.nodes['[data-march-after]'].textContent, f.game.World.marchTimeText(Math.ceil(1761000 * 0.75)));

@@ -27,6 +27,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/game/shop")
 public class ShopController {
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.InventoryService inventory;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -96,11 +97,9 @@ public class ShopController {
         if (certificateRank != null) {
             // 使用锁定读取，避免 MySQL 可重复读快照漏掉等待期间已提交的购买。
             certificateStock = playerItemRepository.findForPurchase(playerId, itemId);
-            String reason = count != 1 ? "晋升凭证每次只能购买1张"
-                    : certificateRank.tier() <= player.getMilitaryRank() ? "已获得该军衔，无需购买对应晋升凭证"
-                    : certificateStock.map(PlayerItem::getCount).orElse(0) > 0
-                    ? "已持有该晋升凭证，无需重复购买" : null;
-            if (reason != null) {
+            String reason = com.wargame.model.constants.ShopRules.unavailable(itemId, count,
+                    player.getMilitaryRank(), certificateStock.map(PlayerItem::getCount).orElse(0), certificateStock.isPresent());
+            if (!reason.isEmpty()) {
                 result.put("success", false);
                 result.put("message", reason);
                 return ResponseEntity.ok(result);
@@ -130,7 +129,7 @@ public class ShopController {
             return ResponseEntity.ok(result);
         }
 
-        long totalCostLong = (long) price * count;
+        long totalCostLong = com.wargame.model.constants.ShopRules.cost(price, count);
         if (totalCostLong > Integer.MAX_VALUE) {
             result.put("success", false);
             result.put("message", "购买总额超出上限");
@@ -152,21 +151,8 @@ public class ShopController {
 
         // 道具入仓
         String itemName = ShopItemPrices.getItemName(itemId);
-        Optional<PlayerItem> existing = certificateRank != null ? certificateStock
-                : playerItemRepository.findByPlayerIdAndItemKey(playerId, itemId);
-        if (existing.isPresent()) {
-            PlayerItem pi = existing.get();
-            pi.setCount(pi.getCount() + count);
-            pi.setUpdatedAt(System.currentTimeMillis());
-            playerItemRepository.save(pi);
-        } else {
-            PlayerItem pi = new PlayerItem();
-            pi.setPlayerId(playerId);
-            pi.setItemKey(itemId);
-            pi.setCount(count);
-            pi.setUpdatedAt(System.currentTimeMillis());
-            playerItemRepository.save(pi);
-        }
+        // 入库与扣钻共用外层事务，容量不足时整体回滚。
+        inventory.add(playerId, itemId, count);
 
         result.put("success", true);
         result.put("message", count > 1 ? "已购买 " + (itemName != null ? itemName : itemId) + " ×" + count : "已购买 " + (itemName != null ? itemName : itemId));
@@ -192,8 +178,8 @@ public class ShopController {
      * 商品价格表 - 与前端 shop.js SHOP_ITEMS 保持一致。
      * 集中管理避免前后端价格不一致导致的安全问题。
      */
-    private static class ShopItemPrices {
-        private static final Map<String, Integer> PRICES = Map.ofEntries(
+    public static class ShopItemPrices {
+        public static final Map<String, Integer> PRICES = Map.ofEntries(
             // 军官道具
             Map.entry("expBook", 10),
             Map.entry("expBookAdv", 100),
@@ -301,11 +287,10 @@ public class ShopController {
             Map.entry("newbiePack", "新手礼包")
         );
 
-        static Integer getPrice(String itemId) {
+        public static Integer getPrice(String itemId) {
             var rank = MilitaryRankDef.certificateRank(itemId);
             if (rank != null) return rank.certificatePrice();
-            // 下架或未知商品返回空值供购买接口拒绝，避免三元表达式将空价格拆箱。
-            if (specificSkillBookName(itemId) != null) return 160;
+            // 指定技能书已下架，不再动态生成售价；旧客户端的购买请求同样由空价格拒绝。
             Integer boxPrice = com.wargame.model.constants.OfficerEquipmentDef.boxPrice(itemId);
             return boxPrice != null ? boxPrice : PRICES.get(itemId);
         }
@@ -315,19 +300,7 @@ public class ShopController {
             if (rank != null) return rank.certificateName();
             String boxName = com.wargame.model.constants.OfficerEquipmentDef.boxName(itemId);
             if (boxName != null) return boxName;
-            String specificBookName = specificSkillBookName(itemId);
-            return specificBookName != null ? specificBookName : NAMES.get(itemId);
-        }
-
-        /**
-         * 返回已定义军官技能对应的指定技能书名称。
-         * 价格与名称均由后端技能定义派生，防止前端伪造不存在的技能书商品。
-         */
-        private static String specificSkillBookName(String itemId) {
-            if (itemId == null || !itemId.startsWith("skillBook_")) return null;
-            String skillId = itemId.substring("skillBook_".length());
-            var skill = com.wargame.model.constants.OfficerSkillDef.OFFICER_SKILLS.get(skillId);
-            return skill == null ? null : skill.name() + "技能书";
+            return NAMES.get(itemId);
         }
     }
 }

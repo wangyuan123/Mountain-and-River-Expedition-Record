@@ -80,7 +80,7 @@ test('VIP modal reports an unavailable API instead of staying in loading state',
 
 test('VIP modal uses server vipLevel, title and recharge thresholds rather than defaulting to VIP 0', async () => {
   const status = {
-    vipLevel: 1, title: '特遣队指挥官', totalRechargeCents: 1800,
+    vipLevel: 1, title: '特遣队指挥官', totalRechargeCents: 1800, intervalProgress:50, centsNeededForNext:1200, currentLevelRequiredCents:600, nextLevelRequiredCents:3000,
     levels: [{ level: 1, requiredCents: 600 }, { level: 2, requiredCents: 3000 }]
   };
   const { vip, elements } = setup({ vipStatus: async () => status });
@@ -324,6 +324,9 @@ test('VIP 0~10 全等级特权与奖励查看器支持全等级胶囊横向切�
   vip.openModal();
   await new Promise(resolve => setImmediate(resolve));
 
+  vip.cachedStatus.levelViews = [{level:2,achieved:true,centsNeeded:0},{level:6,achieved:false,centsNeeded:61800}];
+  vip.cachedStatus.levelPacks = [{level:1,requiredCents:600,rewards:{recruitOrd:1},claimable:true},{level:2,requiredCents:3000,rewards:{recruitOrd:2},claimable:true},{level:6,requiredCents:64800,rewards:{recruitOrd:6},claimable:false}];
+  vip.renderBody();
   // 1. 验证渲染了全等级选择胶囊
   assert.match(elements.vipModalBody.innerHTML, /vip-level-pills-row/);
   assert.match(elements.vipModalBody.innerHTML, /VIP 0/);
@@ -356,7 +359,7 @@ test('VIP 每日军饷道具丰富度：VIP 0 包含技能书/人口动员/加�
     vipStatus: async () => ({
       vipLevel: 0,
       title: '预备指挥官',
-      totalRechargeCents: 0
+      totalRechargeCents: 0, ...require('./server-gameplay.cjs').fixture.vip
     })
   });
   vip.openModal();
@@ -366,14 +369,14 @@ test('VIP 每日军饷道具丰富度：VIP 0 包含技能书/人口动员/加�
   assert.match(elements.vipModalBody.innerHTML, /普通技能书/);
   assert.match(elements.vipModalBody.innerHTML, /人口动员令/);
   assert.match(elements.vipModalBody.innerHTML, /10分加速/);
-  assert.doesNotMatch(elements.vipModalBody.innerHTML, /星耀符/);
+  assert.doesNotMatch(elements.vipModalBody.innerHTML.split('每日战备特勤军饷配给')[1].split('专属终身晋升大礼包')[0].split('阶段战备军械箱微里程碑')[0], /星耀符/);
   assert.doesNotMatch(elements.vipModalBody.innerHTML, /军官改名卡/);
   assert.doesNotMatch(elements.vipModalBody.innerHTML, /城市改名卡/);
 
   // 2. 查看 VIP 5 每日军饷，验证战术令与高危道具杜绝，且每日军饷同样不含星耀符
   vip.selectInspectedLevel(5);
   const vip5Sections = elements.vipModalBody.innerHTML.split('每日战备特勤军饷配给');
-  const vip5DailyHtml = vip5Sections[1] ? vip5Sections[1].split('专属终身晋升大礼包')[0] : '';
+  const vip5DailyHtml = vip5Sections[1] ? vip5Sections[1].split('专属终身晋升大礼包')[0].split('阶段战备军械箱微里程碑')[0] : '';
   assert.match(vip5DailyHtml, /行军令/);
   assert.match(vip5DailyHtml, /通讯干扰令/);
   assert.match(vip5DailyHtml, /撤退拖延令/);
@@ -391,7 +394,7 @@ test('VIP 每日军饷道具丰富度：VIP 0 包含技能书/人口动员/加�
   // 3. 查看最高级 VIP 10 每日军饷，验证改名卡与星耀符已彻底取消，避免背包冗余与长线通胀
   vip.selectInspectedLevel(10);
   const vip10Sections = elements.vipModalBody.innerHTML.split('每日战备特勤军饷配给');
-  const vip10DailyHtml = vip10Sections[1] ? vip10Sections[1].split('专属终身晋升大礼包')[0] : '';
+  const vip10DailyHtml = vip10Sections[1] ? vip10Sections[1].split('专属终身晋升大礼包')[0].split('阶段战备军械箱微里程碑')[0] : '';
   assert.doesNotMatch(vip10DailyHtml, /星耀符/);
   assert.doesNotMatch(vip10DailyHtml, /军官改名卡/);
   assert.doesNotMatch(vip10DailyHtml, /城市改名卡/);

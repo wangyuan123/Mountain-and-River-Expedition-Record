@@ -185,7 +185,6 @@
         0,
         0
       ],
-      "effective_preparation_cap": 1,
       "expected_full_set": {
         "main": 30,
         "each_secondary": 3
@@ -240,7 +239,6 @@
         0,
         0
       ],
-      "effective_preparation_cap": 2,
       "expected_full_set": {
         "main": 50,
         "each_secondary": 6
@@ -295,7 +293,6 @@
         0,
         0
       ],
-      "effective_preparation_cap": 3,
       "expected_full_set": {
         "main": 87,
         "each_secondary": 9
@@ -350,7 +347,6 @@
         0,
         0
       ],
-      "effective_preparation_cap": 4,
       "expected_full_set": {
         "main": 110,
         "each_secondary": 12
@@ -405,7 +401,6 @@
         0,
         0
       ],
-      "effective_preparation_cap": 5,
       "expected_full_set": {
         "main": 142,
         "each_secondary": 12
@@ -460,7 +455,6 @@
         0,
         2
       ],
-      "effective_preparation_cap": 5,
       "expected_full_set": {
         "main": 172,
         "each_secondary": 22
@@ -489,78 +483,6 @@
       }
     }
   ],
-  "preparation": {
-    "binding": "player_officer_slot",
-    "main_attribute_per_effective_level": 1,
-    "empty_slot_bonus": 0,
-    "persist_on_gear_change": true,
-    "persist_on_officer_dismissal": false,
-    "success_rate": 1,
-    "gold_source": "player_main_city_gold",
-    "material_key": "officerPreparationParts",
-    "material_name": "军备零件",
-    "steps": [
-      {
-        "target_level": 1,
-        "required_officer_level": 1,
-        "parts": 20,
-        "gold": 1000
-      },
-      {
-        "target_level": 2,
-        "required_officer_level": 20,
-        "parts": 40,
-        "gold": 2000
-      },
-      {
-        "target_level": 3,
-        "required_officer_level": 40,
-        "parts": 60,
-        "gold": 3000
-      },
-      {
-        "target_level": 4,
-        "required_officer_level": 60,
-        "parts": 80,
-        "gold": 4000
-      },
-      {
-        "target_level": 5,
-        "required_officer_level": 80,
-        "parts": 100,
-        "gold": 5000
-      }
-    ],
-    "daily": {
-      "available_tasks": 4,
-      "max_claims": 3,
-      "parts_per_claim": 40,
-      "timezone": "Asia/Shanghai",
-      "reset": "00:00"
-    },
-    "weekly": {
-      "daily_claims_required": 15,
-      "parts": 240,
-      "max_claims": 1,
-      "timezone": "Asia/Shanghai",
-      "reset": "monday_00:00"
-    },
-    "parts_sold_in_shop": false,
-    "gear_dismantles_into_parts": false,
-    "expected_full_officer_cost": {
-      "parts": 3600,
-      "gold": 180000
-    },
-    "pacing_example": {
-      "assumptions": "120 parts daily; 240 extra on days 7,14,21,...; enough gold and officer level; one officer and no other spending",
-      "all_slots_level_1_day": 2,
-      "all_slots_level_2_day": 6,
-      "all_slots_level_3_day": 10,
-      "all_slots_level_4_day": 16,
-      "all_slots_level_5_day": 24,
-      "four_officers_all_slots_level_5_day": 94
-    }
-  },
   "legacy": {
     "tiers": [
       "recruit",

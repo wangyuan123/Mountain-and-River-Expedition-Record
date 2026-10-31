@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-31T07:09:50.926035+08:00",
+  "snapshot": "2026-10-31T06:59:27.493936",
+  "comparedFiles": 926,
+  "unchangedFiles": 924,
+  "changedFiles": [
+    {
+      "file": "backend/src/main/java/com/wargame/service/GameStateService.java",
+      "previousSha256": "4d3c5afac06a4a5297c65b4be2fcadf71f0912597937b5f9b33dc869a9eac2c9",
+      "currentSha256": "b3b364f52f613dfc6039c64926dedb891799144f53841183c64b066d7e04c3b0"
+    },
+    {
+      "file": "backend/src/test/java/com/wargame/DepotItemBroadcastTest.java",
+      "previousSha256": "7fca02e6a35bffadb17ab9d0a95720b851c95a927029bd0950c4f292ddcb9f25",
+      "currentSha256": "016600685a34b0642d54ad9276d6067b110d2fdb8843ac2be7c863d278176a21"
+    }
+  ],
+  "targetedChecks": [
+    {
+      "class": "DisplayNameTest",
+      "method": "registersNewPlayerWithDefaultCommanderName",
+      "result": "passed",
+      "failure": null
+    },
+    {
+      "class": "DisplayNameTest",
+      "method": "savesGameDisplayNameWithoutChangingLoginUsername",
+      "result": "failed",
+      "failure": "expected: <login-user> but was: <统帅3>"
+    },
+    {
+      "class": "CommanderRenameTest",
+      "method": "expiredCooldownAllowsDepotRenameAndPublishesState",
+      "result": "passed",
+      "failure": null
+    }
+  ],
+  "validationScope": "既有test配置，隔离H2；仅针对统帅显示名读取的变化补测，未重跑全量。",
+  "businessCodeModifiedByAudit": false,
+  "note": "全量结果仍以各自日志为准；不同版本和定向检查的失败数不合并为一次全量结果。"
+}

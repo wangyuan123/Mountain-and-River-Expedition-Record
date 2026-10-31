@@ -49,7 +49,8 @@ test('每个技能均配置重新设计的高清矢量 SVG 图标，且物理文
   const expectedSkills = [
     'frenzy', 'bulwark', 'blitz', 'suppress', 'pierce',
     'leadership', 'supply', 'medic', 'harvest', 'construct',
-    'finance', 'research', 'ration', 'counter', 'learn', 'borrow_armor'
+    'finance', 'research', 'ration', 'counter', 'learn', 'borrow_armor',
+    'ranging', 'barrier', 'last_stand', 'execution', 'smoke', 'reprisal', 'ricochet', 'pursuit'
   ];
 
   for (const skillId of expectedSkills) {
@@ -62,7 +63,7 @@ test('每个技能均配置重新设计的高清矢量 SVG 图标，且物理文
 
     const content = fs.readFileSync(filePath, 'utf8');
     assert.ok(content.includes('<svg'), `文件应为合法的 SVG 格式: ${s.icon}`);
-    assert.ok(content.includes('viewBox="0 0 64 64"'), `SVG 应具备 64x64 viewBox: ${s.icon}`);
+    assert.match(content, /viewBox="0 0 (64 64|96 96)"/, `SVG 应具备正方形 viewBox: ${s.icon}`);
   }
 });
 

@@ -55,5 +55,5 @@ test('build.js 中造船厂正确映射至独立专属模型，不再复用军�
   assert.notEqual(G.Build.BUILD_ICON.shipyard, G.Build.BUILD_ICON.port, '造船厂与军港不得再共用同一套图标');
 
   const indexHtml = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8');
-  assert.ok(/build\.js\?v=20261024-radar-route-copy/.test(indexHtml), 'index.html 需引用最新防缓存版本号');
+  assert.ok(/build\.js\?v=20261031-server-authority/.test(indexHtml), 'index.html 需引用最新防缓存版本号');
 });

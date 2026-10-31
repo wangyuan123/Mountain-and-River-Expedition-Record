@@ -2,7 +2,6 @@ package com.wargame;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.wargame.model.constants.UnitEquipmentDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.service.*;
@@ -21,8 +20,6 @@ class UnitUnlockIntegrationTest extends BaseServiceTest {
     @Autowired UnitUnlockService unlocks;
     @Autowired ArmyService army;
     @Autowired ArmyProductionQueueRepository queues;
-    @Autowired UnitEquipmentService equipment;
-    @Autowired UnitEquipmentOrderRepository orders;
     @Autowired PlayerItemRepository items;
     @Autowired MailService mail;
     @Autowired MailRepository mails;
@@ -45,8 +42,11 @@ class UnitUnlockIntegrationTest extends BaseServiceTest {
     }
 
     @Test void everyDesignConditionIsRequiredBeforeAnyRecruitmentPayment() throws Exception {
+        long fixedNow = com.wargame.util.GameClock.now();
+        // 只验证准入失败不扣人口，固定时钟以排除测试耗时产生的自然人口变化。
+        try (var clock = com.wargame.util.GameClock.use(() -> fixedNow)) {
         JsonNode design = new ObjectMapper().readTree(java.nio.file.Path.of("../docs/balance/unit-unlock-design-20261020.json").toFile());
-        Player p = createTestPlayer(); p.setCivilianPopulation(10000); playerRepository.save(p); city(p.getId(), 0, true);
+        Player p = createTestPlayer(); p.setCivilianPopulation(10000); p.setLastTick(fixedNow); playerRepository.save(p); city(p.getId(), 0, true);
         giveResources(p.getId(), 1000000, 1000000, 1000000, 1000000, 1000000);
         Map<String, Building> buildings = new HashMap<>(); Map<String, Technology> tech = new HashMap<>();
         for (JsonNode unit : design.path("units")) {
@@ -70,12 +70,15 @@ class UnitUnlockIntegrationTest extends BaseServiceTest {
                     var condition = fields.next(); String key = condition.getKey(); int level = condition.getValue().asInt();
                     if (kind.equals("buildings")) { buildings.get(key).setLevel(level - 1); buildingRepository.saveAndFlush(buildings.get(key)); }
                     else { tech.get(key).setLevel(level - 1); technologyRepository.saveAndFlush(tech.get(key)); }
-                    var before = JsonUtil.toJson(getResources(p.getId())); int civilians = p.getCivilianPopulation();
+                    var before = JsonUtil.parseObjMap(JsonUtil.toJson(getResources(p.getId()))); int civilians = p.getCivilianPopulation();
                     var denied = army.recruit(p.getId(), id, 1);
                     assertEquals(false, denied.get("success"), id + "/" + key);
                     var missing = ((UnitUnlockService.Result) denied.get("unlock")).missing();
                     assertEquals(List.of(key), missing.stream().map(r -> r.get("id")).toList());
-                    assertEquals(before, JsonUtil.toJson(getResources(p.getId()))); assertEquals(civilians, p.getCivilianPopulation());
+                    var after = JsonUtil.parseObjMap(JsonUtil.toJson(getResources(p.getId())));
+                    // 经济按请求时刻正常结算，失败招募不得扣资源；不比较乐观锁版本或不足一单位的自然产出尾数。
+                    for (String resource : List.of("food", "steel", "oil", "rare", "gold", "diamond")) assertEquals(before.get(resource), after.get(resource), resource);
+                    assertEquals(civilians, p.getCivilianPopulation());
                     if (kind.equals("buildings")) { buildings.get(key).setLevel(level); buildingRepository.saveAndFlush(buildings.get(key)); }
                     else { tech.get(key).setLevel(level); technologyRepository.saveAndFlush(tech.get(key)); }
                 }
@@ -89,6 +92,7 @@ class UnitUnlockIntegrationTest extends BaseServiceTest {
         assertEquals(Set.of("nav_engine", "weapon_range", "fire_density", "log_food", "air_engine"), carrier.requirements().stream()
                 .filter(r -> r.get("kind").equals("technology")).map(r -> (String) r.get("id")).collect(java.util.stream.Collectors.toSet()));
         assertTrue(carrier.requirements().stream().filter(r -> !r.get("kind").equals("geography")).allMatch(r -> r.get("required").equals(10)));
+            }
     }
 
     @Test void completedEmpireResearchDoesNotReplaceLocalFacilitiesOrCountPendingWork() {
@@ -155,26 +159,16 @@ class UnitUnlockIntegrationTest extends BaseServiceTest {
         assertEquals(1, captives.findById(captive.getId()).orElseThrow().getCount());
     }
 
-    @Test void lockedRewardAndEquipmentPreserveResourcesAndOldPaidOrdersStillComplete() {
-        Player p = createTestPlayer(); createBuilding(p.getId(), "factory", 1); createTechnology(p.getId(), "unit_refit", 10);
+    @Test void lockedRewardsPreserveResourcesAndOldPaidArmyOrdersStillComplete() {
+        Player p = createTestPlayer(); createBuilding(p.getId(), "factory", 1);
         giveResources(p.getId(), 100000, 100000, 100000, 100000, 100000);
         Mail letter = mail.sendSystem(p.getId(), "系统", "reward", "赠兵", "待领取", List.of(Map.of("type", "gold", "qty", 100), Map.of("type", "recon_car", "qty", 2)));
         assertEquals(false, mail.claimAttach(p.getId(), letter.getId()).get("success"));
         assertFalse(mails.findById(letter.getId()).orElseThrow().getIsClaimed()); assertEquals(100000, getResources(p.getId()).getGold());
-        String recipe = UnitEquipmentDef.ITEMS.values().stream().filter(d -> d.unit().equals("recon_car")).findFirst().orElseThrow().key();
-        assertThrows(IllegalArgumentException.class, () -> equipment.manufacture(p.getId(), recipe));
-        assertEquals(100000, getResources(p.getId()).getSteel()); assertTrue(orders.findByPlayerId(p.getId()).isEmpty());
         createBuilding(p.getId(), "factory", 10); createTechnology(p.getId(), "recon_level", 1);
         assertEquals(true, mail.claimAttach(p.getId(), letter.getId()).get("success"));
         assertEquals(100100, getResources(p.getId()).getGold());
         assertThrows(IllegalArgumentException.class, () -> mail.claimAttach(p.getId(), letter.getId()));
-        equipment.manufacture(p.getId(), recipe);
-        var paid = orders.findByPlayerId(p.getId()).get(0); assertNotNull(paid.getUnlockRuleVersion());
-        // 付费后撤掉所有条件，旧队列仍入库；已有装备配装也不重新检查。
-        buildingRepository.deleteByPlayerId(p.getId()); technologyRepository.deleteByPlayerId(p.getId());
-        paid.setEndAt(1L); orders.saveAndFlush(paid); equipment.complete(p.getId(), System.currentTimeMillis());
-        assertEquals(1, items.findByPlayerIdAndItemKey(p.getId(), recipe).orElseThrow().getCount());
-        equipment.save(p.getId(), "recon_car", Map.of(UnitEquipmentDef.ITEMS.get(recipe).slot(), recipe), null);
         ArmyProductionQueue old = new ArmyProductionQueue(); old.setPlayerId(p.getId()); old.setUnitType("carrier"); old.setBuildingType("port");
         old.setUnitCount(1); old.setStartedAt(1L); old.setFinishesAt(2L); old.setDurationSeconds(1); old.setSpeedMultiplier(1.0); queues.save(old);
         army.completeProduction(p.getId(), System.currentTimeMillis());

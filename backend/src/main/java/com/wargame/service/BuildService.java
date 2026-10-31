@@ -33,8 +33,10 @@ import java.util.*;
  */
 @Service
 public class BuildService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodTimeline timeline;
+    @org.springframework.beans.factory.annotation.Autowired private FortService fortService;
     @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
-    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
 
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -126,6 +128,7 @@ public class BuildService {
 
     @Transactional
     public Map<String, Object> upgrade(Long playerId, String buildingType, int slot) {
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Map<String, Object> result = new LinkedHashMap<>();
         playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
@@ -197,9 +200,9 @@ public class BuildService {
         // 6. 检查等级上限（JS: buildMaxLevel）
         int max;
         if ("command".equals(buildingType)) {
-            max = 10;
+            max = GameConstants.BUILDING_MAX_LEVEL;
         } else {
-            max = Math.min(10, Math.max(1, maxBuildingLevel(playerId)));
+            max = Math.min(GameConstants.BUILDING_MAX_LEVEL, Math.max(1, maxBuildingLevel(playerId)));
         }
         if (curLv >= max) {
             result.put("success", false);
@@ -244,11 +247,7 @@ public class BuildService {
         // 8. 计算升级费用（含科技加速系数 buildMul）
         // JS: var mul = Math.pow(b.growth, lv) * Core.buildMul();
         //     cost[k] = Math.floor(b.baseCost[k] * mul);
-        double costMul = Math.pow(b.growth(), curLv) * buildMul(playerId);
-        Map<String, Integer> cost = new LinkedHashMap<>();
-        for (Map.Entry<String, Integer> entry : b.baseCost().entrySet()) {
-            cost.put(entry.getKey(), (int) Math.floor(entry.getValue() * costMul));
-        }
+        Map<String, Integer> cost = upgradeCost(buildingType, curLv, buildMul(playerId));
 
         // 9. 检查资源是否充足
         if (!costEnough(playerId, cost)) {
@@ -281,6 +280,7 @@ public class BuildService {
         construction.setSlot(slotKey);
         construction.setPrerequisiteVersion(prerequisiteService.version());
         construction.setPrerequisiteRequirements(prerequisiteService.snapshot("buildings", buildingType, curLv + 1));
+        construction.setCostSnapshot(JsonUtil.toJson(cost));
         constructionRepository.save(construction);
 
         // 14. 返回结果
@@ -371,6 +371,11 @@ public class BuildService {
 
         // 7. 目标等级：curLv - 1 (如 2级拆除后为1级，1级拆除后为0级即彻底消失)
         int targetLevel = curLv - 1;
+        if ("wall".equals(buildingType) && fortService.totalForts(playerId) > (long) targetLevel * FortService.FORT_CAP_PER_WALL_LEVEL) {
+            result.put("success", false);
+            result.put("message", "降级后城防容量不足，请先拆除多余工事");
+            return result;
+        }
         // 降级保留足够容量，完全拆除必须先清空俘虏池；与入池共用账号锁。
         if ("prisoner_camp".equals(buildingType)) {
             long stock = cityScope.selected(playerId).map(c -> prisonerService.currentTotal(playerId, c.getId())).orElse(0L);
@@ -422,6 +427,7 @@ public class BuildService {
     @Transactional
     public Map<String, Object> cancel(Long playerId, String buildingType, int slot) {
         Map<String, Object> result = new LinkedHashMap<>();
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         BuildingDef b = GameData.BUILDINGS.get(buildingType);
         if (b == null) {
@@ -464,13 +470,14 @@ public class BuildService {
             return result;
         }
 
-        // 重新计算原始费用（含科技加速系数）
+        // 新订单只按开工实扣快照退款；未经过迁移的旧测试/导入队列保留旧规则兼容。
         int currentLevel = target.getTargetLevel() - 1;
         double costMul = Math.pow(b.growth(), currentLevel) * buildMul(playerId);
         Map<String, Integer> cost = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : b.baseCost().entrySet()) {
             cost.put(entry.getKey(), (int) Math.floor(entry.getValue() * costMul));
         }
+        if (target.getCostSnapshot() != null) cost = JsonUtil.parseIntMap(target.getCostSnapshot());
 
         // 按比例返还资源
         refundCosts(playerId, cost, CANCEL_REFUND_RATIO);
@@ -633,6 +640,8 @@ public class BuildService {
     /** 结算到期施工；军备日常只统计实际升高等级的新建或升级，拆除与降级不计入。 */
     @Transactional
     public List<String> completeUpgrade(Long playerId, long now) {
+        if (timeline != null && timeline.eventTime() == null)
+            return timeline.advance(playerId, now, null).buildsFor(cityScope.slot(playerId));
         List<Construction> completed = constructionRepository.findByPlayerIdAndCitySlotAndFinishAtLessThanEqual(playerId, cityScope.slot(playerId), now);
         List<String> completedTypes = new ArrayList<>();
 
@@ -642,6 +651,14 @@ public class BuildService {
             int targetLevel = construction.getTargetLevel();
             Integer slot = construction.getSlot();
 
+            // 兼容升级前已经排定的城墙降级：不删除玩家工事，超容量时撤销该降级工程。
+            if ("wall".equals(buildingType) && targetLevel < buildingLevel(playerId, "wall")
+                    && fortService.totalForts(playerId) > (long) targetLevel * FortService.FORT_CAP_PER_WALL_LEVEL) {
+                constructionRepository.delete(construction);
+                completedTypes.add("城防降级已取消：请先拆除多余工事");
+                continue;
+            }
+
             BuildingDef b = GameData.BUILDINGS.get(buildingType);
             if (b == null) {
                 constructionRepository.delete(construction);
@@ -649,7 +666,6 @@ public class BuildService {
             }
 
             boolean multi = isMultiSlot(buildingType);
-            boolean upgraded = false;
 
             if (targetLevel == 0) {
                 // ===== 1级拆除完毕 -> 彻底删除建筑实体，释放卡槽 =====
@@ -704,8 +720,7 @@ public class BuildService {
                         // 升级
                         building.setLevel(Math.max(currentLevel, targetLevel));
                         buildingRepository.save(building);
-                        grantPrestigeAndQuest(playerId, buildingType, targetLevel);
-                        upgraded = targetLevel > currentLevel;
+                        grantPrestigeAndQuest(playerId, construction);
                     }
                 } else {
                     // 新槽位新建
@@ -716,8 +731,7 @@ public class BuildService {
                     building.setLevel(targetLevel);
                     building.setSlot(slot);
                     buildingRepository.save(building);
-                    grantPrestigeAndQuest(playerId, buildingType, targetLevel);
-                    upgraded = true;
+                    grantPrestigeAndQuest(playerId, construction);
                 }
             } else {
                 // ===== 单槽位建筑 (targetLevel > 0) =====
@@ -735,8 +749,7 @@ public class BuildService {
                         // 升级
                         building.setLevel(Math.max(currentLevel, targetLevel));
                         buildingRepository.save(building);
-                        grantPrestigeAndQuest(playerId, buildingType, targetLevel);
-                        upgraded = targetLevel > currentLevel;
+                        grantPrestigeAndQuest(playerId, construction);
                     }
                 } else {
                     Building building = new Building();
@@ -746,12 +759,10 @@ public class BuildService {
                     building.setLevel(targetLevel);
                     building.setSlot(0);
                     buildingRepository.save(building);
-                    grantPrestigeAndQuest(playerId, buildingType, targetLevel);
-                    upgraded = true;
+                    grantPrestigeAndQuest(playerId, construction);
                 }
             }
 
-            if (upgraded) equipmentProgress.event(playerId, "develop", "build-" + construction.getId(), 1);
             constructionRepository.delete(construction);
             completedTypes.add(buildingType);
 
@@ -764,9 +775,12 @@ public class BuildService {
         return completedTypes;
     }
 
-    private void grantPrestigeAndQuest(Long playerId, String buildingType, int targetLevel) {
-        int fromLevel = Math.max(0, targetLevel - 1);
-        int prestigeGain = calculatePrestigeGain(playerId, buildingType, fromLevel);
+    /** 完工奖励兑现开工实扣快照，施工期间的降费科技不能重估已付款订单。 */
+    private void grantPrestigeAndQuest(Long playerId, Construction construction) {
+        String buildingType = construction.getBuildingType();
+        long paid = construction.getCostSnapshot() == null ? -1 : JsonUtil.parseIntMap(construction.getCostSnapshot()).values().stream().mapToLong(Integer::longValue).sum();
+        int prestigeGain = paid < 0 ? calculatePrestigeGain(playerId, buildingType, Math.max(0, construction.getTargetLevel() - 1))
+                : paid == 0 ? 0 : (int) Math.max(1, paid / 100);
         if (prestigeGain > 0) {
             Player player = playerRepository.findById(playerId).orElse(null);
             if (player != null) {
@@ -827,6 +841,34 @@ public class BuildService {
     //  对应 JS G.buildCost（不含 buildMul 科技系数，由 upgrade 内部叠加）
     //  JS: mul = Math.pow(b.growth, lv); cost[k] = Math.floor(b.baseCost[k] * mul)
     // ================================================================
+
+    /** 材料报价与开工扣费共用此公式，取整发生在折扣之后。 */
+    private Map<String, Integer> upgradeCost(String type, int level, double discount) {
+        BuildingDef definition = GameData.BUILDINGS.get(type);
+        Map<String, Integer> result = new LinkedHashMap<>();
+        definition.baseCost().forEach((key, value) -> result.put(key,
+                (int) Math.floor(value * Math.pow(definition.growth(), level) * discount)));
+        return result;
+    }
+
+    /** 返回本城各等级的后端报价；执行仍在账号锁内重新计算，不能提交报价作为扣费依据。 */
+    public Map<String, Object> previewLevels(Long playerId) {
+        double discount = buildMul(playerId), duration = Math.max(.35, buildDurationMul(playerId));
+        Map<String, Object> result = new LinkedHashMap<>();
+        GameData.BUILDINGS.forEach((id, definition) -> {
+            List<Map<String, Object>> levels = new ArrayList<>();
+            for (int level = 0; level <= GameConstants.BUILDING_MAX_LEVEL; level++) {
+                Map<String, Integer> refund = new LinkedHashMap<>();
+                calcBuildCost(id, Math.max(0, level - 1)).forEach((key, value) ->
+                        refund.put(key, (int) Math.floor(value * DISMANTLE_REFUND_RATIO)));
+                levels.add(Map.of("cost", upgradeCost(id, level, discount),
+                        "duration", calcBuildTime(id, level, duration), "refund", refund));
+            }
+            result.put(id, Map.of("maxLevel", "command".equals(id) ? GameConstants.BUILDING_MAX_LEVEL
+                    : Math.min(GameConstants.BUILDING_MAX_LEVEL, Math.max(1, maxBuildingLevel(playerId))), "levels", levels));
+        });
+        return result;
+    }
 
     public Map<String, Integer> calcBuildCost(String buildingType, int currentLevel) {
         BuildingDef b = GameData.BUILDINGS.get(buildingType);
@@ -901,6 +943,7 @@ public class BuildService {
     // ================================================================
 
     public void refundCosts(Long playerId, Map<String, Integer> costs, double ratio) {
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Resources r = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (r == null) return;
         for (Map.Entry<String, Integer> entry : costs.entrySet()) {
@@ -918,7 +961,7 @@ public class BuildService {
     // ================================================================
 
     /** 科技加速系数 - 对应 JS Core.buildMul: 1 - 0.05 * log_build */
-    private double buildMul(Long playerId) {
+    public double buildMul(Long playerId) {
         int logBuild = techLevel(playerId, "log_build");
         return 1 - 0.05 * logBuild;
     }
@@ -1006,6 +1049,16 @@ public class BuildService {
     /** 资源区与军工区各固定35个共享卡槽，容量不受市政厅等级影响。 */
     private int groupSlotsCap(Long playerId, String groupKey) {
         return "res".equals(groupKey) ? GameConstants.GROUP_SLOTS_RES : GameConstants.GROUP_SLOTS_ARMY;
+    }
+
+    /** 区域卡槽报价与新建准入共用已建成、在建占位统计。 */
+    public Map<String, Object> groupSlotsView(Long playerId) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (String key : GROUPS.keySet()) {
+            int cap = groupSlotsCap(playerId, key), used = groupSlotsUsed(playerId, key);
+            result.put(key, Map.of("cap", cap, "used", used, "remaining", Math.max(0, cap - used)));
+        }
+        return result;
     }
 
     /** 从 Resources 实体读取指定资源值 */

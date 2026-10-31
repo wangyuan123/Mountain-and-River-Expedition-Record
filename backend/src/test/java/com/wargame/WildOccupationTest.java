@@ -94,6 +94,18 @@ class WildOccupationTest extends BaseServiceTest {
         assertEquals(2, worldService.getOwnedWildTiles(player.getId()).size());
     }
 
+    @Test void ownedResourceRemainderComesFromStoredStockRatherThanTileLevel() {
+        var resource = tile(0, true);
+        resource.setTotalRes(10000); resource.setMined(3456); resource.setLevel(10);
+        wildTileRepository.saveAndFlush(resource);
+        var state = occupation.state(player.getId(), 0);
+        var owned = (List<?>) state.get("owned");
+        assertEquals(6544L, ((Map<?, ?>) owned.get(0)).get("remainingRes"));
+        resource.setMined(12000); wildTileRepository.saveAndFlush(resource);
+        owned = (List<?>) occupation.state(player.getId(), 0).get("owned");
+        assertEquals(0L, ((Map<?, ?>) owned.get(0)).get("remainingRes"));
+    }
+
     @Test void fullCityRejectsBeforeConsumingTroopsAndFuel() {
         hall(0, 1); owned(0, 6); createArmyUnit(player.getId(), "infantry", 100);
         WildTile target = tile(0, false);

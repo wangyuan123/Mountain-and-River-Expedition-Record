@@ -14,14 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class TickService {
+    @org.springframework.beans.factory.annotation.Autowired @Lazy private GameplayViewService gameplayViews;
+    @org.springframework.beans.factory.annotation.Autowired private SpeedUpSupport speedUpSupport;
 
-    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
     @org.springframework.beans.factory.annotation.Autowired private UnitUnlockService unitUnlocks;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -29,10 +28,8 @@ public class TickService {
 
     private static final Logger log = LoggerFactory.getLogger(TickService.class);
 
-    /** Bankruptcy protection: gold floor (can be revoked by future feature). */
+    /** 欠薪不制造黄金负库存，处罚状态单独持久化。 */
     private static final int GOLD_FLOOR = 0;
-    /** Consecutive ticks a player can sit at the floor before officers start quitting. */
-    private static final int BANKRUPTCY_GRACE_TICKS = 12;  // ~1 min @ 5s tick
 
     private final PlayerRepository playerRepository;
     private final ResourcesRepository resourcesRepository;
@@ -53,8 +50,6 @@ public class TickService {
     private final TechService techService;
 
 
-    /** Per-player consecutive tick count at gold floor; resets when player earns gold. */
-    private final ConcurrentHashMap<String, AtomicLong> bankruptTicks = new ConcurrentHashMap<>();
 
     @org.springframework.beans.factory.annotation.Value("${game.max-offline-hours:8}")
     private int maxOfflineHours = 8;
@@ -101,6 +96,24 @@ public class TickService {
     @org.springframework.beans.factory.annotation.Autowired private PlayerCityRepository playerCities;
 
     @org.springframework.beans.factory.annotation.Autowired private GarrisonFoodService garrisonFood;
+    @org.springframework.beans.factory.annotation.Autowired @Lazy private GarrisonFoodTimeline timeline;
+    @org.springframework.beans.factory.annotation.Autowired private CityBattleLockService cityBattleLock;
+    private final ThreadLocal<Set<String>> resourceChanges = ThreadLocal.withInitial(HashSet::new);
+
+    /** 所有即时资源收支先结旧账；事件内部沿用事件时刻，同城回调不得递归结算。 */
+    @Transactional
+    public void beforeResourceChange(Long owner, int slot) {
+        String key = owner + ":" + slot;
+        Set<String> active = resourceChanges.get();
+        if (!active.add(key)) return;
+        try (var ignored = cityScope.enter(owner, slot)) {
+            if (timeline.eventTime() != null) settleEconomyAt(owner, slot, timeline.eventTime());
+            else settleEconomyBeforeChange(owner);
+        } finally {
+            active.remove(key);
+            if (active.isEmpty()) resourceChanges.remove();
+        }
+    }
 
     @Transactional
     public void tick(Long playerId) {
@@ -108,6 +121,7 @@ public class TickService {
         Player current = playerRepository.lockById(playerId).orElse(null);
         // 恢复期继续结算；到期后绝不能补建已经清除的个人资产。
         if (current == null || !current.isGameInitialized() || current.deletionDue(System.currentTimeMillis())) return;
+        timeline.advance(playerId, GameClock.now(), null);
         // Each city settles its own clock and queues. Slot zero also advances the scheduler's account clock.
         try (var ignored = cityScope.enter(playerId, 0)) { tickCity(playerId); }
         for (PlayerCity city : playerCities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId)) {
@@ -116,11 +130,49 @@ public class TickService {
         }
     }
 
-    private void tickCity(Long playerId) {
+    /** 变更税率或军官名单前只结清当前城市经济，不推进其他城市或重复执行行军结算。 */
+    @Transactional
+    public void settleEconomyBeforeChange(Long playerId) {
+        marchService.lockInterceptionParticipants(playerId);
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        timeline.advance(playerId, GameClock.now(), null);
+        tickCity(playerId, false);
+    }
+
+    private void tickCity(Long playerId) { tickCity(playerId, true); }
+
+    /** 离线收益上限按整段窗口裁剪，不能因窗口内队列较多而重复获得多段上限。 */
+    public void beginEconomyWindow(Long owner, long now) {
+        long cutoff = now - Math.max(1, maxOfflineHours) * 3600000L;
+        Set<Integer> slots = new LinkedHashSet<>(List.of(0));
+        playerCities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(owner).forEach(c -> slots.add(c.getCitySlot()));
+        for (int slot : slots) try (var ignored = cityScope.enter(owner, slot)) {
+            if (cityScope.frozen(owner)) continue;
+            CityEconomy local = cityScope.economy(owner);
+            if (local.getLastTick() != null && local.getLastTick() < cutoff) {
+                local.setLastTick(cutoff); cityScope.saveEconomy(owner);
+            }
+            // 两套粮账使用同一个补结窗口，已离开的旧驻军也不能留下更长账期。
+            cityScope.selected(owner).ifPresent(c -> {
+                if (c.getGarrisonFoodAt() != null && c.getGarrisonFoodAt() < cutoff) c.setGarrisonFoodAt(cutoff);
+            });
+        }
+    }
+
+    /** 时间轴回调只结清旧配置区间，不递归执行队列或行军。 */
+    @Transactional
+    public void settleEconomyAt(Long playerId, int slot, long at) {
+        try (var selected = cityScope.enter(playerId, slot)) { tickCity(playerId, false, at); }
+    }
+
+    private void tickCity(Long playerId, boolean processQueues) {
+        tickCity(playerId, processQueues, GameClock.now());
+    }
+
+    private void tickCity(Long playerId, boolean processQueues, long now) {
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player == null) return;
 
-        long now = GameClock.now();
         if (cityScope.frozen(playerId)) {
             // Freeze the city clock as well as its writes; no catch-up production after handoff.
             cityScope.economy(playerId).setLastTick(now);
@@ -128,6 +180,7 @@ public class TickService {
             return;
         }
         long lastTick = cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : now;
+        if (now < lastTick) return; // 旧事件不得把已经结算的城市时钟倒拨。
         // 新建或历史账号可能尚未写入 lastTick。即使本次没有经济时间差，
         // 也必须继续处理到达行军和战术回合，避免离线战斗永久停滞。
         double dt = Math.max(0, (now - lastTick) / 1000.0);
@@ -143,7 +196,7 @@ public class TickService {
 
         // City status multiplier
         double stateMul = 1.0;
-        String cityStatus = getCityStatus(playerId);
+        String cityStatus = getCityStatusAt(playerId, Math.max(lastTick, now - Math.round(dt * 1000)));
         if ("war".equals(cityStatus)) stateMul = 0.7;
         if ("shield".equals(cityStatus)) stateMul = 1.1;
 
@@ -172,13 +225,7 @@ public class TickService {
         long rare = res.getRare() != null ? res.getRare() : 0L;
         long gold = res.getGold() != null ? res.getGold() : 0L;
 
-        // 生产容量只限制自然产出，不截断礼包、运输等渠道已经存在的库存。
-        if (!foodManaged && buildingLevel(playerId, "farm") > 0) {
-            long foodCap = cap.get("food");
-            if (food < foodCap) {
-                food = accrue(res, "food", food, produceOf(playerId, "farm") * hours * stateMul, foodCap, true);
-            }
-        }
+        // 粮食与驻军账本共用连续净收支算法，容量只限制自然产出。
         if (buildingLevel(playerId, "refinery") > 0) {
             long steelCap = cap.get("steel");
             if (steel < steelCap) {
@@ -208,112 +255,42 @@ public class TickService {
         }
         if (foodSave < 0.1) foodSave = 0.1;
         double foodUse = foodPerHour(playerId) * foodSave * hours;
-        if (!foodManaged) food = accrue(res, "food", food, -foodUse, null, true);
+        if (!foodManaged) {
+            double opening = food + res.getFoodAccrual();
+            double after = settleBalance(opening, produceOf(playerId, "farm") * stateMul,
+                    foodPerHour(playerId) * foodSave, hours, cap.get("food"));
+            food = accrue(res, "food", food, after - opening, null, true);
+        }
 
         // Resentment & Morale calculation
         int tax = cityScope.economy(playerId).getTax() != null ? cityScope.economy(playerId).getTax() : 30;
         int resentment = cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0;
 
-        // High tax (>50) generates resentment; low tax (<=20) dissipates resentment
-        if (tax > 50) {
-            double resGain = (tax - 50) * 0.05 * hours;
-            if (resGain >= 1.0 || ThreadLocalRandom.current().nextDouble() < resGain) {
-                resentment = Math.min(100, resentment + Math.max(1, (int) Math.floor(resGain)));
-            }
-        } else if (tax <= 20 && resentment > 0) {
-            double resRelief = (25 - tax) * 0.05 * hours;
-            if (resRelief >= 1.0 || ThreadLocalRandom.current().nextDouble() < resRelief) {
-                resentment = Math.max(0, resentment - Math.max(1, (int) Math.floor(resRelief)));
-            }
-        }
+        // 民怨与民心均按连续时长漂移，持久化小数，不在离线一小时处跳变。
+        double resentmentStart = resentment + cityScope.economy(playerId).getResentmentAccrual();
+        double moraleStart = Objects.requireNonNullElse(cityScope.economy(playerId).getMorale(), 70)
+                + cityScope.economy(playerId).getMoraleAccrual();
+        double resentmentRate = tax > 50 ? (tax - 50) * .05 : tax <= 20 ? -(25 - tax) * .05 : 0;
+        double[] sentiment = settleSentiment(moraleStart, resentmentStart, tax, resentmentRate, hours);
+        int morale = (int) Math.floor(sentiment[0] + 1e-9);
+        resentment = (int) Math.floor(sentiment[1] + 1e-9);
 
-        int targetMorale = clamp(100 - tax - resentment, 0, 100);
-        int currentMorale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
-        int morale = currentMorale;
-
-        if (hours >= 1.0) {
-            morale = targetMorale;
-        } else if (currentMorale != targetMorale) {
-            double driftRate = 10.0 * hours; // ~10 points per hour drift towards target
-            if (driftRate >= 1.0) {
-                int step = (int) Math.floor(driftRate);
-                morale = targetMorale > currentMorale ? Math.min(targetMorale, currentMorale + step)
-                                                      : Math.max(targetMorale, currentMorale - step);
-            } else if (ThreadLocalRandom.current().nextDouble() < driftRate) {
-                morale += (targetMorale > currentMorale ? 1 : -1);
-            }
-        }
-
-        // 平民按民居容量与民心自然增长/逃亡，小数部分累计到下一次结算。
+        // 人口和税收同步积分；新增长人口只从出现时起纳税，逃亡也不按区间末人口追溯。
         int populationCap = popMax(playerId);
-        int effectiveCap = populationCap <= 0 ? 0 : Math.max(10, (int) Math.round(populationCap * Math.min(1.0, morale / 70.0)));
-        int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
-        double populationRemainder = cityScope.economy(playerId).getPopulationGrowthRemainder() != null ? cityScope.economy(playerId).getPopulationGrowthRemainder() : 0.0;
-        if (civilians < effectiveCap) {
-            double growthRateMultiplier = Math.max(0.2, morale / 70.0);
-            double growth = populationCap * 0.03 * growthRateMultiplier * hours + populationRemainder;
-            int gained = (int) Math.floor(growth);
-            civilians = Math.min(effectiveCap, civilians + gained);
-            populationRemainder = civilians >= effectiveCap ? 0.0 : growth - gained;
-        } else if (civilians > effectiveCap) {
-            double excess = civilians - effectiveCap;
-            double fleePerHour = Math.max(2.0, excess * 0.10);
-            double fleeAmount = fleePerHour * hours + populationRemainder;
-            int lost = (int) Math.floor(fleeAmount);
-            if (lost > 0) {
-                civilians = Math.max(effectiveCap, civilians - lost);
-                populationRemainder = civilians <= effectiveCap ? 0.0 : fleeAmount - lost;
-            } else {
-                populationRemainder = fleeAmount;
-            }
-        } else {
-            populationRemainder = 0.0;
-        }
-
-        // 黄金税收以当前平民人口为基数，超过上限时不再继续增加（市长理财技能每级+4%）。
+        int effectiveCap = (int) Math.round(PopulationEconomy.effectiveCap(populationCap, sentiment[0]));
+        double openingPopulation = Math.max(0, Objects.requireNonNullElse(cityScope.economy(playerId).getCivilianPopulation(), 0)
+                + Objects.requireNonNullElse(cityScope.economy(playerId).getPopulationGrowthRemainder(), 0.0));
         int financeLv = getOfficerSkillLevel(mayor, "finance");
-        double goldRate = civilians * (tax / 100.0) * (1 + mayorKnow / 100.0) * (1.0 + 0.04 * financeLv) * 2;
-        long goldCap = cap.get("gold");
-        if (gold < goldCap) {
-            gold = accrue(res, "gold", gold, goldRate * hours, goldCap, true);
-        }
-
-        // Officer salary
+        double taxFactor = taxFactor(tax, mayorKnow, .04 * financeLv);
         List<Officer> officers = officerRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
-        double totalSalary = 0;
-        for (Officer off : officers) {
-            totalSalary += (off.getSalary() != null ? off.getSalary() : 0);
-
-            // Officer loyalty
-            double loy = off.getLoyalty() != null ? off.getLoyalty() : 0;
-            String role = off.getRole() != null ? off.getRole() : "idle";
-            if ("idle".equals(role)) {
-                loy = Math.min(100, loy + 0.5 * hours);
-            } else {
-                loy = Math.max(0, loy - 0.2 * hours);
-            }
-            off.setLoyalty((int) Math.round(loy));
-        }
-        double exactGoldAfterSalary = gold + res.getGoldAccrual() - totalSalary * hours;
-        long goldAfterSalary = accrue(res, "gold", gold, -totalSalary * hours, null, true);
-        // Bankruptcy protection: clamp at floor, and if we were already at floor, count down.
-        if (exactGoldAfterSalary < GOLD_FLOOR) {
-            long consecutive = bankruptTicks
-                .computeIfAbsent(playerId + ":" + cityScope.slot(playerId), k -> new AtomicLong(0))
-                .incrementAndGet();
-            if (consecutive >= BANKRUPTCY_GRACE_TICKS) {
-                // Force officers to quit / morale to drop to force player to act.
-                for (Officer off : officers) {
-                    int loy = off.getLoyalty() != null ? off.getLoyalty() : 100;
-                    off.setLoyalty(Math.max(0, loy - 2));
-                }
-            }
-            gold = GOLD_FLOOR;
-        } else {
-            // Earning again: clear the counter
-            bankruptTicks.computeIfPresent(playerId + ":" + cityScope.slot(playerId), (k, v) -> { v.set(0); return v; });
-            gold = goldAfterSalary;
-        }
+        double totalSalary = officers.stream().mapToDouble(o -> Math.max(0, Objects.requireNonNullElse(o.getSalary(), 0))).sum();
+        double goldBeforeIncome = gold + res.getGoldAccrual();
+        PopulationEconomy.Result settled = PopulationEconomy.settle(openingPopulation, goldBeforeIncome, moraleStart,
+                resentmentStart, tax, resentmentRate, populationCap, taxFactor, totalSalary, cap.get("gold"),
+                now - Math.round(dt * 1000), now, res, officers);
+        int civilians = (int) Math.floor(settled.population() + 1e-9);
+        double populationRemainder = settled.population() - civilians;
+        gold = accrue(res, "gold", gold, settled.gold() - goldBeforeIncome, null, true);
 
         // Save resources
         res.setFood(food);
@@ -329,6 +306,8 @@ public class TickService {
         // Save player
         cityScope.economy(playerId).setMorale(morale);
         cityScope.economy(playerId).setResentment(resentment);
+        cityScope.economy(playerId).setMoraleAccrual(sentiment[0] - morale);
+        cityScope.economy(playerId).setResentmentAccrual(sentiment[1] - resentment);
         cityScope.economy(playerId).setCivilianPopulation(civilians);
         cityScope.economy(playerId).setPopulationGrowthRemainder(populationRemainder);
         cityScope.economy(playerId).setLastTick(now);
@@ -338,13 +317,11 @@ public class TickService {
         // Update city state
         updateCityState(playerId, now);
 
+        if (!processQueues) return;
+
         // Complete army production queues before processing marches.
         armyService.completeProduction(playerId, now);
-        if (unitEquipment.complete(playerId, now)) {
-            // 制备完成即同步账号库存与本城通道，离开配装面板也能看到新装备。
-            pushService.pushTickUpdate(playerId, Map.of("items", unitEquipment.inventory(playerId),
-                    "unitEquipment", unitEquipment.state(playerId)));
-        }
+
 
         // Process marches
         marchService.processMarches(playerId, now);
@@ -358,8 +335,16 @@ public class TickService {
                 ? techService.settleCompletedResearchForCity(playerId, cityScope.slot(playerId), now)
                 : Collections.emptyList();
 
+        GarrisonFoodTimeline.Completions earlier = timeline.drain(playerId, cityScope.slot(playerId));
+        completedBuilds = new ArrayList<>(new LinkedHashSet<>(concat(completedBuilds, earlier.buildsFor(cityScope.slot(playerId)))));
+        completedResearch = new ArrayList<>(new LinkedHashSet<>(concat(completedResearch, earlier.researchFor(cityScope.slot(playerId)))));
+
         // Push tick update to player via WebSocket
         pushTickUpdate(playerId, res, now, completedBuilds, completedResearch, civilians, populationCap, effectiveCap, morale, resentment, tax);
+    }
+
+    private static List<String> concat(List<String> first, List<String> second) {
+        List<String> result = new ArrayList<>(first); result.addAll(second); return result;
     }
 
     /**
@@ -415,6 +400,8 @@ public class TickService {
         resources.put("rare", res.getRare() != null ? res.getRare() : 0);
         resources.put("gold", res.getGold() != null ? res.getGold() : 0);
         stateChanges.put("resources", resources);
+        stateChanges.put("resourceRates", resourceRates(playerId));
+        if (techService != null) stateChanges.put("tech", techService.getTechMap(playerId));
 
         // 标量税率/民心/民怨
         stateChanges.put("tax", tax);
@@ -454,6 +441,7 @@ public class TickService {
         stateChanges.put("reinforcements", worldViewService.getReinforcements(playerId));
         // 接收／返程及交战伤亡后同步实际粮耗，不能只在整页刷新时更新。
         stateChanges.put("foodSupply", garrisonFood.supplyView(playerId));
+        stateChanges.put("cityBattleLocked", cityBattleLock.locked(playerId));
 
         // 建筑进度
         List<Construction> constructions = constructionRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -467,6 +455,8 @@ public class TickService {
             buildInfo.put("targetLevel", targetLv);
             buildInfo.put("startedAt", c.getStartAt() != null ? c.getStartAt() : 0);
             buildInfo.put("finishesAt", c.getFinishAt() != null ? c.getFinishAt() : 0);
+            buildInfo.put("freeSpeedUpAt", c.getFinishAt() == null ? null : c.getFinishAt() - BuildService.FREE_SPEED_UP_SECONDS * 1000L);
+            buildInfo.put("speedUpCounts", speedUpSupport.suggestedCounts(playerId, Objects.requireNonNullElse(c.getFinishAt(), 0L)));
             buildInfo.put("progress", calcProgress(
                     c.getStartAt() != null ? c.getStartAt() : now,
                     c.getFinishAt() != null ? c.getFinishAt() : now,
@@ -501,6 +491,7 @@ public class TickService {
             }
         }
 
+        stateChanges.put("gameplay", gameplayViews.tick(playerId, stateChanges));
         return stateChanges;
     }
 
@@ -515,6 +506,90 @@ public class TickService {
     // ================================================================
     // Helper methods - matching JS Core methods
     // ================================================================
+
+    /**
+     * 按连续净收支结算；库存超过自然产出上限时先停税支付工资，降至上限后才恢复税收。
+     * 触及上限的时刻分段处理，拆分同一时段不会额外丢弃本可支付工资的税收。
+     */
+    public static double settleBalance(double opening, double incomePerHour, double salaryPerHour, double hours, long cap) {
+        if (hours <= 0) return opening;
+        if (opening > cap) {
+            if (salaryPerHour <= 0) return opening;
+            double untilCap = (opening - cap) / salaryPerHour;
+            if (untilCap >= hours) return opening - salaryPerHour * hours;
+            hours -= untilCap;
+            opening = cap;
+        }
+        return Math.min(cap, opening + (incomePerHour - salaryPerHour) * hours);
+    }
+
+    /** 只读返回本城实际经济费率；军情警讯和新手保护本身不改变生产倍率。 */
+    public Map<String, Object> resourceRates(Long owner) {
+        Resources stock = resourcesRepository.findByPlayerIdAndCitySlot(owner, cityScope.slot(owner)).orElse(null);
+        String status = getCityStatus(owner);
+        double multiplier = "war".equals(status) ? .7 : "shield".equals(status) ? 1.1 : 1;
+        Map<String, Double> income = new LinkedHashMap<>(), expense = new LinkedHashMap<>(), net = new LinkedHashMap<>();
+        income.put("food", produceOf(owner, "farm") * multiplier);
+        income.put("steel", produceOf(owner, "refinery") * multiplier);
+        income.put("oil", produceOf(owner, "oilfield") * multiplier);
+        income.put("rare", produceOf(owner, "raremine") * multiplier);
+        Officer mayor = getOfficerByRole(owner, "mayor");
+        double know = mayor == null ? 0 : equipmentService.attributes(mayor).knowledge();
+        CityEconomy local = cityScope.economy(owner);
+        double people = Math.max(0, Objects.requireNonNullElse(local.getCivilianPopulation(), 0)
+                + Objects.requireNonNullElse(local.getPopulationGrowthRemainder(), 0.0));
+        income.put("gold", people * taxFactor(Objects.requireNonNullElse(local.getTax(), 30), know, .04 * getOfficerSkillLevel(mayor, "finance")));
+        Map<String, Double> supply = garrisonFood.supplyView(owner);
+        double use = supply == null ? foodPerHour(owner) * Math.max(.1, Math.max(.5, 1 - .05 * getTechLevel(owner, "log_food"))
+                * (1 - .16 * getOfficerSkillLevel(mayor, "ration"))) : supply.get("totalPerHour");
+        expense.put("food", use);
+        expense.put("gold", officerRepository.findByPlayerIdAndCitySlot(owner, cityScope.slot(owner)).stream()
+                .mapToDouble(o -> Math.max(0, Objects.requireNonNullElse(o.getSalary(), 0))).sum());
+        Map<String, Long> caps = capacity(owner);
+        // 整数展示值可能刚好等于容量，经济判断仍须包含尚未入整的小数。
+        double foodRemainder = cityScope.selected(owner).map(PlayerCity::getGarrisonFoodRemainder).orElse(0.0);
+        Map<String, Double> amounts = stock == null ? Map.of() : Map.of(
+                "food", Objects.requireNonNullElse(stock.getFood(), 0L) + stock.getFoodAccrual() + foodRemainder,
+                "steel", Objects.requireNonNullElse(stock.getSteel(), 0L) + stock.getSteelAccrual(),
+                "oil", Objects.requireNonNullElse(stock.getOil(), 0L) + stock.getOilAccrual(),
+                "rare", Objects.requireNonNullElse(stock.getRare(), 0L) + stock.getRareAccrual(),
+                "gold", Objects.requireNonNullElse(stock.getGold(), 0L) + stock.getGoldAccrual());
+        boolean paused = cityScope.frozen(owner) || cityScope.selected(owner).map(c -> c.getReadyAt() > GameClock.now()).orElse(false);
+        income.forEach((key, value) -> {
+            double cost = expense.getOrDefault(key, 0.0), amount = amounts.getOrDefault(key, 0.0);
+            double change = amount > caps.get(key) ? -cost : amount == caps.get(key) ? Math.min(0, value - cost) : value - cost;
+            net.put(key, paused || amount <= 0 && change < 0 ? 0.0 : change);
+        });
+        if (paused) { income.replaceAll((key, value) -> 0.0); expense.replaceAll((key, value) -> 0.0); }
+        return Map.of("netPerHour", net, "productionPerHour", income, "expensePerHour", expense, "status", status);
+    }
+
+    /** 连续目标随民怨线性移动；在触及目标或边界后分段，切分同一时段结果一致。 */
+    public static double[] settleSentiment(double morale, double resentment, int tax, double rate, double hours) {
+        double remaining = hours;
+        while (remaining > 1e-10) {
+            double step = remaining;
+            if (rate > 0 && resentment < 100) step = Math.min(step, (100 - resentment) / rate);
+            if (rate < 0 && resentment > 0) step = Math.min(step, -resentment / rate);
+            double target = Math.max(0, Math.min(100, 100 - tax - resentment));
+            double endResentment = Math.max(0, Math.min(100, resentment + rate * step));
+            double endTarget = Math.max(0, Math.min(100, 100 - tax - endResentment));
+            // 目标触及零点时另起一段，避免把截断后的目标误当成整段线性变化。
+            if (rate > 0 && target > 0 && endTarget == 0) step = Math.min(step, target / rate);
+            if (rate < 0 && resentment > 100 - tax && endResentment < 100 - tax)
+                step = Math.min(step, (resentment - (100 - tax)) / -rate);
+            endResentment = Math.max(0, Math.min(100, resentment + rate * step));
+            endTarget = Math.max(0, Math.min(100, 100 - tax - endResentment));
+            double slope = step > 0 ? (endTarget - target) / step : 0;
+            double distance = target - morale;
+            double meet = distance >= 0 ? distance / (10 - slope) : -distance / (10 + slope);
+            morale = meet <= step ? endTarget : morale + Math.copySign(10 * step, distance);
+            resentment = endResentment;
+            remaining -= step;
+            if (resentment <= 0 && rate < 0 || resentment >= 100 && rate > 0) rate = 0;
+        }
+        return new double[]{Math.max(0, Math.min(100, morale)), resentment};
+    }
 
     /** 小数持久化保证频繁结算不吞产量或免粮耗；到达生产容量或零库存后不积累超产或欠款。 */
     private long accrue(Resources stock, String key, long current, double delta, Long cap, boolean rounded) {
@@ -539,6 +614,15 @@ public class TickService {
      * total = sum(baseProduce * curve)
      * return Math.floor(total * resBonusMul)
      */
+    public static double taxFactor(int tax, double knowledge, double financeBonus) {
+        return tax / 100.0 * (1 + knowledge / 100) * (1 + financeBonus) * 2;
+    }
+
+    /** 建筑逐级预览与真实自然产出共享基础曲线。 */
+    public static double baseProduction(BuildingDef building, int level) {
+        return Objects.requireNonNullElse(building.baseProduce(), 0) * level * (1 + .12 * (level - 1));
+    }
+
     public double produceOf(Long playerId, String buildingType) {
         BuildingDef b = GameData.BUILDINGS.get(buildingType);
         if (b == null || b.produces() == null) return 0;
@@ -548,8 +632,7 @@ public class TickService {
         for (Building building : buildings) {
             int lv = building.getLevel() != null ? building.getLevel() : 0;
             if (lv <= 0) continue;
-            double curve = lv * (1 + 0.12 * (lv - 1));
-            total += b.baseProduce() * curve;
+            total += baseProduction(b, lv);
         }
         return Math.floor(total * resBonusMul(playerId, b.produces()));
     }
@@ -561,7 +644,7 @@ public class TickService {
      * bonus *= 1 + 0.03 * buildings.transit
      */
     /** 城内产量只读取当前资源对应科技；野地采集不使用此倍率。 */
-    private double resBonusMul(Long playerId, String resource) {
+    public double resBonusMul(Long playerId, String resource) {
         Officer mayor = getOfficerByRole(playerId, "mayor");
         double mayorLogi = mayor != null ? equipmentService.attributes(mayor).logistics() : 0;
         int harvestLv = getOfficerSkillLevel(mayor, "harvest");
@@ -593,14 +676,14 @@ public class TickService {
      * foodPerHour() - matches JS Core.foodPerHour
      * sum of D.units[id].food * army[id] for each army unit
      */
-    public int foodPerHour(Long playerId) {
+    public long foodPerHour(Long playerId) {
         List<ArmyUnit> units = armyUnitRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
-        int sum = 0;
+        long sum = 0;
         for (ArmyUnit unit : units) {
             UnitDef def = GameData.UNITS.get(unit.getType());
             if (def != null) {
                 int count = unit.getCount() != null ? unit.getCount() : 0;
-                sum += def.food() * count;
+                sum += (long) def.food() * count;
             }
         }
         return sum;
@@ -643,25 +726,16 @@ public class TickService {
 
         long now = GameClock.now();
 
-        // updateCityState logic inline
-        long shieldUntil = cs.getShieldUntil() != null ? cs.getShieldUntil() : 0L;
-        if (shieldUntil != 0 && now >= shieldUntil) {
-            cs.setShieldUntil(0L);
-            cityStateRepository.save(cs);
-        }
+        return getCityStatusAt(playerId, now);
+    }
 
-        long warEndAt = cs.getWarEndAt() != null ? cs.getWarEndAt() : 0L;
-        if ("war".equals(cs.getStatus()) && warEndAt != 0 && now >= warEndAt) {
-            cs.setStatus("peace");
-            cs.setWarEndAt(0L);
-            cs.setPeaceUntil(now + 2 * 3600 * 1000L);
-            cityStateRepository.save(cs);
-        }
-
-        // Re-read updated values
-        shieldUntil = cs.getShieldUntil() != null ? cs.getShieldUntil() : 0L;
-        if (shieldUntil != 0 && now < shieldUntil) return "shield";
-        if ("war".equals(cs.getStatus())) return "war";
+    /** 读取不会清除历史边界；只有经济结算到达该时刻后才能清理到期状态。 */
+    public String getCityStatusAt(Long playerId, long at) {
+        CityState state = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+        if (state == null) return "peace";
+        if (Objects.requireNonNullElse(state.getShieldUntil(), 0L) > at) return "shield";
+        if ("war".equals(state.getStatus()) && (Objects.requireNonNullElse(state.getWarEndAt(), 0L) == 0
+                || state.getWarEndAt() > at)) return "war";
         return "peace";
     }
 

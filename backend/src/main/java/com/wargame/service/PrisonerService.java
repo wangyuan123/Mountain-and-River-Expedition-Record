@@ -19,6 +19,8 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class PrisonerService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
     @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     private final PrisonerUnitRepository prisoners;
     private final BattleSettlementRepository settlements;
@@ -217,6 +219,22 @@ public class PrisonerService {
         return Math.max(1L, (cost + 3) / 4);
     }
 
+    public long recruitmentCost(String unit, int count) { return Math.multiplyExact(goldPerUnit(unit), count); }
+
+    /** 只读当前城市战俘数量、解锁和余额，费用复用正式招募规则。 */
+    @Transactional(readOnly = true)
+    public Map<String, Object> preview(Long playerId, String unit, int count) {
+        if (count <= 0 || !GameData.UNITS.containsKey(unit)) throw new IllegalArgumentException("请输入有效兵种和数量");
+        PlayerCity city = scope.selected(playerId).orElseThrow(() -> new IllegalArgumentException("城市不存在"));
+        long owned = prisoners.findByPlayerIdAndCityIdOrderByCreatedAtAscIdAsc(playerId, city.getId()).stream()
+                .filter(batch -> unit.equals(batch.getType())).mapToLong(PrisonerUnit::getCount).sum();
+        long cost = recruitmentCost(unit, count);
+        long gold = resources.findByPlayerIdAndCitySlot(playerId, city.getCitySlot()).map(Resources::getGold).orElse(0L);
+        String reason = unavailable(playerId, city, unit, false);
+        return Map.of("cost", cost, "allowed", count <= owned && cost <= gold && reason.isEmpty()
+                && !city.isSurrenderFrozen(GameClock.now()), "reason", reason);
+    }
+
     /** 黄金招募与普通征召共用制造前置，当前读仍沿用玩家锁后的实体刷新。 */
     private String unavailable(Long playerId, PlayerCity city, String unit, boolean current) {
         return unitUnlocks.message(unitUnlocks.evaluate(playerId, city.getCitySlot(), unit, current));
@@ -275,9 +293,12 @@ public class PrisonerService {
         if ("recruit".equals(action)) {
             String reason = unavailable(playerId, city, unit, true);
             if (!reason.isEmpty()) throw new IllegalArgumentException(reason);
+            resourceEconomy.beforeResourceChange(playerId, city.getCitySlot());
+            // 先用旧兵力结到归队时刻；未启用账本的城市从旧经济时刻接管。
+            garrisonFood.activate(city, GameClock.now());
             Resources balance = resources.findCityForTreatment(playerId, city.getCitySlot()).orElseThrow();
             em.refresh(balance, LockModeType.PESSIMISTIC_WRITE);
-            cost = Math.multiplyExact(goldPerUnit(unit), count);
+            cost = recruitmentCost(unit, count);
             long gold = Objects.requireNonNullElse(balance.getGold(), 0L);
             if (gold < cost) throw new IllegalArgumentException("黄金不足，请减少招募数量");
             balance.setGold(gold - cost); resources.save(balance);

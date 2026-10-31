@@ -1,0 +1,415 @@
+{
+  "scope": "防御性代码审查与业务一致性排查",
+  "issues": [
+    {
+      "id": "R4-01",
+      "priority": "P1",
+      "title": "阶段礼包的钻石未进入账号共享钱包",
+      "evidence": "隔离记录与源码",
+      "impact": "在分城开启阶段礼包时，钻石记入分城资源记录，账号消费读取的主城钱包未收到这笔奖励。",
+      "remediation": "五类城市资源仍按受领城发放；钻石统一使用账号钱包，并将背包扣减与整组奖励作为一个事务。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/DepotService.java",
+          "line": 687
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/CityScope.java",
+          "line": 71
+        }
+      ]
+    },
+    {
+      "id": "R4-02",
+      "priority": "P1",
+      "title": "阶段礼包钻石入账缺少余额上限校验",
+      "evidence": "隔离记录与源码",
+      "impact": "礼包可以完成开启，但钻石余额超出字段容量时会写成异常值，玩家资产与成功提示不一致。",
+      "remediation": "发奖前检查所有余额能否容纳奖励；不满足时保留礼包、余额及领取资格。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/DepotService.java",
+          "line": 706
+        }
+      ]
+    },
+    {
+      "id": "R4-03",
+      "priority": "P1",
+      "title": "通用道具入库缺少数量上限校验",
+      "evidence": "隔离记录与源码",
+      "impact": "额外奖励及通用入库使用普通整数相加，库存到达字段边界时可能变成异常数量。此问题不限于钻石字段。",
+      "remediation": "统一使用经过范围校验的入库方法；礼包附赠、装备返还、VIP奖励等调用方共同遵守整组原子提交。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/DepotService.java",
+          "line": 767
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/EquipmentService.java",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "id": "R4-04",
+      "priority": "P2",
+      "title": "同一本经验书从不同入口使用，升级行为不同",
+      "evidence": "隔离记录与源码",
+      "impact": "仓库入口会自动扣经验升级，军官入口只累积经验并等待手动升级。同一道具的属性点、等级及剩余经验取决于入口。",
+      "remediation": "确定一种培养规则，由两个入口调用同一服务；批量使用和满级书同步处理。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/DepotService.java",
+          "line": 423
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/OfficerService.java",
+          "line": 645
+        }
+      ]
+    },
+    {
+      "id": "R4-05",
+      "priority": "P2",
+      "title": "洗点重造出生属性，并可能改变主属性方向",
+      "evidence": "隔离记录与源码",
+      "impact": "洗点没有恢复军官真实初始属性，而是套用按星级推算的模板；五星主属性又按当前最高属性判断。正常培养后洗点可能改变军官本身资质。",
+      "remediation": "保存或可靠还原出生属性与实际分配点；历史军官无出生快照时制定兼容规则，不能声称模板就是原值。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/OfficerService.java",
+          "line": 886
+        }
+      ]
+    },
+    {
+      "id": "R4-06",
+      "priority": "P2",
+      "title": "任命市长会追溯改变未结算时段的资源产出",
+      "evidence": "隔离记录与源码",
+      "impact": "任命前只结粮账，没有结清全部旧经济区间；下次结算以新市长属性计算此前产出。装备与内政技能的相关变更也应纳入统一边界。",
+      "remediation": "在配置变化前按旧配置结清受影响城市经济，再更新任命、装备或内政技能。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/OfficerService.java",
+          "line": 267
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 554
+        }
+      ]
+    },
+    {
+      "id": "R4-07",
+      "priority": "P2",
+      "title": "民心恢复对结算频率敏感",
+      "evidence": "隔离记录与源码",
+      "impact": "相同一小时，单次结算会直接到目标民心，拆成两个半小时却只按每小时10点漂移。离线与持续在线会得到不同结果。",
+      "remediation": "改为统一的按时长漂移规则，并保存必要的小数累计；去除一小时处的突变分支。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 238
+        }
+      ]
+    },
+    {
+      "id": "R4-08",
+      "priority": "P2",
+      "title": "普通粮账与驻军粮账在仓库封顶时结果不一致",
+      "evidence": "隔离记录与源码",
+      "impact": "普通粮账先限制产出再扣兵粮，驻军粮账使用净收支。相同农场、兵力、库存与时长会得到不同粮食结余。",
+      "remediation": "统一净收支与容量处理顺序，保留超额库存和小数，不让是否启用驻军账本改变养兵规则。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 180
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/GarrisonFoodService.java",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "id": "R4-09",
+      "priority": "P2",
+      "title": "产量科技完成时可能追溯增加历史产出",
+      "evidence": "隔离记录与源码",
+      "impact": "科技先完成、经济后结算的路径会用新科技等级计算整个旧区间，使结果取决于结算入口顺序。",
+      "remediation": "按研发实际完成时刻分段结算；账号共享科技应覆盖各受影响城市的旧经济区间。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TechService.java",
+          "line": 311
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 329
+        }
+      ]
+    },
+    {
+      "id": "R4-10",
+      "priority": "P2",
+      "title": "离线期间资源建筑完工后的产出漏算",
+      "evidence": "隔离记录与源码",
+      "impact": "经济先结算、施工后完工。离线期间已经建好的资源建筑，到下一次结算才开始产生收益，完工后至本次结算之间的产出丢失。",
+      "remediation": "将资源建筑完工视为经济事件，在真实完工时刻切换产能并分段计算。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 329
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/BuildService.java",
+          "line": 644
+        }
+      ]
+    },
+    {
+      "id": "R4-11",
+      "priority": "P2",
+      "title": "护盾到期会丢失此前保护期的生产加成",
+      "evidence": "隔离记录与源码",
+      "impact": "查询城市状态时先清除已到期护盾，再用当前状态计算整个历史区间；晚结算的玩家少拿护盾有效期间的产出加成。",
+      "remediation": "保留结算所需的状态时间边界，按有效区间计算加成后再清理到期状态。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 630
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 154
+        }
+      ]
+    },
+    {
+      "id": "R4-12",
+      "priority": "P1",
+      "title": "VIP全域政务会修改归降冻结城市",
+      "evidence": "隔离记录与源码",
+      "impact": "免费特赦和黄金安抚遍历城市时没有按城市可写状态筛选，冻结中的民心、民怨及黄金仍可能被改变。",
+      "remediation": "在事务内重新核对每城归属、建设和冻结状态，明确跳过原因；冻结资产应保持不变。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/VipService.java",
+          "line": 296
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/CityScope.java",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": "R4-13",
+      "priority": "P3",
+      "title": "VIP特赦受影响城市数量多算主城",
+      "evidence": "隔离记录与源码",
+      "impact": "查询结果已经包含主城，返回数量又加一，成功提示会比实际拥有城市多一座。",
+      "remediation": "主城与分城统一去重，统计实际处理的城市；不要同时维护两个主城表示的计数。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/VipService.java",
+          "line": 313
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/VipService.java",
+          "line": 339
+        }
+      ]
+    },
+    {
+      "id": "R4-14",
+      "priority": "P3",
+      "title": "军团解散后入团申请残留",
+      "evidence": "隔离记录与源码",
+      "impact": "团长解散最后一人的军团时，只删除成员和军团，待审核申请仍留在表内。",
+      "remediation": "解散事务一并清理申请和其他从属关系；迁移清理历史孤立记录并检查相关外键约束。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/GuildService.java",
+          "line": 212
+        }
+      ]
+    },
+    {
+      "id": "R4-15",
+      "priority": "P2",
+      "title": "论坛累计打赏金额使用窄整数统计",
+      "evidence": "隔离记录与源码",
+      "impact": "资金转移与累计展示采用不同数值容量，累计打赏较大时统计会变成异常值。",
+      "remediation": "累计金额使用与黄金账本一致的宽整数，并同步实体、迁移与返回字段。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/ForumService.java",
+          "line": 465
+        }
+      ]
+    },
+    {
+      "id": "R4-16",
+      "priority": "P2",
+      "title": "战报注销脱敏不能正确识别统帅显示名",
+      "evidence": "隔离记录与源码",
+      "impact": "战报常保存显示名，脱敏却用用户名查注销账号；有显示名的历史参与者无法按约定隐藏。仅按名称匹配也缺少稳定身份。",
+      "remediation": "战报与分享使用稳定玩家ID关联脱敏，兼容历史姓名快照；不要将名字相同当作身份相同。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/ReportPrivacyService.java",
+          "line": 16
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/AccountService.java",
+          "line": 178
+        }
+      ]
+    },
+    {
+      "id": "R4-17",
+      "priority": "P1",
+      "title": "注销账号的有效挂单没有结束资产生命周期",
+      "evidence": "隔离记录与源码",
+      "impact": "注销清理移除卖方资源记录后，活动挂单仍可继续成交；购买扣款可以成功，卖方结算分支却找不到金库。",
+      "remediation": "清理账号时原子关闭活动挂单；交易提交前校验有效卖方与结算账户，确保扣款和结算整体成功或整体失败。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/AccountService.java",
+          "line": 178
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/MarketService.java",
+          "line": 151
+        }
+      ]
+    },
+    {
+      "id": "R4-18",
+      "priority": "P2",
+      "title": "发布的PvP校准配置与当前战斗版本不一致",
+      "evidence": "既有全量测试与源码",
+      "impact": "当前模型版本与随包校准表不匹配，旧行被加载器跳过，首次遇到相应组合会转入运行时校准；配置验收因此失败。",
+      "remediation": "为当前战斗契约发布真实测得的校准数据，检查版本覆盖率；不要只改版本号或放宽断言。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/pvp/PvpPowerModel.java",
+          "line": 29
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/pvp/PvpSnapshotService.java",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "id": "R4-19",
+      "priority": "P2",
+      "title": "账号单份战争状态无法完整承载多方战争",
+      "evidence": "源码确认，未新增运行实验",
+      "impact": "宣战重复检查只保护同一对手及被选目标城，账号却只保存一份对手、备战与终战字段；跨对手或跨城市的合法战争流程可能覆盖旧关系。",
+      "remediation": "若每个账号只允许一场战争，应检查双方全部有效战争；若允许多方战争，应独立建模战争关系，统一地图、计谋与出征读取。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/WorldService.java",
+          "line": 515
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/WorldService.java",
+          "line": 545
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/MarchService.java",
+          "line": 4001
+        }
+      ]
+    },
+    {
+      "id": "R4-20",
+      "priority": "P3",
+      "title": "军团详情与排行榜的人员统计资格不同",
+      "evidence": "源码确认，未新增运行实验",
+      "impact": "排行榜排除未初始化、注销与封禁账号，军团详情的声望和人数直接汇总全部成员。同一军团在两个入口可能显示不同值。",
+      "remediation": "共用统计口径；若详情需要显示名册总数，明确区分名册人数与榜单有效人数。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/GuildService.java",
+          "line": 265
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/LeaderboardService.java",
+          "line": 22
+        }
+      ]
+    },
+    {
+      "id": "R4-21",
+      "priority": "P2",
+      "title": "旧粮耗汇总仍采用整数乘加",
+      "evidence": "源码确认，未新增运行实验",
+      "impact": "普通粮账的每小时粮耗仍使用int乘法与累加，容量与新驻军账本采用的宽类型不一致，大规模存量军队存在计算失真风险。",
+      "remediation": "将粮耗汇总及其调用返回值统一为宽类型，在写回库存前做合法范围处理。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/TickService.java",
+          "line": 586
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/GarrisonFoodService.java",
+          "line": 45
+        }
+      ]
+    },
+    {
+      "id": "R4-22",
+      "priority": "P1",
+      "title": "普通安抚和主动撤盾未统一遵守城市冻结约束",
+      "evidence": "源码确认与既有撤盾记录",
+      "impact": "通用请求拦截没有覆盖这些城市写操作，服务也未统一检查冻结状态；与建筑、生产等城市只读规则不一致。",
+      "remediation": "在服务事务中统一校验目标城市归属及可写状态，外层拦截仅作补充，不能作为唯一约束。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/GameStateService.java",
+          "line": 583
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/CityService.java",
+          "line": 109
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/config/CityContextConfig.java",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": "R4-23",
+      "priority": "P2",
+      "title": "军团支援的注销期限判断混用了游戏与真实时间",
+      "evidence": "源码确认，未新增运行实验",
+      "impact": "账号恢复截止时间按真实时间保存，支援资格却将游戏时间传给deletionDue；停服顺延后两种时钟不一致，过期账号的判断窗口会偏移。",
+      "remediation": "建设与行军使用游戏时间，账号注销资格单独使用真实时间；统一账号状态校验方法，避免同一参数承担两种时钟。",
+      "sources": [
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/GuildSupportService.java",
+          "line": 56
+        },
+        {
+          "file": "/Users/chenjuan/Documents/游戏/Strategies-of-the-Flaming-Plains/backend/src/main/java/com/wargame/service/AccountService.java",
+          "line": 178
+        }
+      ]
+    }
+  ],
+  "designQuestions": [
+    {
+      "id": "D1",
+      "title": "军团友好关系允许单方修改共享外交状态",
+      "impact": "与同盟需双方同意的通常预期不一致，也会影响另一方的战争选择。",
+      "recommendation": "确认采用单方立场还是双方同盟；若为同盟，应增加邀请与接受流程。"
+    }
+  ]
+}

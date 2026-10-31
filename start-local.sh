@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+# 为后台服务建立独立进程组，退出时一并结束 Maven 派生的 Java 子进程。
+set -m
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
@@ -92,6 +94,28 @@ ensure_maven() {
   log "Maven 已就绪：$(mvn -version | head -n 1)"
 }
 
+# 从后端 JDBC 配置提取同一 TCP 目标，避免检查本机空密码却让后端使用部署密码。
+configure_database() {
+  export WARGAME_DB_URL="${WARGAME_DB_URL:-jdbc:mysql://localhost:3306/wargame?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}"
+  export WARGAME_DB_USER="${WARGAME_DB_USER:-root}"
+  export WARGAME_DB_PASSWORD="${WARGAME_DB_PASSWORD:-}"
+  local jdbc_pattern='^jdbc:mysql://([a-zA-Z0-9_.-]+)(:([0-9]+))?/([a-zA-Z0-9_-]+)(\?.*)?$'
+  [[ "$WARGAME_DB_URL" =~ $jdbc_pattern ]] || fail "本地脚本需要单主机 MySQL JDBC 地址，请检查 .env.local 的 WARGAME_DB_URL。"
+  DB_HOST="${BASH_REMATCH[1]}"
+  DB_PORT="${BASH_REMATCH[3]:-3306}"
+  DB_NAME="${BASH_REMATCH[4]}"
+  MYSQL_ARGS=(--protocol=TCP --host="$DB_HOST" --port="$DB_PORT" --user="$WARGAME_DB_USER" --connect-timeout=3)
+}
+
+mysql_local() {
+  # 密码仅通过子进程环境传递，不放入命令行或日志。
+  MYSQL_PWD="$WARGAME_DB_PASSWORD" mysql "${MYSQL_ARGS[@]}" "$@"
+}
+
+database_connection_error() {
+  fail "无法连接 MySQL ${DB_HOST}:${DB_PORT}（用户 ${WARGAME_DB_USER}）。请检查 .env.local 或已导出的 WARGAME_DB_* 配置，本地启动不读取部署用的 .env。后端尚未启动。"
+}
+
 ensure_mysql() {
   if ! command -v mysql >/dev/null 2>&1; then
     log "未检测到 MySQL 客户端，正在安装 mysql-client"
@@ -99,7 +123,12 @@ ensure_mysql() {
     export PATH="$(brew --prefix mysql-client)/bin:$PATH"
   fi
 
-  if ! mysql -u root -e "SELECT 1" >/dev/null 2>&1; then
+  if ! mysql_local -e "SELECT 1" >/dev/null 2>&1; then
+    # 已有监听服务时优先报告认证/连接错误，不能把密码不匹配误判成未安装 MySQL。
+    if [[ "$DB_HOST" != localhost && "$DB_HOST" != 127.0.0.1 ]] || \
+        lsof -nP -iTCP:"$DB_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+      database_connection_error
+    fi
     if brew services list 2>/dev/null | grep -q mysql; then
       log "正在启动 MySQL 服务"
       brew services start mysql
@@ -110,9 +139,9 @@ ensure_mysql() {
     fi
 
     local waited=0
-    until mysql -u root -e "SELECT 1" >/dev/null 2>&1; do
+    until mysql_local -e "SELECT 1" >/dev/null 2>&1; do
       if (( waited >= 60 )); then
-        fail "MySQL 在 60 秒内未就绪，请手动启动 MySQL 后重试。"
+        database_connection_error
       fi
       sleep 2
       ((waited += 2))
@@ -125,8 +154,8 @@ ensure_mysql() {
 }
 
 ensure_database() {
-  log "创建数据库 wargame（如不存在）"
-  mysql -u root -e "CREATE DATABASE IF NOT EXISTS wargame DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  log "创建数据库 ${DB_NAME}（如不存在）"
+  mysql_local -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 }
 
 stop_port_process() {
@@ -137,8 +166,41 @@ stop_port_process() {
   if [[ -n "$pids" ]]; then
     log "清理端口 $port 上的旧进程"
     kill $pids 2>/dev/null || true
-    sleep 2
+    local waited=0
+    while lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; do
+      if (( waited >= 5 )); then
+        # 只强制结束先前识别的监听进程，不终止其所在的终端进程组。
+        kill -KILL $pids 2>/dev/null || true
+        sleep 1
+        break
+      fi
+      sleep 1
+      ((waited += 1))
+    done
+    if lsof -tiTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      fail "端口 $port 仍被占用，无法启动服务。"
+    fi
   fi
+}
+
+# 探测必须有单次超时和总超时，并且只有 HTTP 200 才表示服务可用。
+wait_for_http() {
+  local pid="$1" url="$2" timeout="$3" name="$4"
+  local started=$SECONDS status
+  while true; do
+    kill -0 "$pid" 2>/dev/null || fail "${name}进程已退出，请检查上方日志。"
+    if status="$(curl --noproxy '*' --fail --silent --output /dev/null --write-out '%{http_code}' \
+        --connect-timeout 2 --max-time 3 "$url")" && [[ "$status" == 200 ]]; then
+      kill -0 "$pid" 2>/dev/null || fail "${name}进程已退出，请检查上方日志。"
+      printf '\n'
+      return
+    fi
+    if (( SECONDS - started >= timeout )); then
+      fail "${name}在 ${timeout} 秒内未就绪，请检查 ${url} 和上方日志。"
+    fi
+    sleep 1
+    printf '.'
+  done
 }
 
 start_backend() {
@@ -149,20 +211,7 @@ start_backend() {
   BACKEND_PID=$!
   log "后端进程 PID: ${BACKEND_PID}，等待启动..."
 
-  local waited=0
-  until curl -s "http://localhost:$BACKEND_PORT/api/game/state" >/dev/null 2>&1 || \
-        curl -s -o /dev/null -w "%{http_code}" "http://localhost:$BACKEND_PORT/api/game/state" | grep -qE '4[0-9][0-9]'; do
-    if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
-      fail "后端进程已退出，请检查日志。"
-    fi
-    if (( waited >= 120 )); then
-      fail "后端在 120 秒内未响应，请检查 http://localhost:$BACKEND_PORT"
-    fi
-    sleep 2
-    ((waited += 2))
-    printf '.'
-  done
-  printf '\n'
+  wait_for_http "$BACKEND_PID" "http://127.0.0.1:$BACKEND_PORT/api/auth/server" 120 "后端"
   log "后端已就绪：http://localhost:$BACKEND_PORT"
 }
 
@@ -185,15 +234,37 @@ start_frontend() {
     fail "未找到 Python 或 Node.js，无法启动前端服务器。请安装 python3。"
   fi
 
+  wait_for_http "$FRONTEND_PID" "http://127.0.0.1:$FRONTEND_PORT/index.html" 15 "前端"
   log "前端已就绪：http://localhost:$FRONTEND_PORT"
 }
 
 cleanup() {
+  # 只在 EXIT 清理一次；重复 Ctrl+C 不应中断限时清理流程。
+  trap - EXIT
+  trap '' INT TERM
+  [[ -n "${FRONTEND_PID:-}${BACKEND_PID:-}" ]] || return 0
   log "正在关闭服务..."
-  [[ -n "${FRONTEND_PID:-}" ]] && kill "$FRONTEND_PID" 2>/dev/null || true
-  [[ -n "${BACKEND_PID:-}" ]] && kill "$BACKEND_PID" 2>/dev/null || true
+  local pid alive waited=0
+  for pid in ${FRONTEND_PID:-} ${BACKEND_PID:-}; do
+    kill -TERM -- "-$pid" 2>/dev/null || true
+  done
+  while (( waited < 5 )); do
+    alive=0
+    for pid in ${FRONTEND_PID:-} ${BACKEND_PID:-}; do
+      if kill -0 -- "-$pid" 2>/dev/null; then alive=1; fi
+    done
+    (( alive == 1 )) || break
+    sleep 1
+    ((waited += 1))
+  done
+  for pid in ${FRONTEND_PID:-} ${BACKEND_PID:-}; do
+    kill -KILL -- "-$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+  done
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 ensure_git_hooks() {
   if [[ -f "$PROJECT_DIR/scripts/install-hooks.sh" ]]; then
@@ -216,12 +287,15 @@ main() {
   [[ -f "$BACKEND_DIR/pom.xml" ]] || fail "未找到 backend/pom.xml。"
   [[ -f "$FRONTEND_DIR/index.html" ]] || fail "未找到 frontend/index.html。"
 
-  # Spring 不自动读取 .env；将本机受信任配置导出给后端，避免只写入文件却未启用邮件服务。
-  if [[ -f "$PROJECT_DIR/.env" ]]; then
+  # .env 专供上线部署；本机仅加载 .env.local，避免混入部署数据库密码和邮件密钥。
+  if [[ -f "$PROJECT_DIR/.env.local" ]]; then
     set -a
-    source "$PROJECT_DIR/.env"
+    source "$PROJECT_DIR/.env.local"
     set +a
+  else
+    log "未找到 .env.local，使用已导出的环境变量或开发默认值；可从 .env.local.example 复制。本地启动不读取 .env。"
   fi
+  configure_database
 
   LOCAL_IP="$(get_local_ip)"
   if [[ -n "$LOCAL_IP" ]]; then
@@ -248,11 +322,18 @@ main() {
     printf '  手机浏览器：http://%s:%s （需在同一 Wi-Fi）\n' "$LOCAL_IP" "$FRONTEND_PORT"
   fi
   printf '  后端：http://localhost:%s\n' "$BACKEND_PORT"
-  printf '  数据库：MySQL localhost:3306/wargame\n'
+  printf '  数据库：MySQL %s:%s/%s\n' "$DB_HOST" "$DB_PORT" "$DB_NAME"
   printf '========================================\n'
   printf '\n按 Ctrl+C 停止所有服务。\n'
 
-  wait
+  # Bash 3.2 没有 wait -n；分别监测服务，任一退出就回收另一服务。
+  while true; do
+    kill -0 "$BACKEND_PID" 2>/dev/null || fail "后端进程已退出，正在停止前端。"
+    kill -0 "$FRONTEND_PID" 2>/dev/null || fail "前端进程已退出，正在停止后端。"
+    sleep 1
+  done
 }
 
-main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+  main "$@"
+fi

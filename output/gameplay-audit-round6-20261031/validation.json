@@ -1,0 +1,62 @@
+{
+  "backendExistingReports": [
+    {
+      "name": "GuildSupportTest",
+      "tests": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "PlayerCityConquestTest",
+      "tests": 63,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "WoundedServiceTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "RankPromotionTest",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "PrisonerServiceTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "name": "QuestStageSystemTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "backendTotals": {
+    "tests": 160,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "frontendExistingLog": {
+    "tests": 36,
+    "pass": 36,
+    "fail": 0,
+    "rerun": false
+  },
+  "backendObservationCount": 6,
+  "frontendQuoteCount": 2,
+  "round5CitedSourcesChanged": [],
+  "businessCodeModified": false
+}

@@ -11,42 +11,11 @@ window.Game = window.Game || {};
     if (value && value.buildings && value.technologies) rules = value;
   }
 
-  function currentLevel(id, scope) {
-    var state = (G.Core && G.Core.state) || {};
-    if (scope === 'owned_coastal_city') return state.coastalPortLevel == null ? null : state.coastalPortLevel;
-    var value = (state.buildings || {})[id];
-    var levels = Array.isArray(value) ? value.slice() : [value || 0];
-    var jobs = state.constructions || [];
-    for (var j = 0; j < jobs.length; j++) {
-      var job = jobs[j];
-      if ((job.id || job.buildingType) !== id) continue;
-      var slot = job.slot == null ? 0 : job.slot;
-      if (slot < levels.length && job.targetLevel < levels[slot]) {
-        levels[slot] = job.targetLevel;
-      }
-    }
-    var highest = 0;
-    for (var i = 0; i < levels.length; i++) highest = Math.max(highest, levels[i] || 0);
-    return highest;
-  }
-
-  /** Direct, level-specific requirements. A pending construction is not completed progress. */
+  /** 后端同时返回已满足和未满足条件；客户端不重算建筑、拆除或沿海资格。 */
   function check(kind, id, targetLevel) {
-    var definition = rules && rules[kind] && rules[kind][id];
-    var level = definition && definition.levels[targetLevel - 1];
-    if (!level) return null;
-    var requirements = level.requires.map(function (entry) {
-      var actual = currentLevel(entry.building, entry.scope);
-      return {
-        id: entry.building,
-        name: rules.buildings[entry.building].name,
-        required: entry.level,
-        actual: actual,
-        scope: entry.scope,
-        met: actual != null && actual >= entry.level
-      };
-    });
-    return { requirements: requirements, missing: requirements.filter(function (entry) { return !entry.met; }) };
+    var state = (G.Core && G.Core.state) || {};
+    var result = state.gameplay && state.gameplay.prerequisites;
+    return result && result[kind] && result[kind][id] && result[kind][id][targetLevel - 1] || null;
   }
 
   function firstMissing(kind, id, targetLevel) {
@@ -62,12 +31,6 @@ window.Game = window.Game || {};
 
   /** 建设与研究分别导航，地理缺项进入城市选择。 */
   function goToRequirement(kind, id, scope, event) {
-    // 装备抽屉覆盖其他页面；沿用原有草稿确认，确认前不跳转或丢弃配装。
-    if (G.UnitEquipment) {
-      if (G.UnitEquipment.isBusy()) return;
-      if (G.UnitEquipment.hasUnsaved()) { G.UnitEquipment.close(false); return; }
-      G.UnitEquipment.close(true);
-    }
     if (kind === 'geography') { if (G.Cities && G.Cities.open) G.Cities.open(); return; }
     if (kind !== 'technology') { goTo(id, scope, event); return; }
     var mask = event && event.target && event.target.closest('.modal-mask');

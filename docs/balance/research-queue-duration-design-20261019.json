@@ -263,26 +263,6 @@
       "timingProfile": "normal"
     },
     {
-      "key": "unit_refit",
-      "name": "武器装备",
-      "branch": "军事",
-      "maxLevel": 10,
-      "queueGroup": "normal",
-      "baseCost": {
-        "steel": 300,
-        "oil": 100,
-        "rare": 50
-      },
-      "costGrowth": 2,
-      "prerequisiteReference": {
-        "version": "research-technology-ten-levels-20261019-v1",
-        "key": "unit_refit",
-        "scope": "research_city",
-        "section": "tenLevelTechnologyExpansion.prerequisiteOverrides"
-      },
-      "timingProfile": "normal"
-    },
-    {
       "key": "prisoner_education",
       "name": "战俘收编",
       "branch": "后勤",
@@ -694,8 +674,7 @@
       "baseDurationSeconds": 2419200,
       "technologyPrerequisites": {
         "arm_engine": 10,
-        "log_train": 10,
-        "unit_refit": 10
+        "log_train": 10
       },
       "buildingPrerequisiteScope": "research_city",
       "coastalOnly": false,
@@ -757,8 +736,7 @@
       "baseDurationSeconds": 2419200,
       "technologyPrerequisites": {
         "air_engine": 10,
-        "log_train": 10,
-        "unit_refit": 10
+        "log_train": 10
       },
       "buildingPrerequisiteScope": "research_city",
       "coastalOnly": false,
@@ -816,8 +794,7 @@
       "baseDurationSeconds": 2419200,
       "technologyPrerequisites": {
         "nav_engine": 10,
-        "log_train": 10,
-        "unit_refit": 10
+        "log_train": 10
       },
       "buildingPrerequisiteScope": "research_city",
       "effect": {
@@ -1246,37 +1223,6 @@
       },
       {
         "key": "wall_reinforcement",
-        "timingProfile": "normal",
-        "maxLevel": 10,
-        "baseSecondsByTargetLevel": [
-          180,
-          600,
-          1800,
-          10800,
-          43200,
-          85320,
-          168420,
-          332460,
-          656400,
-          1296000
-        ],
-        "fullBonusSecondsByTargetLevel": [
-          112,
-          372,
-          1116,
-          6696,
-          26786,
-          52902,
-          104427,
-          206138,
-          406994,
-          803571
-        ],
-        "baseChainSeconds": 2595180,
-        "fullBonusChainSeconds": 1609114
-      },
-      {
-        "key": "unit_refit",
         "timingProfile": "normal",
         "maxLevel": 10,
         "baseSecondsByTargetLevel": [
@@ -1966,9 +1912,7 @@
     "technologyKeys": [
       "log_warehouse",
       "recon_level",
-      "recon_radar",
-      "unit_refit"
-    ],
+      "recon_radar"],
     "timingProfile": "normal",
     "preserveWarehouseAndEquipmentMaximumEffects": true,
     "warehouse": {
@@ -3614,134 +3558,6 @@
             ]
           }
         ]
-      },
-      "unit_refit": {
-        "maxLevel": 10,
-        "labFloor": 2,
-        "tierByLevel": [
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
-        ],
-        "levels": [
-          {
-            "targetLevel": 1,
-            "tier": 1,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 2,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 2,
-            "tier": 2,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 2,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 3,
-            "tier": 3,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 3,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 4,
-            "tier": 4,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 4,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 5,
-            "tier": 5,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 5,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 6,
-            "tier": 6,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 6,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 7,
-            "tier": 7,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 7,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 8,
-            "tier": 8,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 8,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 9,
-            "tier": 9,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 9,
-                "scope": "city"
-              }
-            ]
-          },
-          {
-            "targetLevel": 10,
-            "tier": 10,
-            "requires": [
-              {
-                "building": "lab",
-                "level": 10,
-                "scope": "city"
-              }
-            ]
-          }
-        ]
       }
     },
     "migration": {
@@ -3825,7 +3641,6 @@
         "labLevel": 2,
         "newTechnologyKeys": [
           "military_theory",
-          "unit_refit",
           "defense_tech",
           "weapon_range",
           "log_warehouse",
@@ -3835,7 +3650,7 @@
           "log_load",
           "wall_reinforcement"
         ],
-        "cumulativeTechnologyCount": 16,
+        "cumulativeTechnologyCount": 15,
         "maximumTargetLevel": 2
       },
       {
@@ -3848,7 +3663,7 @@
           "log_medical",
           "prisoner_education"
         ],
-        "cumulativeTechnologyCount": 22,
+        "cumulativeTechnologyCount": 21,
         "maximumTargetLevel": 3
       },
       {
@@ -3856,7 +3671,7 @@
         "newTechnologyKeys": [
           "air_engine"
         ],
-        "cumulativeTechnologyCount": 23,
+        "cumulativeTechnologyCount": 22,
         "maximumTargetLevel": 4
       },
       {
@@ -3864,37 +3679,37 @@
         "newTechnologyKeys": [
           "nav_engine"
         ],
-        "cumulativeTechnologyCount": 24,
+        "cumulativeTechnologyCount": 23,
         "maximumTargetLevel": 5
       },
       {
         "labLevel": 6,
         "newTechnologyKeys": [],
-        "cumulativeTechnologyCount": 24,
+        "cumulativeTechnologyCount": 23,
         "maximumTargetLevel": 6
       },
       {
         "labLevel": 7,
         "newTechnologyKeys": [],
-        "cumulativeTechnologyCount": 24,
+        "cumulativeTechnologyCount": 23,
         "maximumTargetLevel": 7
       },
       {
         "labLevel": 8,
         "newTechnologyKeys": [],
-        "cumulativeTechnologyCount": 24,
+        "cumulativeTechnologyCount": 23,
         "maximumTargetLevel": 8
       },
       {
         "labLevel": 9,
         "newTechnologyKeys": [],
-        "cumulativeTechnologyCount": 24,
+        "cumulativeTechnologyCount": 23,
         "maximumTargetLevel": 9
       },
       {
         "labLevel": 10,
         "newTechnologyKeys": [],
-        "cumulativeTechnologyCount": 24,
+        "cumulativeTechnologyCount": 23,
         "maximumTargetLevel": 10
       }
     ]

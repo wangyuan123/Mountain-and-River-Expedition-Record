@@ -6,6 +6,7 @@ import java.util.Map;
 @Data
 public class PvpBattleData {
     private Map<String, Integer> armyA, armyB, positionsA, positionsB;
+    private com.wargame.model.dto.BattleSkillState skillState = new com.wargame.model.dto.BattleSkillState();
     private int distance, firstCombatRound;
     private boolean autoA, autoB, pendingTakeoverA, pendingTakeoverB;
     private double lossA, lossB;

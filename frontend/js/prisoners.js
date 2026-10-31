@@ -74,8 +74,13 @@ window.Game = window.Game || {};
     buttons: function (unit, count) {
       var valid = Number.isInteger(count) && count > 0 && count <= unit.count;
       var disabled = !valid || this.pending || this.attempt;
-      var cost = unit.goldPerUnit * count;
-      return '<button class="btn sm ok"' + (disabled || unit.unavailableReason || cost > ((Core.state.resources || {}).gold || 0) ? ' disabled' : '') + ' onclick="Game.Prisoners.confirm(\'recruit\',\'' + unit.unit + '\')">黄金招募 · ' + (valid ? G.fmt(cost) : '待输入') + '</button>' +
+      var self = this;
+      var quote = valid ? G.ServerRules.cachedPreview({ action: 'prisoner', id: unit.unit, count: count }, function () {
+        var node = document.getElementById('prisoner-actions-' + unit.unit);
+        if (node && self.quantities[unit.unit] === count) node.innerHTML = self.buttons(unit, count);
+      }) : null;
+      var cost = quote ? quote.cost : '待报价';
+      return '<button class="btn sm ok"' + (disabled || !quote || !quote.allowed ? ' disabled' : '') + ' onclick="Game.Prisoners.confirm(\'recruit\',\'' + unit.unit + '\')">黄金招募 · ' + (valid ? G.fmt(cost) : '待输入') + '</button>' +
         '<button class="btn sm warn"' + (disabled ? ' disabled' : '') + ' onclick="Game.Prisoners.confirm(\'release\',\'' + unit.unit + '\')">释放</button>';
     },
     changeQuantity: function (unit, value) {
@@ -91,11 +96,13 @@ window.Game = window.Game || {};
       var item = this.data.units.find(function (u) { return u.unit === unit; }), count = this.quantities[unit];
       if (!item || !Number.isInteger(count) || count <= 0 || count > item.count) { G.toast('请输入有效数量'); return; }
       if (action === 'recruit' && item.unavailableReason) { G.toast(item.unavailableReason); return; }
+      var quote = action === 'recruit' ? G.ServerRules.cachedPreview({ action: 'prisoner', id: unit, count: count }) : null;
+      if (action === 'recruit' && (!quote || !quote.allowed)) { G.toast('请等待有效的后端报价'); return; }
       var operation = { action: action, unit: unit, count: count, operationKey: 'prisoner_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 14) };
       this.closeModal();
       var mask = document.createElement('div'); mask.id = 'prisoner-modal'; mask.className = 'modal-mask';
       mask.innerHTML = '<div class="modal-card prisoner-modal" role="dialog" aria-modal="true" aria-labelledby="prisoner-modal-title"><div class="title" id="prisoner-modal-title">' + (action === 'recruit' ? '确认黄金招募' : '确认释放战俘') + '</div>' +
-        '<p>' + G.escapeHtml((G.DATA.units[unit] || {}).name || unit) + ' × ' + G.fmt(count) + '</p><p>' + (action === 'recruit' ? '黄金 ' + G.fmt(item.goldPerUnit * count) + ' · 归队城市 ' + G.escapeHtml(this.data.cityName) : '所属城市 ' + G.escapeHtml(this.data.cityName) + ' · 释放后无法撤回，无资源奖励') + '</p>' +
+        '<p>' + G.escapeHtml((G.DATA.units[unit] || {}).name || unit) + ' × ' + G.fmt(count) + '</p><p>' + (action === 'recruit' ? '黄金 ' + G.fmt(quote.cost) + ' · 归队城市 ' + G.escapeHtml(this.data.cityName) : '所属城市 ' + G.escapeHtml(this.data.cityName) + ' · 释放后无法撤回，无资源奖励') + '</p>' +
         '<div class="btn-row"><button class="btn" id="prisoner-cancel">取消</button><button class="btn ' + (action === 'recruit' ? 'ok' : 'warn') + '" id="prisoner-confirm">' + (action === 'recruit' ? '支付黄金并招募' : '确定释放') + '</button></div></div>';
       document.body.appendChild(mask);
       var self = this;

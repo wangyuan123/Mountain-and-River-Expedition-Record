@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 const rules = JSON.parse(fs.readFileSync(path.join(__dirname,
   '../../backend/src/main/resources/game/tech-building-prerequisites.json'), 'utf8'));
@@ -46,6 +46,11 @@ function setup(buildings = {}, constructions = []) {
   for (const file of ['constants.js', 'data.js', 'prerequisites.js', 'build.js', 'army.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
   }
+  for (const id of ['destroyer','scout']) context.Game.Core.state.gameplay.units[id]={...context.Game.Core.state.gameplay.units[id],maxRecruitable:10,allowed:true,duration:600,cost:{steel:100},startsAt:1,finishesAt:600001};
+  Object.assign(state.gameplay.training, {
+    shipyard:{maxBatch:60,parallel:2,avgSpeed:1.3,count:1,sumLevel:6},
+    airport:{maxBatch:50,parallel:2,avgSpeed:1.25,count:1,sumLevel:5}
+  });
   context.Game.Prerequisites.setRules(rules);
   return { G: context.Game, toasts, recruits };
 }
@@ -64,34 +69,20 @@ test('造船厂加入军事建筑，四种海军的制造设施切换到造船�
   assert.equal(G.DATA.units.infantry.build, 'factory');
 });
 
-test('完整建筑与科技前置可从零逐步满足，不产生升级环路', () => {
-  const buildings = {};
-  for (const id of Object.keys(rules.buildings)) buildings[id] = 0;
-  let changed;
-  do {
-    changed = false;
-    for (const [id, definition] of Object.entries(rules.buildings)) {
-      const next = definition.levels[buildings[id]];
-      if (next && next.requires.every(r => buildings[r.building] >= r.level)) {
-        buildings[id]++; changed = true;
-      }
-    }
-  } while (changed);
-  for (const id of Object.keys(rules.buildings)) assert.equal(buildings[id], 10, `${id} 存在升级死锁`);
-  const { G } = setup(buildings);
-  for (const [id, definition] of Object.entries(rules.technologies)) {
-    for (let n = 1; n <= definition.maxLevel; n++) {
-      assert.equal(G.Prerequisites.check('technologies', id, n).missing.length, 0, `${id} Lv.${n}`);
-    }
-  }
+test('完整前置图无建筑升级环路，前端逐级读取服务器结果',()=>{
+ const buildings=Object.fromEntries(Object.keys(rules.buildings).map(id=>[id,0]));let changed;
+ do {changed=false;for(const [id,def] of Object.entries(rules.buildings)){const next=def.levels[buildings[id]];if(next&&next.requires.every(r=>buildings[r.building]>=r.level)){buildings[id]++;changed=true;}}} while(changed);
+ for(const id of Object.keys(buildings)) assert.equal(buildings[id],10,id);
+ const {G}=setup(buildings),snapshot=G.Core.state.gameplay.prerequisites;
+ for(const [id,levels] of Object.entries(snapshot.technologies)) levels.forEach((quote,i)=>assert.equal(G.Prerequisites.check('technologies',id,i+1),quote));
 });
 
-test('造船厂/军港升级弹窗条件与舰船动力研发同步显示联动建筑', () => {
-  const { G } = setup({ command: 10, heavyfactory: 10, refinery: 10, transit: 10, lab: 10, oilfield: 10, port: 5, shipyard: 4 });
-  assert.equal(G.Prerequisites.check('buildings', 'port', 6).missing[0].id, 'shipyard');
-  assert.equal(G.Prerequisites.check('buildings', 'shipyard', 6).missing[0].id, 'port');
-  assert.equal(G.Prerequisites.check('technologies', 'nav_engine', 5).missing[0].id, 'shipyard');
-  assert.match(G.Prerequisites.html('buildings', 'port', 6), /造船厂/);
+test('舰船配套前置按后端缺项展示，不自行推断可研发等级',()=>{
+ const {G}=setup({port:10,shipyard:10});
+ const missing={id:'shipyard',name:'造船厂',actual:4,required:5,scope:'city',met:false};
+ G.Core.state.gameplay.prerequisites.buildings.port[5]={requirements:[missing],missing:[missing]};
+ assert.match(G.Prerequisites.html('buildings','port',6),/造船厂/);
+ assert.equal(G.Prerequisites.check('buildings','port',6).missing[0].actual,4);
 });
 
 test('缺造船厂或军港时前端显示全部缺项，并拦截直接调用征召', () => {

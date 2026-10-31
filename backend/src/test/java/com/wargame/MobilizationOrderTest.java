@@ -110,63 +110,42 @@ class MobilizationOrderTest extends BaseServiceTest {
             Long id = fixture("mobilizationOrder", 2).getId();
             items.saveAndFlush(new PlayerItem(null, id, "rapidMobilizationOrder", 1, 0L));
             mobilization.use(id, "mobilizationOrder", 2, "normal-use-1");
-            String cycle = preferences.get(id).formationKey();
+            long cycle = reload(id).getMobilizationCycle();
             mobilization.use(id, "rapidMobilizationOrder", 1, "rapid-use-1");
             assertEquals(37500, armies.armyCap(id));
-            assertEquals(cycle, preferences.get(id).formationKey());
+            assertEquals(cycle, reload(id).getMobilizationCycle());
             clock.addAndGet(MobilizationRules.DURATION_MS);
             assertEquals(27500, armies.armyCap(id));
-            assertEquals(cycle, preferences.get(id).formationKey());
+            assertEquals(cycle, reload(id).getMobilizationCycle());
             clock.addAndGet(MobilizationRules.DURATION_MS);
             assertEquals(25000, armies.armyCap(id));
         }
     }
 
     @Test
-    void boostedDefenseDoesNotOverwriteDefaultAndExpiredDraftCannotSave() throws Exception {
+    void mobilizationExpiryChangesDispatchCapacityButNotDefenseOrActionDrafts() throws Exception {
         AtomicLong clock = new AtomicLong(System.currentTimeMillis());
         try (var ignored = GameClock.use(clock::get)) {
             Long id = fixture("rapidMobilizationOrder", 2).getId();
-            var ordinary = preferences.get(id);
-            preferences.save(id, new BattleActionPreferences.Preferences(ordinary.outgoing(), ordinary.defending(),
-                    Map.of("infantry", 10000, "rocket", 10000), "default"));
+            Player player = reload(id);
+            player.setSortieArmy("{\"infantry\":0}");
+            player.setMobilizationSortieArmy("{}");
+            playerRepository.saveAndFlush(player);
+            var army = Map.of("infantry", 100000, "rocket", 100000);
             mobilization.use(id, "rapidMobilizationOrder", 1, "defense-use-1");
-            var boosted = preferences.get(id);
-            assertEquals(Map.of("infantry", 10000, "rocket", 10000), boosted.sortieArmy());
-            var draft = new BattleActionPreferences.Preferences(boosted.outgoing(), boosted.defending(),
-                    Map.of("infantry", 22500, "rocket", 15000), boosted.formationKey());
-            preferences.save(id, draft);
-            assertEquals(Map.of("infantry", 22500, "rocket", 15000), preferences.selectSortieArmy(id,
-                    Map.of("infantry", 100000, "rocket", 100000)));
-            assertEquals(Map.of("infantry", 10000, "rocket", 10000), JsonUtil.parseIntMap(reload(id).getSortieArmy()));
+            assertEquals(37500, armies.armyCap(id));
+            var draft = preferences.get(id);
+            assertNull(draft.sortieArmy());
+            assertEquals(army, preferences.selectSortieArmy(id, army));
             clock.addAndGet(MobilizationRules.DURATION_MS);
-            assertEquals(Map.of("infantry", 10000, "rocket", 10000), preferences.get(id).sortieArmy());
-            assertEquals(Map.of("infantry", 10000, "rocket", 10000), preferences.selectSortieArmy(id,
-                    Map.of("infantry", 100000, "rocket", 100000)));
-            assertThrows(IllegalArgumentException.class, () -> preferences.save(id, draft));
+            assertEquals(25000, armies.armyCap(id));
+            assertEquals(army, preferences.selectSortieArmy(id, army));
+            preferences.save(id, new BattleActionPreferences.Preferences(draft.outgoing(), draft.defending(), Map.of(), "mobilization:old"));
+            assertEquals(draft.defending(), preferences.get(id).defending());
             mobilization.use(id, "rapidMobilizationOrder", 1, "defense-use-2");
-            assertNotEquals(boosted.formationKey(), preferences.get(id).formationKey());
-            assertEquals(Map.of("infantry", 10000, "rocket", 10000), preferences.get(id).sortieArmy());
-            assertThrows(IllegalArgumentException.class, () -> preferences.save(id, draft));
-        }
-    }
-
-    @Test
-    void automaticAndZeroDefaultDefenseAreRestoredExactly() throws Exception {
-        AtomicLong clock = new AtomicLong(System.currentTimeMillis());
-        try (var ignored = GameClock.use(clock::get)) {
-            Long id = fixture("mobilizationOrder", 2).getId();
-            for (Map<String, Object> defaultArmy : java.util.Arrays.asList(null, Map.<String, Object>of())) {
-                var current = preferences.get(id);
-                preferences.save(id, new BattleActionPreferences.Preferences(current.outgoing(), current.defending(), defaultArmy, "default"));
-                mobilization.use(id, "mobilizationOrder", 1, "auto-zero-" + clock.get());
-                current = preferences.get(id);
-                preferences.save(id, new BattleActionPreferences.Preferences(current.outgoing(), current.defending(),
-                        Map.of("infantry", 27000), current.formationKey()));
-                clock.addAndGet(MobilizationRules.DURATION_MS);
-                if (defaultArmy == null) assertNull(preferences.get(id).sortieArmy());
-                else assertEquals(Map.of(), preferences.get(id).sortieArmy());
-            }
+            assertEquals(army, preferences.selectSortieArmy(id, army));
+            assertEquals("{\"infantry\":0}", reload(id).getSortieArmy());
+            assertEquals("{}", reload(id).getMobilizationSortieArmy());
         }
     }
 

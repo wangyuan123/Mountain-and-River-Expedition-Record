@@ -29,6 +29,12 @@ public class CityTeleportController {
         return teleport.preview(auth.getCurrentPlayer().getId(), battlefield, x, y);
     }
 
+    /** 仅返回当前请求城市的检查结果，不授予或缓存传送资格。 */
+    @GetMapping("/readiness")
+    public Map<String, Object> readiness() {
+        return teleport.readiness(auth.getCurrentPlayer().getId());
+    }
+
     @PostMapping
     @Transactional
     public Map<String, Object> teleport(@RequestBody Request request) {

@@ -2,7 +2,6 @@ import com.wargame.service.BattleService;
 import com.wargame.service.pvp.*;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.dto.pvp.PvpSnapshot;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.*;
 import java.nio.file.*;
@@ -18,7 +17,6 @@ public class PvpHoldoutTool {
     static BattleService.TechCtx context(Map<String,Integer> army,Map<String,Integer> skills) {
         Map<String,Integer> tech=new TreeMap<>();
         for(String id:List.of("attack_tech","defense_tech","cmd_hp","fire_density","weapon_range","arm_engine","air_engine","nav_engine"))tech.put(id,3);
-        army.keySet().forEach(id->{for(String key:List.of("ground","air","sea","defense","hp","speed"))tech.put(UnitEquipmentEffects.key(id,key),5);});
         return new BattleService.TechCtx(tech,skills,60,60,CommandBonus.NONE);
     }
     static Map<String,Integer> equalPower(Map<String,Integer> form,Map<String,Integer> skills,String field,double factor) {

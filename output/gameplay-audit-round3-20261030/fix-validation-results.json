@@ -1,0 +1,176 @@
+{
+  "date": "2026-10-31",
+  "status": "passed",
+  "scope": "第三轮七类问题修复及新军官个人欠薪处罚边界",
+  "backend": {
+    "totals": {
+      "tests": 214,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "suites": [
+      {
+        "name": "GameplayAuditRound3FixesTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ConstructionCostSnapshotMigrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "OfficerSalaryArrearsTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "MailServiceTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PrisonerServiceTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "BuildServiceTest",
+        "tests": 45,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "BuildDismantleSettlementTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "FortCapacityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "FreeArmySpeedUpTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "FreeBuildSpeedUpTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ArmyRecruitmentFoodTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "TickServiceTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "GameplayAuditFixesTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "GameRuleAdjustmentsTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "MultiCityTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "WoundedServiceTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ProductionRewardSalaryMigrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "JointDefenseBattleTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "JointDefenseConcurrencyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "logs": [
+      "fix-backend-validation.log",
+      "fix-final-regression.log"
+    ],
+    "environment": "test profile; isolated H2 in-memory databases; no game databases"
+  },
+  "frontend": {
+    "tests": 64,
+    "pass": 64,
+    "fail": 0,
+    "skipped": 0,
+    "log": "fix-frontend-validation.log"
+  },
+  "targeted_whitespace_and_conflict_checks": "passed; no automatic formatting",
+  "migration": {
+    "version": "147",
+    "test": "ConstructionCostSnapshotMigrationTest",
+    "legacy_rule": "Freeze historical cancellation calculation at migration time; original opening costs cannot be reconstructed"
+  },
+  "commands": [
+    "LC_ALL=en_US.UTF-8 ./mvnw -q -f backend/pom.xml -Dmaven.compiler.useIncrementalCompilation=false -Dtest=GameplayAuditRound3FixesTest,ConstructionCostSnapshotMigrationTest,OfficerSalaryArrearsTest,MailServiceTest,PrisonerServiceTest,BuildServiceTest,BuildDismantleSettlementTest,FortCapacityTest,FreeArmySpeedUpTest,FreeBuildSpeedUpTest,ArmyRecruitmentFoodTest,TickServiceTest,GameplayAuditFixesTest,GameRuleAdjustmentsTest,MultiCityTest,WoundedServiceTest,ProductionRewardSalaryMigrationTest,JointDefenseBattleTest,JointDefenseConcurrencyTest test",
+    "LC_ALL=en_US.UTF-8 ./mvnw -q -f backend/pom.xml -Dmaven.compiler.useIncrementalCompilation=false -Dtest=GameplayAuditRound3FixesTest,ConstructionCostSnapshotMigrationTest,OfficerSalaryArrearsTest test",
+    "node --test frontend/tests/mail-attachment.test.cjs frontend/tests/prisoners.test.cjs frontend/tests/build.test.cjs frontend/tests/fort-capacity.test.cjs frontend/tests/fort-overview-rules.test.cjs frontend/tests/army-overview-rules.test.cjs frontend/tests/officer-dismiss.test.cjs frontend/tests/home-officer-recruit.test.cjs"
+  ],
+  "limitations": [
+    "No MySQL-specific stress testing",
+    "Backend rebuild and restart required; migration not applied to game database",
+    "Repeated low-level NPC promotion intentionally unchanged"
+  ]
+}

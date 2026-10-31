@@ -97,7 +97,7 @@
 
     if (totalRes == null || gatherHarvested == null) {
       var stateList = (typeof G !== 'undefined' && G.state && G.state.world && G.state.world.wildTiles) ||
-                      (typeof Core !== 'undefined' && Core.state && Core.state.world && Core.state.world.wildTiles);
+                      (G.Core && G.Core.state && G.Core.state.world && G.Core.state.world.wildTiles);
       if (stateList) {
         var match = stateList.find(function (item) {
           return (t.id != null && String(item.id) === String(t.id)) || (t.x === item.x && t.y === item.y);
@@ -2004,6 +2004,8 @@
       if(self.destroyed||seq!==self.detailSeq||identity()!==owner)return;
       self.selected=Object.assign({kind:'site'},site);
       var terrainType=site.cityType || (site.coastal?'海岸':'平原');
+      // 标题描述选中单格的实际地表，不把 2×2 建城区域分类当作图案名称。
+      if(G.MapTerrain&&G.MapTerrain.surfaceName)terrainType=G.MapTerrain.surfaceName(x,y,self.camera.size,terrainType);
       var html = '<button class="world-map-detail-close" data-map="close" aria-label="关闭">×</button>' +
         '<div style="display:flex;align-items:center;gap:6px;padding-right:24px;margin-bottom:6px;flex-wrap:wrap;">' +
         '<b style="font-size:15px;">' + esc(terrainType) + ' · (' + x + ', ' + y + ')</b>' +
@@ -2192,21 +2194,9 @@
           hasGarrison = true;
           var udef = (G.DATA && G.DATA.units && G.DATA.units[uid]) || { name: uid, load: 10 };
           garrisonList.push(udef.name + ' ×' + count);
-          totalLoad += (udef.load || 0) * count * 1;
         }
       }
-
-      if (stationedMarches.length) {
-        totalLoad = 0;
-        stationedMarches.forEach(function (m) {
-          var snap = m.unitEquipment || {}, baseLoad = 0;
-          Object.keys(m.army || {}).forEach(function (id) {
-            baseLoad += Math.max(0, m.army[id]) * ((G.DATA.units[id] || {}).load || 0)
-              * (G.UnitEquipment ? G.UnitEquipment.mul(snap, id, 'load') : 1);
-          });
-          totalLoad += Math.floor(baseLoad * (1 + .05 * Math.max(0, Math.min(10, snap['@log:load'] || 0))));
-        });
-      }
+      totalLoad = t.gatherView ? t.gatherView.garrisonCapacity : null;
       var isGathering = Boolean(t.gathering);
       var gather = gatherProgress(t, now);
       var canAbandon = !G.wildAbandonReason(t, (G.Core.state.world || {}).marches);
@@ -2214,9 +2204,6 @@
       var gatherMarches = G.World.renderGatherMarches(t.id, 'world-map-button primary');
       if (gatherMarches) this.detail.querySelector('p').insertAdjacentHTML('afterend', gatherMarches);
       var dispatchResource = (G.DATA.wildTypes[t.type] || {}).res;
-      if (dispatchResource && (t.totalRes || 0) > (t.mined || 0)) {
-        button('派兵采集', 'gatherDispatch', true);
-      }
 
       // 资源地耗尽后仍展示剩余量和原因，不能因储量为零把整个资源面板隐藏。
       if (dispatchResource) {
@@ -2231,10 +2218,10 @@
             '<span><b>' + G.resourceIconHtml(rk) + ' ' + modeLabel + ' · ' + esc(rName) + '</b></span>' +
             '<span data-gather-time style="color:var(--primary,#467da5);font-weight:600;">' + esc(gather.tip) + '</span>' +
           '</div>' +
-          '<div>剩余资源：<b data-gather-remaining>' + G.fmt(gather.remaining) + '</b></div>' +
+          '<div>剩余资源：<b data-gather-remaining>' + (gather.remaining == null ? '待同步' : G.fmt(gather.remaining)) + '</b></div>' +
           // 出征队伍在各自任务行显示累计时间，驻军则在汇总面板展示，避免重复。
           (isGathering ? '<div data-gather-elapsed>' + esc(G.gatherElapsedText(t, now)) + '</div>' : '') +
-          '<div role="progressbar"' + (gather.hasHarvested && !gather.active ? ' hidden' : '') + ' aria-label="野地资源采集进度" aria-valuemin="0" aria-valuemax="' + String(gather.total) + '" aria-valuenow="' + String(gather.mined) + '" style="height:6px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden;margin:6px 0;">' +
+          '<div role="progressbar"' + (gather.total == null || gather.hasHarvested && !gather.active ? ' hidden' : '') + ' aria-label="野地资源采集进度" aria-valuemin="0" aria-valuemax="' + String(gather.total == null ? 0 : gather.total) + '" aria-valuenow="' + String(gather.mined == null ? 0 : gather.mined) + '" style="height:6px;background:rgba(0,0,0,0.08);border-radius:3px;overflow:hidden;margin:6px 0;">' +
             '<div data-gather-progress style="height:100%;width:' + gather.percent + '%;background:var(--primary,#467da5);transition:width .3s;"></div>' +
           '</div>' +
           '<div style="font-size:12px;display:flex;justify-content:space-between;color:var(--ink-sec,#666);">' +
@@ -2262,14 +2249,14 @@
       if (hasGarrison) {
         extraHtml += '<div class="wild-garrison-panel" style="margin:8px 0;padding:8px 10px;background:rgba(87,134,87,0.1);border-radius:6px;border:1px solid rgba(87,134,87,0.25);font-size:12px;">' +
           '<div style="margin-bottom:4px;"><b>🛡 驻守部队</b>：' + esc(garrisonList.join(' · ')) + '</div>' +
-          '<div style="color:var(--ink-sec,#666);">部队运载负重：<b>' + G.fmt(totalLoad) + '</b></div>' +
+          '<div style="color:var(--ink-sec,#666);">部队运载负重：<b>' + (totalLoad == null ? '待同步' : G.fmt(totalLoad)) + '</b></div>' +
         '</div>';
         this.detail.querySelector('p').insertAdjacentHTML('afterend', extraHtml);
 
         var wtDef = G.DATA.wildTypes[t.type] || {};
-        var remaining = Math.max(0, (t.totalRes || 0) - (t.mined || 0));
+        var remaining = gather.remaining;
         if (wtDef.res) {
-          button('采集', 'gather', true, remaining <= 0);
+          button('采集', 'gather', true, remaining == null || remaining <= 0);
         }
         button('撤回', 'recall');
         if (canAbandon) button('放弃领地', 'abandon');
@@ -2285,7 +2272,7 @@
         '</div>';
       } else {
         extraHtml += '<div style="margin:8px 0;padding:6px 10px;background:rgba(0,0,0,0.04);border-radius:6px;font-size:12px;color:var(--ink-sec,#666);">' +
-          (gatherMarches ? '采集部队独立执行任务；如需驻防，可另行派遣部队进驻。' : '暂无驻扎部队，派遣部队进驻后可就地开启资源采集与驻防。') +
+          (gatherMarches ? '采集部队独立执行任务；如需驻防，可另行派遣部队进驻。' : '暂无驻扎部队，请先派遣部队进驻；抵达后手动点击“采集”，再手动收获、下令回城。') +
         '</div>';
       }
       this.detail.querySelector('p').insertAdjacentHTML('afterend', extraHtml);
@@ -2305,20 +2292,20 @@
       } else if(t.warAt>now&&t.warEndAt>now&&t.canAccelerateWar){
         button('加速备战','speedUpWar',true);
       } else if(shielded){
-        button('讨伐','campaign',true,true);
+        button('征服','conquer',true,true);button('掠夺','plunder',false,true);
         actions.insertAdjacentHTML('beforeend','<span class="world-map-shield-note">'+esc(name(t))+'处于护盾期间，无法发起侦查或攻击</span>');
       } else if(t.guildRelation==='hostile'){
-        button('讨伐','campaign',true);
+        button('征服','conquer',true);button('掠夺','plunder');
       } else if(t.warAt&&t.warAt<=now&&t.warEndAt>now){
-        button('讨伐','campaign',true);
+        button('征服','conquer',true);button('掠夺','plunder');
       } else if(!t.warAt||t.warEndAt<=now){
         button('宣战','declare',true);
       }
-    }else{button('讨伐','campaign',true);}
+    }else{button('征服','conquer',true);button('掠夺','plunder');}
   };
   MapView.prototype.act = function(action, button) {
     var self=this,t=this.selected,seq=this.detailSeq;if(!t)return;
-    if(t.kind==='player' && t.powerProtection && t.powerProtection.allowed===false && (action==='campaign'||action==='declare')){
+    if(t.kind==='player' && t.powerProtection && t.powerProtection.allowed===false && (['campaign','conquer','plunder','declare'].indexOf(action)>=0)){
       G.toast(t.powerProtection.reason);return;
     }
     if(action==='speedUpWar'){G.World.useTacticalOrder(null,'warSpeedOrder',Number(t.id));return;}
@@ -2329,7 +2316,7 @@
       else G.Cities.openTransfer(t.id,action);
       return;
     }
-    if(t.kind==='player'&&!t.selfCity&&isShieldedCity(t)&&(action==='campaign'||action==='scout'||action==='declare')){
+    if(t.kind==='player'&&!t.selfCity&&isShieldedCity(t)&&(['campaign','conquer','plunder','scout','declare'].indexOf(action)>=0)){
       G.toast((name(t)||'目标城市')+'处于护盾期间，无法发起侦查或攻击');
       return;
     }

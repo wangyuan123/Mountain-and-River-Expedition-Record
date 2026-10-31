@@ -17,6 +17,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class OnboardingService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private com.wargame.service.TickService resourceEconomy;
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.ArmyPopulationService populationCosts;
     private static final String PREFIX = "ob3_";
     private static final String ENROLLED = PREFIX + "enrolled";
@@ -31,7 +32,6 @@ public class OnboardingService {
     private final MarchRepository marches;
     private final WildTileRepository wilds;
     private final GuildMemberRepository guildMembers;
-    private final UnitLoadoutRepository loadouts;
     private final WorldTerrainService terrain;
     private final CityScope scope;
     private final com.wargame.service.MailService mail;
@@ -59,11 +59,10 @@ public class OnboardingService {
             new Supply("battle", "首战补给", List.of("occupy"), Map.of("food", 10000, "steel", 10000, "oil", 10000, "rare", 10000, "gold", 10000))
     );
     public static final List<Exploration> EXPLORATIONS = List.of(
-            new Exploration("gather", "首次采集", "从己方资源地采集并将资源运回城市。", "world", "", "选择己方资源地，派出步兵或运输部队采集。步兵每人基础负重10，卡车每辆500，优先使用基础卡车；采满后需手动收获，再下达部队回城命令；资源返城入库后完成任务。", Map.of("food", 5000, "steel", 3600, "oil", 1000)),
+            new Exploration("gather", "首次采集", "从己方资源地采集并将资源运回城市。", "world", "", "选择己方资源地，通过派遣进驻步兵或运输部队；抵达后手动点击“采集”开始。步兵每人基础负重10，卡车每辆500，优先使用基础卡车；采满后需手动收获，再下达部队回城命令；资源返城入库后完成任务。", Map.of("food", 5000, "steel", 3600, "oil", 1000)),
             new Exploration("truck", "生产卡车", "生产一辆卡车，提高资源运输能力。", "army", "truck", "卡车擅长运输，负重较高。选择军队中的卡车，征召一辆并等待生产完成。", Map.of("food", 1000, "steel", 1000)),
             new Exploration("tech", "研究科技", "完成一次科技研究，提升基地能力。", "tech", "", "科研中心建成后，选择一项可研究的科技；研究完成后任务自动更新。", Map.of("steel", 1500, "rare", 200)),
             new Exploration("officer", "招募军官", "招募一名军官，了解将领的作用。", "academy", "academy", "军校建成后刷新候选军官，选择一名招募。将领可以出征，也可以留城任职。", Map.of("gold", 300)),
-            new Exploration("equipment", "配置兵种装备", "给一个兵种配置装备，提升作战能力。", "army", "infantry", "打开兵种的配装入口，使用仓库中的兵种装备；缺少装备时可以先查看制造条件。", Map.of("steel", 1500)),
             new Exploration("guild", "加入军团", "加入或创建军团，结识其他指挥官。", "guild", "", "在军团页选择一个军团申请加入，审核通过后完成任务；也可以自行创建军团。", Map.of("gold", 300))
     );
 
@@ -220,7 +219,6 @@ public class OnboardingService {
         if (!officers.findByPlayerId(playerId).isEmpty()) mark(rows, playerId, "task_officer");
         if (techs.findByPlayerId(playerId).stream().anyMatch(t -> Objects.requireNonNullElse(t.getLevel(), 0) > 0)) mark(rows, playerId, "task_tech");
         if (guildMembers.findByPlayerId(playerId).isPresent()) mark(rows, playerId, "task_guild");
-        if (loadouts.findByPlayerId(playerId).stream().anyMatch(l -> !JsonUtil.parseObjMap(l.getSlots()).isEmpty())) mark(rows, playerId, "task_equipment");
         if (!rows.containsKey(ENROLLED) || finished(rows)) return;
         // 旧玩家已侦查的事实保留，不要求重新建设或更换侦查方式。
         if (done(rows, "scout")) {
@@ -256,9 +254,14 @@ public class OnboardingService {
 
     /** 可选任务只根据自身条件解锁，互相不串成必须依次完成的链条。 */
     private List<Map<String, Object>> optionalTasks(Long playerId, Map<String, PlayerGuide> rows) {
-        boolean owned = wilds.findByOccupiedBy(playerId).stream().anyMatch(t -> Objects.requireNonNullElse(t.getOccupiedCitySlot(), 0) == 0
+        List<WildTile> ownedTiles = wilds.findByOccupiedBy(playerId);
+        boolean owned = ownedTiles.stream().anyMatch(t -> Objects.requireNonNullElse(t.getOccupiedCitySlot(), 0) == 0
                 && hasResource(t) && Objects.requireNonNullElse(t.getTotalRes(), 0) > Objects.requireNonNullElse(t.getMined(), 0));
-        boolean gathering = marches.findByPlayerId(playerId).stream().anyMatch(m -> "wild_gather".equals(m.getTargetKind()) || "gather".equals(m.getAction()));
+        // 派遣到达后引导玩家去野地手动采集，不能再次推荐派兵；收获待回城也仍属进行中。
+        boolean gathering = ownedTiles.stream().anyMatch(t -> Boolean.TRUE.equals(t.getGathering()) || t.getGatherHarvested() != null
+                || (hasResource(t) && JsonUtil.parseIntMap(t.getGarrison()).values().stream().anyMatch(n -> n > 0)))
+                || marches.findByPlayerId(playerId).stream().anyMatch(m -> "wild_gather".equals(m.getTargetKind())
+                || "gather".equals(m.getAction()) || ("wild".equals(m.getTargetKind()) && "station".equals(m.getAction())));
         return EXPLORATIONS.stream().map(t -> {
             String reason = switch (t.id()) {
                 case "gather" -> owned ? "" : "先占领一处有剩余资源的野地";
@@ -370,6 +373,7 @@ public class OnboardingService {
     }
     private void grantReward(Map<String, PlayerGuide> rows, Long playerId, String id, Reward reward) {
         if (done(rows, "reward_" + id)) return;
+        if (resourceEconomy != null) resourceEconomy.beforeResourceChange(playerId, 0);
         Resources balance = resources.findByPlayerIdAndCitySlot(playerId, 0).orElseThrow();
         Map<String, Integer> r = reward.resources();
         balance.addResource("food", r.getOrDefault("food", 0)); balance.addResource("steel", r.getOrDefault("steel", 0));

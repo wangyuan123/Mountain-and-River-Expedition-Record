@@ -3,7 +3,14 @@
   'use strict';
   // Fixed world-space fields keep the same terrain under every zoom and viewport.
   var palette = G.Constants.terrainPalette;
-  var snowImages = [], meadowImages = [], meadowLoading = null, meadowReady = false, forestImage = null, forestImages = [], shrubImage = null, snowRGB = [226, 234, 237];
+  var meadowLoading = null, meadowReady = false, snowRGB = [226, 234, 237];
+  var modelImages = {}, modelSources = {
+    forest: ['wild-forest-dense-integrated.webp', 'wild-forest-ridge-integrated.webp', 'wild-forest-edge-integrated.webp'],
+    hill: ['wild-hill-peak-integrated.webp', 'wild-hill-ridge-integrated.webp', 'wild-hill-foothill-integrated.webp'],
+    shrub: ['wild-shrub-grass-patch.webp?v=5.9-green-lawn'],
+    wetland: ['wild-swamp-deep-integrated.webp', 'wild-swamp-creek-integrated.webp', 'wild-swamp-marsh-integrated.webp'],
+    meadow: ['wild-grassland.webp']
+  };
   var targetChunks = new Map(), clearings = new Map(), terrainRevision = 0;
   /** 保存所有目标的完整图标占地；筛选、归属和展示缓存淘汰均不能释放这些区域。 */
   function updateChunk(cx, cy, targets, size) {
@@ -56,30 +63,67 @@
     var px=(x+.5)*density, py=(y+.5)*density, grass=sample(x+.5,y+.5,size).grass;
     var depth=G.MapOcean?G.MapOcean.sample(x+.5,y+.5):-1000;
     if (northernSnow(x+.5,y+.5,size)>.12 || depth>-1.4) return null;
-    if (!(x%2) && !(y%2) && (forestImages.length || forestImage) && depth<=-1.8 && grass>=.25) {
+    if (!(x%2) && !(y%2) && decorationImage('forest',x,y) && depth<=-1.8 && grass>=.25) {
       var woodland=noise(px/240+31,py/240+71);
       if (hash(x/2+719,y/2+911)<=.18+smooth(.4,.72,woodland)*.55) return 'forest';
     }
-    if (shrubImage && grass>=.34 && hash(x+1201,y+4099)<=.13) return 'shrub';
+    if (decorationImage('shrub',x,y) && grass>=.34 && hash(x+1201,y+4099)<=.13) return 'shrub';
     return grass<=.34?'landmark':null;
   }
+  /** 地貌绘制与选中名称共用分类，避免同一格显示两种地形。 */
+  function landmarkAt(x, y) {
+    var seed=hash(x+1701,y+2309);
+    return seed<.18?'hill':seed<.43?'shrub':seed<.62?'forest':seed<.75?'wetland':'meadow';
+  }
   /**
-   * Load terrain decoration textures before map chunks are generated.
-   * @returns {Promise<void>} Resolves after woodland and shrub textures are ready.
+   * 按世界坐标选择同类微缩模型；变体与可占领野地一致，素材失败不再退回色块。
+   * @param {string} kind - 森林、丘陵、灌木、湿地或草地。
+   * @param {number} x - 地块横坐标。
+   * @param {number} y - 地块纵坐标。
+   * @returns {HTMLImageElement|null} 已加载的模型；同类全部失败时返回 null。
+   */
+  function decorationImage(kind, x, y) {
+    var images=modelImages[kind];
+    if (!images) return null;
+    var seed=kind==='forest'?x+y*2:kind==='hill'?x*2+y:kind==='wetland'?x*2+y*2+1:0;
+    return images[Math.abs(seed)%images.length] || images.find(Boolean) || null;
+  }
+  /**
+   * 返回当前格实际绘制的地表名称；装饰不是可占领野地，建城资格仍由服务端校验。
+   * @param {number} x - 全局地块横坐标。
+   * @param {number} y - 全局地块纵坐标。
+   * @param {number} size - 完整世界边长，与细地形瓦片一致。
+   * @param {string} cityType - 服务端建城区域，仅保留海岸、海岛的地理说明。
+   * @returns {string} 与当前格图案一致的名称。
+   */
+  function surfaceName(x, y, size, cityType) {
+    x=Math.floor(x);y=Math.floor(y);
+    var kind=decorationAt(x,y,size);
+    if(kind==='landmark')kind=landmarkAt(x,y);
+    var names={forest:'森林',shrub:'灌木',hill:'丘陵',wetland:'湿地',meadow:'草地'};
+    // 建城接口的丘陵/平原来自独立坐标分类，不能替代地图实际绘制的地表。
+    return (decorationImage(kind,x,y) && names[kind]) || (cityType==='海岸'||cityType==='海岛'?cityType:'平原');
+  }
+  /**
+   * 在生成地图瓦片前预载全部地表模型；绘制与名称均只使用加载成功的同类素材。
+   * @returns {Promise<void>} 所有微缩模型加载或失败后完成。
    */
   function loadMeadows() {
-    if (!meadowLoading) meadowLoading = Promise.all(['dense', 'ridge', 'edge', 'shrub'].map(function(variant, i) {
-      return new Promise(function(resolve) {
-        var image = new Image();
-        image.onload = function() {
-          if (variant === 'shrub') shrubImage = image;
-          else { forestImages[i] = image; if (i === 0) forestImage = image; }
-          resolve();
-        };
-        image.onerror = function() { resolve(); };
-        image.src = variant === 'shrub' ? 'img/map/wild-shrub-grass-patch.webp?v=5.9-green-lawn' : 'img/map/wild-forest-' + variant + '-integrated.webp';
+    if (!meadowLoading) {
+      var requests=[];
+      Object.keys(modelSources).forEach(function(kind) {
+        modelImages[kind]=new Array(modelSources[kind].length);
+        modelSources[kind].forEach(function(source,index) {
+          requests.push(new Promise(function(resolve) {
+            var image=new Image();
+            image.onload=function() { modelImages[kind][index]=image; resolve(); };
+            image.onerror=function() { resolve(); };
+            image.src='img/map/'+source;
+          }));
+        });
       });
-    })).then(function() { meadowReady = true; });
+      meadowLoading=Promise.all(requests).then(function() { meadowReady=true; });
+    }
     return meadowLoading;
   }
   function clamp(v) { return Math.max(0, Math.min(1, v)); }
@@ -287,87 +331,27 @@
         }
       }
     }
-    // 所有图标装饰共用单格预约，包含瓦片边界 halo；地貌笔画也限制在该格内。
-    // Minimal canvas mocks used by terrain seam tests do not expose shape primitives.
-    if (!ctx.fillRect) return canvas;
-    var decorations=[], minCellX=Math.floor(startX/density), maxCellX=Math.floor((startX+side)/density);
+    // 所有地形共用模型绘制，保留单格预约与跨瓦片 halo，不再生成方块或线条地貌。
+    if (!ctx.drawImage || !ctx.setTransform) return canvas;
+    var projection=G.MapCamera?G.MapCamera.projection:{a:1,b:0,c:0,d:1};
+    var determinant=projection.a*projection.d-projection.b*projection.c;
+    var ia=projection.d/determinant, ib=-projection.b/determinant, ic=-projection.c/determinant, id=projection.a/determinant;
+    // 逆投影后的微缩模型也必须完全落在所属格内，不能压住邻格目标。
+    var modelReach=density/Math.max(1,Math.abs(ia)+Math.abs(ic),Math.abs(ib)+Math.abs(id));
+    var minCellX=Math.floor(startX/density), maxCellX=Math.floor((startX+side)/density);
     var minCellY=Math.floor(startY/density), maxCellY=Math.floor((startY+side)/density);
     for (var cellY=minCellY;cellY<=maxCellY;cellY++) for (var cellX=minCellX;cellX<=maxCellX;cellX++) {
       var kind=decorationAt(cellX,cellY,size);
-      if (kind) decorations.push({x:cellX,y:cellY,kind:kind});
-    }
-    for (var di=0;di<decorations.length;di++) {
-      var decoration=decorations[di];
-      if (decoration.kind!=='landmark') continue;
-      var gx2=decoration.x, gy2=decoration.y, seed2=hash(gx2+1701,gy2+2309);
-      var dx2=(gx2+.5)*density-startX, dy2=(gy2+.5)*density-startY;
-      if (seed2 < .18) {
-        // Low rounded hill with a few exposed soil/rock facets.
-        ctx.fillStyle = 'rgba(112,101,73,.25)'; ctx.fillRect(dx2-15, dy2-3, 30, 12);
-        ctx.fillStyle = 'rgba(145,136,101,.28)'; ctx.fillRect(dx2-14, dy2-10, 28, 14);
-        ctx.strokeStyle = 'rgba(91,82,61,.30)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(dx2 - 9, dy2 - 1); ctx.lineTo(dx2 - 2, dy2 - 7); ctx.lineTo(dx2 + 7, dy2 - 2); ctx.stroke();
-      } else if (seed2 < .43) {
-        // Small shrub thicket: layered sage circles with visible gaps.
-        for (var shrub = 0; shrub < 4; shrub++) { var sx = dx2 + (hash(shrub + gx2, gy2) - .5) * 25, sy = dy2 + (hash(shrub + gy2, gx2) - .5) * 18; ctx.fillStyle = shrub % 2 ? 'rgba(74,100,57,.42)' : 'rgba(105,127,69,.38)'; ctx.fillRect(sx-5, sy-5, 10, 10); }
-      } else if (seed2 < .62) {
-        // A few readable woodland crowns, sparser than the grass texture.
-        for (var tree = 0; tree < 3; tree++) { var tx2 = dx2 + (tree - 1) * 13, ty2 = dy2 + (tree % 2) * 7; ctx.fillStyle = 'rgba(47,76,43,.45)'; ctx.fillRect(tx2-8, ty2-8, 16, 16); ctx.fillStyle = 'rgba(104,130,72,.45)'; ctx.fillRect(tx2-7, ty2-8, 12, 12); }
-      } else if (seed2 < .75) {
-        // Tiny wetland pocket with a muted teal center and reed marks.
-        ctx.fillStyle = 'rgba(76,116,104,.25)'; ctx.fillRect(dx2-14, dy2-8, 28, 16);
-        ctx.strokeStyle = 'rgba(55,88,72,.40)'; ctx.lineWidth = 1; for (var reed = -2; reed <= 2; reed++) { ctx.beginPath(); ctx.moveTo(dx2 + reed * 7, dy2 + 7); ctx.lineTo(dx2 + reed * 8 + 3, dy2 - 5); ctx.stroke(); }
-      } else {
-        // Connected meadow patches: layered miniature grass clumps, from
-        // lush centers to sparse edges, so plains read as a continuous field.
-        for (var tuft = 0; tuft < 9; tuft++) {
-          var tx3 = dx2 + (hash(tuft + gx2 * 3, gy2) - .5) * 42;
-          var ty3 = dy2 + (hash(tuft + gy2 * 5, gx2) - .5) * 28;
-          var lush = hash(tuft + 91, gx2 + gy2);
-          var blades = lush > .58 ? 5 : lush > .24 ? 3 : 2;
-          ctx.strokeStyle = lush > .58 ? 'rgba(67,103,45,.52)' : 'rgba(102,130,61,.44)';
-          ctx.lineWidth = .7;
-          for (var blade3 = 0; blade3 < blades; blade3++) { ctx.beginPath(); ctx.moveTo(tx3 + blade3 * 1.6, ty3 + 4); ctx.lineTo(tx3 + blade3 * 1.6 - 2 + blade3, ty3 - 4 - lush * 5); ctx.stroke(); }
-        }
-      }
-    }
-
-    // 灌木限制在独占格内，不能与同格森林或地貌叠画。
-    if (ctx.drawImage && shrubImage) {
-      for (var si=0;si<decorations.length;si++) {
-          var shrubCell=decorations[si];
-          if (shrubCell.kind!=='shrub') continue;
-          var sx=shrubCell.x, sy=shrubCell.y;
-          var shrubX=(sx+.5)*density, shrubY=(sy+.5)*density;
-          var shrubWidth = 38 + hash(sx + 41, sy + 149) * 18;
-          var shrubHeight = shrubWidth * (.92 + hash(sx + 359, sy + 83) * .16);
-          ctx.globalAlpha = .58 + hash(sx + 577, sy + 601) * .22;
-          ctx.drawImage(shrubImage, shrubX - startX - shrubWidth / 2, shrubY - startY - shrubHeight / 2, shrubWidth, shrubHeight);
-          ctx.globalAlpha = 1;
-      }
-    }
-
-    // 装饰森林与目标图标共用单格中心和尺寸；跨纹理边界的 halo 保持重复绘制一致。
-    if (ctx.drawImage && (forestImages.length || forestImage)) {
-      var forestReach=density;
-      var projection=G.MapCamera?G.MapCamera.projection:{a:1,b:0,c:0,d:1};
-      var determinant=projection.a*projection.d-projection.b*projection.c;
-      var ia=projection.d/determinant, ib=-projection.b/determinant, ic=-projection.c/determinant, id=projection.a/determinant;
-      // 即使以后恢复斜投影，逆变换后的森林也不能伸出预约单格。
-      forestReach/=Math.max(1,Math.abs(ia)+Math.abs(ic),Math.abs(ib)+Math.abs(id));
-      for (var fi=0;fi<decorations.length;fi++) {
-          var forestCell=decorations[fi];
-          if (forestCell.kind!=='forest') continue;
-          var fx=forestCell.x/2, fy=forestCell.y/2;
-          var treeX=(forestCell.x+.5)*density, treeY=(forestCell.y+.5)*density;
-          // Cancel the ground-plane skew so trees stand upright like forest targets.
-          var fArt = (forestImages.length ? forestImages[Math.abs(fx + fy * 2) % forestImages.length] : null) || forestImage;
-          ctx.setTransform(ia,ib,ic,id,treeX-startX,treeY-startY);
-          ctx.drawImage(fArt,-forestReach/2,-forestReach/2,forestReach,forestReach);
-          ctx.setTransform(1,0,0,1,0,0);
-      }
+      if (kind==='landmark') kind=landmarkAt(cellX,cellY);
+      var image=decorationImage(kind,cellX,cellY);
+      if (!image) continue;
+      var modelX=(cellX+.5)*density, modelY=(cellY+.5)*density;
+      ctx.setTransform(ia,ib,ic,id,modelX-startX,modelY-startY);
+      ctx.drawImage(image,-modelReach/2,-modelReach/2,modelReach,modelReach);
+      ctx.setTransform(1,0,0,1,0,0);
     }
 
     return canvas;
   }
-  G.MapTerrain = { northernSnow:northernSnow, updateChunk:updateChunk, clearTargets:clearTargets, revision:function(){return terrainRevision;}, snowVariant:snowVariant, loadMeadows:loadMeadows, meadowsReady:function(){return meadowReady;}, create: create, createTile: createTile, tileSpan: tileSpan, density: density, padding: padding, region: region, sample: sample };
+  G.MapTerrain = { surfaceName:surfaceName, northernSnow:northernSnow, updateChunk:updateChunk, clearTargets:clearTargets, revision:function(){return terrainRevision;}, snowVariant:snowVariant, loadMeadows:loadMeadows, meadowsReady:function(){return meadowReady;}, create: create, createTile: createTile, tileSpan: tileSpan, density: density, padding: padding, region: region, sample: sample };
 })(window.Game = window.Game || {});

@@ -17,7 +17,7 @@ public final class ReportSummary {
             Map<String, Object> full = JsonUtil.getMapper().readValue(json, new TypeReference<LinkedHashMap<String, Object>>() {});
             if (full == null) return null;
             Map<String, Object> card = new LinkedHashMap<>();
-            for (String key : new String[]{"subject", "action", "originalAction", "perspective", "attackerName", "defenderName", "fromName", "toName", "fromCoord", "toCoord", "interceptCoord", "win", "attackerWon", "result", "targetType", "cityConquered", "wildConquered", "wildOccupation", "occupationFailure", "intercepted", "attackerContinued", "attackerRetreated", "defenderRetreated", "interceptionOpening", "targetName", "x", "y", "showCityInfo", "detailLevel", "scoutMode", "isCity", "cause", "cityName", "citySlot", "losses", "period"}) {
+            for (String key : new String[]{"attackerPlayerId", "defenderPlayerId", "ownerId", "playerId", "subject", "action", "originalAction", "perspective", "attackerName", "defenderName", "fromName", "toName", "fromCoord", "toCoord", "interceptCoord", "win", "attackerWon", "result", "targetType", "cityConquered", "wildConquered", "wildOccupation", "occupationFailure", "intercepted", "attackerContinued", "attackerRetreated", "defenderRetreated", "interceptionOpening", "targetName", "x", "y", "showCityInfo", "detailLevel", "scoutMode", "isCity", "cause", "cityName", "citySlot", "losses", "period"}) {
                 if (full.containsKey(key)) card.put(key, full.get(key));
             }
             for (String key : new String[]{"attackerWin", "troopDisposition", "wildOccupationReason", "conquered", "cityTakeoverReason", "targetSea", "sea", "scoutType", "scoutUnit", "reconMode", "sampledAt", "intelligencePhase"}) {

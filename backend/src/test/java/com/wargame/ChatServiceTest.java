@@ -73,6 +73,7 @@ public class ChatServiceTest {
 
     @Test
     public void testPrestigeBelowThresholdCannotSend() {
+        player.setWorldChatUnlocked(false);
         player.setPrestige(9999);
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> chatService.send(player.getId(), "新手发言"));
@@ -85,7 +86,28 @@ public class ChatServiceTest {
     }
 
     @Test
+    public void testPreviouslyUnlockedPlayerCanSendAfterPrestigeFallsToZero() {
+        assertTrue(player.isWorldChatUnlocked());
+        player.setPrestige(0);
+
+        assertNotNull(chatService.send(player.getId(), "声望归零后仍可发言"));
+        assertTrue(player.isWorldChatUnlocked());
+    }
+
+    @Test
+    public void testUnlockIsPermanentAfterCrossingThreshold() {
+        player.setWorldChatUnlocked(false);
+        player.setPrestige(9999);
+        player.setPrestige(10000);
+        player.setPrestige(0);
+
+        assertTrue(player.isWorldChatUnlocked());
+        assertNotNull(chatService.send(player.getId(), "解锁状态永久保留"));
+    }
+
+    @Test
     public void testNullPrestigeCannotSend() {
+        player.setWorldChatUnlocked(false);
         player.setPrestige(null);
         assertThrows(IllegalArgumentException.class,
                 () -> chatService.send(player.getId(), "新手发言"));

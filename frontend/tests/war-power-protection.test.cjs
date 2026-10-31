@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
 
-test('实力保护阻止宣战和讨伐，但不阻止侦察', () => {
+test('实力保护阻止宣战、征服和掠夺，但不阻止侦察', () => {
   const toasts = [];
   const target = { id: 2, name: '前线', powerProtection: { allowed: false, reason: '双方编队战力差距超过10倍' } };
   const state = { player: { id: 1 }, world: { playerCities: [target] } };
@@ -14,8 +14,8 @@ test('实力保护阻止宣战和讨伐，但不阻止侦察', () => {
   context.window = context;
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/world.js'), 'utf8'), context);
   game.World.declareWar('player', 0);
-  game.World.attack('player', 0, 'campaign');
-  assert.deepEqual(toasts, ['双方编队战力差距超过10倍', '双方编队战力差距超过10倍']);
+  for (const action of ['campaign', 'conquer', 'plunder']) game.World.attack('player', 0, action);
+  assert.deepEqual(toasts, Array(4).fill('双方编队战力差距超过10倍'));
   game.World.prepareCampaign = value => value;
   game.World.attack('player', 0, 'scout');
   assert.equal(toasts.at(-1), 'dispatch');

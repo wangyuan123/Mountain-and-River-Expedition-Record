@@ -46,8 +46,8 @@ public class GarrisonFoodService {
     public void beforeScheduledChange(Long owner, long now) { scope.selected(owner).ifPresent(c -> settleInterval(c, now)); }
     public boolean managed(PlayerCity city) { return city != null && (city.getGarrisonFoodAt() != null || !stationed(city).isEmpty()); }
     public static double baseUse(Map<String, Integer> army) {
-        return army.entrySet().stream().mapToDouble(e -> GameData.UNITS.containsKey(com.wargame.model.constants.UnitEquipmentEffects.base(e.getKey()))
-                ? (double) GameData.UNITS.get(com.wargame.model.constants.UnitEquipmentEffects.base(e.getKey())).food() * e.getValue() : 0).sum();
+        return army.entrySet().stream().mapToDouble(e -> GameData.UNITS.containsKey(com.wargame.model.constants.BattleUnitIds.base(e.getKey()))
+                ? (double) GameData.UNITS.get(com.wargame.model.constants.BattleUnitIds.base(e.getKey())).food() * e.getValue() : 0).sum();
     }
     /** 来源粮耗采用本场已经持久化的存活编队，而非尚未终局扣除的原始驻军数量。 */
     public Map<String, Integer> living(March march, List<BattleSession> sessions) {
@@ -70,9 +70,10 @@ public class GarrisonFoodService {
             return Math.max(.1, Math.max(.5, 1 - .05 * Math.max(0, Math.min(10, tech))) * (1 - .16 * Math.max(0, Math.min(5, ration))));
         }
     }
-    public double production(PlayerCity city) {
+    public double production(PlayerCity city) { return production(city, GameClock.now()); }
+    private double production(PlayerCity city, long at) {
         try (var ignored = scope.enter(city)) {
-            String status = economy.getCityStatus(city.getOwnerId());
+            String status = economy.getCityStatusAt(city.getOwnerId(), at);
             return economy.produceOf(city.getOwnerId(), "farm") * ("war".equals(status) ? .7 : "shield".equals(status) ? 1.1 : 1);
         }
     }
@@ -103,8 +104,12 @@ public class GarrisonFoodService {
         PlayerCity city = scope.selected(owner).orElse(null);
         if (city == null) return null;
         double own = ownUse(city) * reduction(city), support = supportUse(city);
+        double income = production(city), net = income - own - support;
+        double food = stocks.findByPlayerIdAndCitySlot(owner, scope.slot(owner)).map(r -> (double) Objects.requireNonNullElse(r.getFood(), 0L)
+                + r.getFoodAccrual() + Objects.requireNonNullElse(city.getGarrisonFoodRemainder(), 0.0)).orElse(0.0);
         return Map.of("ownPerHour", own, "supportPerHour", support, "totalPerHour", own + support,
-                "productionPerHour", production(city));
+                "productionPerHour", income, "netPerHour", net, "depleted", net < 0 && food <= 0 ? 1.0 : 0.0,
+                "estimatedDepletedAt", net < 0 ? GameClock.now() + Math.ceil(Math.max(0, food) / -net * 3600000) : 0.0);
     }
     /** 只在城主锁内调用；事件时刻单调递增，重复回合或重复抵达不会再次扣粮。 */
     @Transactional
@@ -123,7 +128,9 @@ public class GarrisonFoodService {
     }
 
     private void settleInterval(PlayerCity city, long now) {
-        if (city == null || city.getOwnerId() == null || city.getCitySlot() == null || !managed(city)) return;
+        // 后台科研等回调也必须遵守城市冻结，不能仅依赖普通 Tick 的过滤。
+        if (city == null || city.getOwnerId() == null || city.getCitySlot() == null
+                || city.isSurrenderFrozen(now) || !managed(city)) return;
         List<March> supports = stationed(city);
         if (city.getGarrisonFoodAt() == null) {
             city.setGarrisonFoodAt(now); supports.forEach(m -> m.setGarrisonFoodAt(now)); cities.save(city); return;
@@ -142,19 +149,25 @@ public class GarrisonFoodService {
             long cursor = city.getGarrisonFoodAt();
             List<March> liveSupport = stationed(city);
             double support = liveSupport.stream().mapToDouble(m -> baseUse(living(m, sessions))).sum();
-            double net = production(city) - (ownUse(city) + support) * reduction(city);
+            double income = production(city, cursor);
+            double expense = (ownUse(city) + support) * reduction(city);
+            double net = income - expense;
             // 普通经济转入驻军粮账时一并接管尚未入整的小数，随后由城市粮账唯一维护。
             double exact = exactFood(city, stock);
             stock.setFoodAccrual(0);
             long end = through;
-            boolean depleted = net < 0 && exact + net * (through - cursor) / 3600000.0 <= 0;
-            // 离线同样在实际耗尽时刻返程，不能把整段离线时长都按已经遣返的兵力收费。
-            if (depleted && !liveSupport.isEmpty()) end = Math.min(through, cursor + Math.max(1, (long) Math.ceil(exact / -net * 3600000)));
-            double after = exact + net * (end - cursor) / 3600000.0;
-            if (after < 0) { city.setGarrisonFoodUnmet(city.getGarrisonFoodUnmet() - after); after = 0; }
             long cap;
             try (var ignored = scope.enter(city)) { cap = economy.capacity(city.getOwnerId()).get("food"); }
-            if (net > 0) after = Math.min(Math.max(cap, Objects.requireNonNullElse(stock.getFood(), 0L)), after);
+            boolean depleted = net < 0 && TickService.settleBalance(exact, income, expense,
+                    (through - cursor) / 3600000.0, cap) <= 0;
+            // 离线同样在实际耗尽时刻返程，不能把整段离线时长都按已经遣返的兵力收费。
+            if (depleted && !liveSupport.isEmpty()) {
+                double overHours = exact > cap && expense > 0 ? (exact - cap) / expense : 0;
+                double untilEmpty = overHours + Math.min(exact, cap) / -net;
+                end = Math.min(through, cursor + Math.max(1, (long) Math.ceil(untilEmpty * 3600000)));
+            }
+            double after = TickService.settleBalance(exact, income, expense, (end - cursor) / 3600000.0, cap);
+            if (after < 0) { city.setGarrisonFoodUnmet(city.getGarrisonFoodUnmet() - after); after = 0; }
             stock.setFood((long) Math.floor(after)); city.setGarrisonFoodRemainder(after - Math.floor(after)); city.setGarrisonFoodAt(end);
             final long billed = end; liveSupport.forEach(m -> m.setGarrisonFoodAt(billed));
             stocks.save(stock); cities.save(city);
@@ -215,5 +228,8 @@ public class GarrisonFoodService {
         return sessions.stream().anyMatch(s -> JsonUtil.parseObjMap(s.getDefenderSupport()).containsKey(march.getId().toString()));
     }
     @Transactional
-    public void beforeChange(Long owner) { scope.selected(owner).ifPresent(city -> settle(city, GameClock.now())); }
+    public void beforeChange(Long owner) {
+        economy.beforeResourceChange(owner, scope.slot(owner));
+        scope.selected(owner).ifPresent(city -> settle(city, timeline.eventTime() == null ? GameClock.now() : timeline.eventTime()));
+    }
 }

@@ -28,7 +28,7 @@ public final class BotPolicy {
     public static double strength(Map<String, Integer> army) {
         double total = 0;
         for (var entry : army.entrySet()) {
-            UnitDef unit = GameData.UNITS.get(UnitEquipmentEffects.base(entry.getKey()));
+            UnitDef unit = GameData.UNITS.get(BattleUnitIds.base(entry.getKey()));
             if (entry.getValue() < 0 || unit == null) return Double.POSITIVE_INFINITY;
             if (!Boolean.TRUE.equals(unit.logistic())) {
                 total += entry.getValue() * Math.sqrt(Math.max(0, unit.atkGround()) * Math.max(0, unit.hp()));

@@ -164,7 +164,12 @@ public class QuestStageSystemTest {
         assertEquals("in_progress", chapters.get(0).get("status"));
         assertEquals("locked", chapters.get(1).get("status"), "未通关第一阶段时第二阶段应处于锁定状态");
 
-        // 将第一阶段所有任务设为 completed
+        // 建筑等级必须由实际建筑快照证明，不能仅伪造 completed 状态绕过校验。
+        for (String type : List.of("house", "farm", "refinery")) {
+            Building building = new Building(); building.setPlayerId(pid); building.setCitySlot(0);
+            building.setType(type); building.setLevel(2); buildingRepository.save(building);
+        }
+        // 其他已达成目标保留完成记录，战损等后续状态变化不撤销历史成果。
         QuestCatalog.Chapter ch1 = QuestCatalog.CHAPTERS.get(0);
         for (QuestCatalog.Quest q : ch1.quests()) {
             PlayerQuest pq = playerQuestRepository.findByPlayerIdAndQuestId(pid, q.id()).orElseThrow();

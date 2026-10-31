@@ -121,8 +121,8 @@ test('伤兵营顶部提示重构为紧凑概览卡片，并提供详细说明�
   assert.match(html, /class="wounded-notice-badge"[^>]*>救治须知<\/span>/);
   assert.match(html, /class="wounded-notice-digest"/);
   assert.match(html, /伤兵留存 7 天/);
-  assert.match(html, /最高 50% 回收/);
-  assert.match(html, /每 1000 黄金折算 1 颗/);
+  assert.match(html, /最高 65% 回收/);
+  assert.match(html, /每 1000 基础黄金折算 1 颗/);
 
   // 2. 验证包含详细说明操作按钮
   assert.match(html, /class="wounded-rules-btn"[^>]*onclick="Game\.Wounded\.showWoundedRulesModal\(\)"/);
@@ -156,7 +156,11 @@ test('点击详细说明按钮或调用showWoundedRulesModal展示规则弹窗�
   assert.match(modal.innerHTML, /医疗技术与军官急救技能/);
   assert.match(modal.innerHTML, /50%/);
   assert.match(modal.innerHTML, /治疗费用与货币折算/);
-  assert.match(modal.innerHTML, /1000 黄金折算 1 颗钻石/);
+  assert.match(modal.innerHTML, /1000 未折扣的基础黄金折算 1 颗钻石/);
+  assert.match(modal.innerHTML, /额外提供 15% 回收率/);
+  assert.match(modal.innerHTML, /学习即满级，无需升级/);
+  assert.match(modal.innerHTML, /合计最高 65%/);
+  assert.match(modal.innerHTML, /归降冻结期间暂停/);
   assert.match(modal.innerHTML, /快捷选择与批量救治/);
   assert.match(modal.innerHTML, /一键 MAX/);
   assert.match(modal.innerHTML, /超额置灰/);

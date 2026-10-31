@@ -70,6 +70,10 @@ class FortCapacityTest extends BaseServiceTest {
         Long playerId = createTestPlayer().getId();
         createBuilding(playerId, "wall", 10);
         seedFort(playerId, 0, "bunker", 30000);
+        var city = new com.wargame.model.entity.PlayerCity();
+        city.setOwnerId(playerId); city.setCitySlot(1); city.setWorldId(1L);
+        city.setName("分城"); city.setX(40); city.setY(40); city.setLastTick(com.wargame.util.GameClock.now());
+        playerCityRepository.save(city);
         Building secondWall = createBuilding(playerId, "wall", 1);
         secondWall.setCitySlot(1);
         buildingRepository.save(secondWall);

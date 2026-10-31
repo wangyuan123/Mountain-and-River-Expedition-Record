@@ -24,9 +24,7 @@ window.Game = window.Game || {};
   }
 
   /** 当前城市的四类工事合计占用城防容量，每级增加3000。 */
-  function fortCap() {
-    return (Core.state.buildings.wall || 0) * (D.buildings.wall.fortCapPerLevel || 3000);
-  }
+  function fortCap() { return G.ServerRules.value('fortCap', 0); }
 
   function totalForts() {
     var s = Core.state, sum = 0;
@@ -44,11 +42,8 @@ window.Game = window.Game || {};
     var s = Core.state || {};
     var buildings = s.buildings || {};
     var wallLv = buildings.wall || 0;
-    var wallMul = typeof Core.wallMul === 'function' ? Core.wallMul() : 1;
-    var wallHpPerLevel = (D.buildings && D.buildings.wall && D.buildings.wall.wallHpPerLevel) || 250000;
-    var wallDefPerLevel = (D.buildings && D.buildings.wall && D.buildings.wall.wallDefensePerLevel) || 20;
-    var wallHp = Math.round(Math.min(10, wallLv) * wallHpPerLevel * wallMul);
-    var wallDef = Math.round(Math.min(10, wallLv) * wallDefPerLevel * wallMul);
+    var wallHp = G.ServerRules.value('wall', {}).maxHp || 0;
+    var wallDef = G.ServerRules.value('wall', {}).defense || 0;
     var techLv = (s.tech || {}).wall_reinforcement || 0;
 
     var mask = document.createElement('div');
@@ -144,12 +139,9 @@ window.Game = window.Game || {};
       var wallLv = buildings.wall || 0;
       var currentForts = totalForts();
       var cap = fortCap();
-      var wallMul = typeof Core.wallMul === 'function' ? Core.wallMul() : 1;
-      var wallHpPerLevel = (D.buildings && D.buildings.wall && D.buildings.wall.wallHpPerLevel) || 250000;
-      var wallDefPerLevel = (D.buildings && D.buildings.wall && D.buildings.wall.wallDefensePerLevel) || 20;
-      var capPerLv = (D.buildings && D.buildings.wall && D.buildings.wall.fortCapPerLevel) || 3000;
-      var wallHp = Math.round(Math.min(10, wallLv) * wallHpPerLevel * wallMul);
-      var wallDef = Math.round(Math.min(10, wallLv) * wallDefPerLevel * wallMul);
+      var capPerLv = G.ServerRules.effect('wall', 1).fortCapacity;
+      var wallHp = G.ServerRules.value('wall', {}).maxHp || 0;
+      var wallDef = G.ServerRules.value('wall', {}).defense || 0;
 
       var roleShortMap = {
         bunker: '反步兵·高防',

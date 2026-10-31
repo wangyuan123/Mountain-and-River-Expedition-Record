@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
-/** 整套与培养操作只接受选择，不接受客户端属性、价格或材料数量。 */
+/** 整套操作只接受装备选择；保留旧整备和材料领奖路由用于明确拒绝旧客户端请求。 */
 @RestController
 @RequestMapping("/api/game/officer-equipment")
 @RequiredArgsConstructor
@@ -31,8 +31,7 @@ public class OfficerEquipmentController {
     }
     @PostMapping("/prepare")
     public Map<String, Object> prepare(@RequestBody PrepareRequest r) {
-        if (r.expectedLevel() == null) throw new IllegalArgumentException("缺少当前整备等级");
-        Long p = auth.getCurrentPlayer().getId(); return response(p, equipment.prepare(p, r.officerId(), r.slot(), r.expectedLevel()));
+        Long p = auth.getCurrentPlayer().getId(); return response(p, equipment.prepare(p, r.officerId(), r.slot(), r.expectedLevel() == null ? 0 : r.expectedLevel()));
     }
     @PostMapping("/save-loadout")
     public Map<String, Object> saveLoadout(@RequestBody LoadoutRequest r) {
@@ -44,7 +43,7 @@ public class OfficerEquipmentController {
     }
     @PostMapping("/refresh")
     public Map<String, Object> refresh() {
-        Long p = auth.getCurrentPlayer().getId(); return response(p, Map.of("success", true, "message", "军备任务已刷新"));
+        Long p = auth.getCurrentPlayer().getId(); return response(p, Map.of("success", true, "message", "装备收藏已刷新"));
     }
     @PostMapping("/claim")
     public Map<String, Object> claim(@RequestBody ClaimRequest r) {

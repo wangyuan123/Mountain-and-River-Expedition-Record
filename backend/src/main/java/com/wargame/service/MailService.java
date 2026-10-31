@@ -42,6 +42,8 @@ import java.util.*;
  */
 @Service
 public class MailService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private com.wargame.service.TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
     @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.repository.PlayerItemRepository playerItems;
@@ -226,11 +228,15 @@ public class MailService {
                 .or(() -> findUnnamedCommander(toName))
                 .or(() -> playerRepository.findByUsername(toName))
                 .orElseThrow(() -> new IllegalArgumentException("收件人不存在: " + toName));
-        to = accounts.lockPlayer(to.getId());
-        if (to.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("收件人不存在");
         if (to.getId().equals(fromPlayerId)) {
             throw new IllegalArgumentException("不能给自己发邮件");
         }
+
+        // 发件也会扣资产；按账号 ID 固定顺序锁定双方，避免相互寄信反向等待或并发透支。
+        for (Long id : new TreeSet<>(List.of(fromPlayerId, to.getId()))) accounts.lockPlayer(id);
+        from = playerRepository.findById(fromPlayerId).orElseThrow();
+        to = playerRepository.findById(to.getId()).orElseThrow();
+        if (to.deletionDue(System.currentTimeMillis())) throw new IllegalArgumentException("收件人不存在");
 
         // 附件校验 + 资源扣减
         List<Map<String, Object>> normalizedAttach = normalizeAndDeductAttach(fromPlayerId, attach);
@@ -379,35 +385,40 @@ public class MailService {
             throw new IllegalArgumentException("该邮件没有附件");
         }
 
-        List<Map<String, Object>> resList = new ArrayList<>();
+        Map<String, Long> resDeltas = new LinkedHashMap<>();
         Map<String, Integer> armyDeltas = new LinkedHashMap<>();
         Map<String, Integer> itemDeltas = new LinkedHashMap<>();
 
         for (Map<String, Object> a : attach) {
             String t = String.valueOf(a.get("type"));
-            int qty = a.get("qty") instanceof Number n ? n.intValue() : 0;
-            if (qty <= 0) continue;
+            int qty = attachmentQuantity(a.get("qty"));
 
             if ("item".equals(t)) {
                 String itemId = String.valueOf(a.get("itemId"));
                 if (!Boolean.TRUE.equals(mail.getIsSystem()) ||
                         !com.wargame.model.constants.CommanderRenamePolicy.ITEM_KEY.equals(itemId))
                     throw new IllegalArgumentException("不支持的道具附件");
-                itemDeltas.merge(itemId, qty, Math::addExact);
+                mergeCount(itemDeltas, itemId, qty);
             } else if (ALLOWED_ATTACH.contains(t)) {
-                resList.add(a);
+                mergeResource(resDeltas, t, qty);
             } else if (UnitDef.UNITS.containsKey(t)) {
-                armyDeltas.merge(t, qty, Integer::sum);
+                mergeCount(armyDeltas, t, qty);
             } else if ("army".equalsIgnoreCase(t)) {
                 String unit = a.containsKey("unit") ? String.valueOf(a.get("unit")) : String.valueOf(a.get("unitType"));
                 if (UnitDef.UNITS.containsKey(unit)) {
-                    armyDeltas.merge(unit, qty, Integer::sum);
+                    mergeCount(armyDeltas, unit, qty);
+                } else {
+                    throw new IllegalArgumentException("不支持的部队附件");
                 }
             } else if (t.startsWith("army_")) {
                 String unit = t.substring(5);
                 if (UnitDef.UNITS.containsKey(unit)) {
-                    armyDeltas.merge(unit, qty, Integer::sum);
+                    mergeCount(armyDeltas, unit, qty);
+                } else {
+                    throw new IllegalArgumentException("不支持的部队附件");
                 }
+            } else {
+                throw new IllegalArgumentException("不支持的附件类型");
             }
         }
 
@@ -422,8 +433,11 @@ public class MailService {
         // 必要锁及资格检查之后重新取真实时间；锁等待和慢检查不能绕过领取截止。
         long now = System.currentTimeMillis();
         if (expiredGift(mail, now)) return expireGift(mail, now);
-        if (!resList.isEmpty()) {
-            applyResources(playerId, resList, +1);
+        // 奖兵前先结清旧兵力粮账，混合附件中的粮食也不能提前抵扣历史耗粮。
+        if (!armyDeltas.isEmpty()) cityScope.selected(playerId).ifPresent(c -> garrisonFood.activate(c, com.wargame.util.GameClock.now()));
+        validateArmyAndItems(playerId, armyDeltas, itemDeltas);
+        if (!resDeltas.isEmpty()) {
+            applyResources(playerId, resDeltas, +1);
         }
         if (!armyDeltas.isEmpty()) {
             applyArmyUnits(playerId, armyDeltas);
@@ -663,7 +677,7 @@ public class MailService {
         if (attach.size() > 6) throw new IllegalArgumentException("附件最多 6 项");
 
         // 先校验 + 累计需要扣的资源
-        Map<String, Integer> need = new LinkedHashMap<>();
+        Map<String, Long> need = new LinkedHashMap<>();
         List<Map<String, Object>> normalized = new ArrayList<>();
         for (Map<String, Object> a : attach) {
             Object t = a.get("type");
@@ -673,17 +687,15 @@ public class MailService {
             if (!ALLOWED_ATTACH.contains(type)) {
                 throw new IllegalArgumentException("不支持的附件类型: " + type);
             }
-            int qty;
-            try { qty = Integer.parseInt(q.toString()); }
-            catch (Exception e) { throw new IllegalArgumentException("附件数量必须为整数"); }
-            if (qty <= 0) throw new IllegalArgumentException("附件数量必须 > 0");
-            need.merge(type, qty, Integer::sum);
+            int qty = attachmentQuantity(q);
+            mergeResource(need, type, qty);
             normalized.add(Map.of("type", type, "qty", qty));
         }
+        resourceEconomy.beforeResourceChange(fromPlayerId, cityScope.slot(fromPlayerId));
         // 校验余额
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(fromPlayerId, cityScope.slot(fromPlayerId))
                 .orElseThrow(() -> new IllegalArgumentException("发件人资源不存在"));
-        for (Map.Entry<String, Integer> e : need.entrySet()) {
+        for (Map.Entry<String, Long> e : need.entrySet()) {
             long have = getRes("diamond".equals(e.getKey()) ? cityScope.wallet(fromPlayerId) : res, e.getKey());
             if (have < e.getValue()) {
                 throw new IllegalArgumentException("资源不足: " + labelOf(e.getKey())
@@ -695,33 +707,72 @@ public class MailService {
         return normalized;
     }
 
-    private void applyResources(Long playerId, Map<String, Integer> delta, int sign) {
+    /** 整组余额先校验后写入；资源使用 long，钻石仍遵守账号钱包的 int 存储上限。 */
+    private void applyResources(Long playerId, Map<String, Long> delta, int sign) {
         if (delta == null || delta.isEmpty()) return;
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))
                 .orElseThrow(() -> new IllegalArgumentException("玩家资源不存在: " + playerId));
-        for (Map.Entry<String, Integer> e : delta.entrySet()) {
-            int v = e.getValue() * sign;
+        Map<String, Long> after = new LinkedHashMap<>();
+        for (Map.Entry<String, Long> e : delta.entrySet()) {
+            Resources balance = "diamond".equals(e.getKey()) ? cityScope.wallet(playerId) : res;
+            long current = getRes(balance, e.getKey()), amount = e.getValue();
+            long limit = "diamond".equals(e.getKey()) ? Integer.MAX_VALUE : Long.MAX_VALUE;
+            if (amount <= 0 || (sign < 0 ? current < amount : current > limit - amount))
+                throw new IllegalArgumentException("附件数量或" + labelOf(e.getKey()) + "余额超出范围");
+            after.put(e.getKey(), sign < 0 ? current - amount : current + amount);
+        }
+        for (Map.Entry<String, Long> e : after.entrySet()) {
             Resources balance = "diamond".equals(e.getKey()) ? cityScope.wallet(playerId) : res;
             if ("diamond".equals(e.getKey())) {
-                int cur = (int) getRes(balance, e.getKey());
-                balance.setDiamond(cur + v);
+                balance.setDiamond(e.getValue().intValue());
             } else {
-                balance.addResource(e.getKey(), v);
+                switch (e.getKey()) {
+                    case "food" -> balance.setFood(e.getValue()); case "steel" -> balance.setSteel(e.getValue());
+                    case "oil" -> balance.setOil(e.getValue()); case "rare" -> balance.setRare(e.getValue());
+                    case "gold" -> balance.setGold(e.getValue());
+                    default -> throw new IllegalArgumentException("不支持的附件资源");
+                }
             }
             resourcesRepository.save(balance);
         }
         resourcesRepository.save(res);
     }
 
-    /** 兼容 List<Map> 和 Map<String,Integer> 两种入参 */
-    private void applyResources(Long playerId, List<Map<String, Object>> attach, int sign) {
-        Map<String, Integer> agg = new LinkedHashMap<>();
-        for (Map<String, Object> a : attach) {
-            String t = String.valueOf(a.get("type"));
-            int q = ((Number) a.get("qty")).intValue();
-            agg.merge(t, q, Integer::sum);
+    /** 单项维持既有正整数契约，拒绝小数和截断后变正的大数。 */
+    private static int attachmentQuantity(Object value) {
+        try {
+            int amount = Integer.parseInt(String.valueOf(value));
+            if (amount > 0) return amount;
+        } catch (NumberFormatException ignored) { }
+        throw new IllegalArgumentException("附件数量必须为有效正整数");
+    }
+
+    /** 同类资源可以重复，但总数必须在真实存储类型范围内。 */
+    private static void mergeResource(Map<String, Long> totals, String type, int quantity) {
+        long sum;
+        try { sum = Math.addExact(totals.getOrDefault(type, 0L), quantity); }
+        catch (ArithmeticException overflow) { throw new IllegalArgumentException("附件总量超出范围"); }
+        if ("diamond".equals(type) && sum > Integer.MAX_VALUE) throw new IllegalArgumentException("钻石附件总量超出范围");
+        totals.put(type, sum);
+    }
+
+    private static void mergeCount(Map<String, Integer> totals, String key, int quantity) {
+        try { totals.merge(key, quantity, Math::addExact); }
+        catch (ArithmeticException overflow) { throw new IllegalArgumentException("附件总量超出范围"); }
+    }
+
+    /** 在任何发奖前检查部队和道具库存，防止混合附件只发一部分后才发现溢出。 */
+    private void validateArmyAndItems(Long player, Map<String, Integer> army, Map<String, Integer> items) {
+        for (var e : army.entrySet()) {
+            long stock = armyUnitRepository.findByPlayerIdAndCitySlotAndType(player, cityScope.slot(player), e.getKey()).stream()
+                    .mapToLong(a -> Objects.requireNonNullElse(a.getCount(), 0)).sum();
+            if (stock > Integer.MAX_VALUE - (long) e.getValue()) throw new IllegalArgumentException("部队数量超出范围");
         }
-        applyResources(playerId, agg, sign);
+        for (var e : items.entrySet()) {
+            int stock = playerItems.findByPlayerIdAndItemKey(player, e.getKey()).map(i -> Objects.requireNonNullElse(i.getCount(), 0)).orElse(0);
+            if (stock > Integer.MAX_VALUE - (long) e.getValue()) throw new IllegalArgumentException("道具数量超出范围");
+        }
     }
 
     private void applyArmyUnits(Long playerId, Map<String, Integer> armyDeltas) {

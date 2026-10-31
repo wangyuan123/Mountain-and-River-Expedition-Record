@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup() {
   const Game = {
@@ -14,6 +14,12 @@ function setup() {
   context.Game = Game;
   require('./load-constants.cjs')(context);
   for (const file of ['data.js', 'battle.js']) vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
+  const render = Game.Battle.renderTacticalBattle;
+  Game.Battle.renderTacticalBattle = function(view) {
+    this._activeTactical.attackerStats ||= {special:{range:160,speed:3}};
+    this._activeTactical.defenderStats ||= {howitzer:{range:1850},bunker:{range:200},flak:{range:1000},infantry:{range:160},htank:{range:320}};
+    return render.call(this,view);
+  };
   Game.Battle.startTacticalTimer = () => {};
   Game.Battle._tacticalOrders = {};
   return Game;

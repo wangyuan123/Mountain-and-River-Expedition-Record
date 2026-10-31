@@ -33,7 +33,8 @@ public final class CommanderReportSnapshot {
         levels.forEach((id, level) -> {
             OfficerSkillDef definition = OfficerSkillDef.getSkill(id);
             result.add(Map.of("id", id, "name", definition == null ? id : definition.name(), "level", level,
-                    "description", definition == null ? "" : definition.descriptionAtLevel(level)));
+                    "description", definition == null ? "" : definition.descriptionAtLevel(level),
+                    "bonusText", definition == null ? "" : definition.bonusText(level)));
         });
         return result;
     }

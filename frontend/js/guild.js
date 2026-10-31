@@ -212,6 +212,13 @@ window.Game = window.Game || {};
       });
     },
 
+    /** 外交邀请由对方接受后生效，拒绝和撤回均保留当前外交状态。 */
+    respondFriendship: function (guildId, action) {
+      return G.API.respondGuildFriendship(guildId, action).then(function (data) {
+        G.toast(data.message); Guild.reload();
+      }).catch(function (err) { G.toast(err.message || '邀请处理失败'); });
+    },
+
     updateRelation: function (guildId, status) {
       G.API.updateGuildRelation(guildId, status).then(function (data) {
         G.toast(data.message || '军团关系已更新');
@@ -427,15 +434,12 @@ window.Game = window.Game || {};
       var relations = g.relations || [];
       var applications = g.applications || [];
 
-      // 军团声望由军团成员声望总和组成
+      // 有效成员统计由服务端按排行榜口径计算；旧响应才从名册回退汇总。
       var memberPrestigeSum = 0;
       for (var pi = 0; pi < members.length; pi++) {
         memberPrestigeSum += (members[pi].prestige || 0);
       }
-      var totalPrestige = memberPrestigeSum;
-      if (g.prestige != null && g.prestige > totalPrestige) {
-        totalPrestige = g.prestige;
-      }
+      var totalPrestige = g.prestige != null ? g.prestige : memberPrestigeSum;
 
       var roleName = g.role === 'leader' ? '团长' : (g.role === 'admin' ? '管理员' : '成员');
       var badgeClass = g.role === 'leader' ? 'leader' : (g.role === 'admin' ? 'admin' : 'member');
@@ -451,10 +455,11 @@ window.Game = window.Game || {};
       h += '<div class="guild-header-title">' + esc(g.name || '军团') + '</div>';
       h += '<span class="guild-wap-badge ' + badgeClass + '">' + roleName + '</span>';
       h += '</div>';
-      h += '<div class="guild-header-prestige">军团声望: <strong>★' + G.fmt(totalPrestige) + '</strong><span class="guild-prestige-tip">（由全体成员声望总和组成）</span></div>';
+      h += '<div class="guild-header-prestige">军团声望: <strong>★' + G.fmt(totalPrestige) + '</strong><span class="guild-prestige-tip">（由榜单有效成员声望总和组成）</span></div>';
       h += '<div class="guild-header-meta">';
       h += '<span>团长: <strong>' + esc(g.leaderName || '未知') + '</strong></span>';
       h += '<span>编制人数: <strong>' + members.length + '/' + (g.maxMembers || 30) + ' 人</strong></span>';
+      if (g.eligibleMembers != null) h += '<span>榜单有效人数: <strong>' + g.eligibleMembers + ' 人</strong></span>';
       h += '</div>';
       h += '</div>';
       h += '</div>';
@@ -640,7 +645,7 @@ window.Game = window.Game || {};
       h += '<div id="guildTabPanel_diplomacy" class="guild-tab-panel" style="' + (activeTab === 'diplomacy' ? '' : 'display:none;') + '">';
       h += '<div class="guild-notice-card" style="margin-bottom:10px;">';
       h += '<div class="guild-notice-head"><div class="guild-notice-title">⚔️ 战区外交立场说明</div></div>';
-      h += '<div class="guild-notice-body">长官可在此界定全服各军团的外交立场：设为<strong>友好同盟</strong>或<strong>交战敌对</strong>。中立军团保持常规接触。</div>';
+      h += '<div class="guild-notice-body"><strong>友好同盟</strong>需发出邀请并由对方管理者接受，任一方可解除。长官也可声明<strong>交战敌对</strong>。中立军团保持常规接触。</div>';
       h += '</div>';
 
       h += '<div class="guild-members-card">';
@@ -678,14 +683,20 @@ window.Game = window.Game || {};
 
           if (g.isManager) {
             h += '<div class="guild-member-actions">';
-            if (ogStatus !== 'friendly') {
-              h += '<button type="button" class="guild-op-btn ok" onclick="Game.Guild.updateRelation(' + og.id + ',\'friendly\')">[设为友好]</button>';
+            var invitation = ogRel && ogRel.friendshipInvitation || 'none';
+            if (invitation === 'incoming') {
+              h += '<button type="button" class="guild-op-btn ok" onclick="Game.Guild.respondFriendship(' + og.id + ',\'accept\')">接受友好邀请</button>';
+              h += '<button type="button" class="guild-op-btn" onclick="Game.Guild.respondFriendship(' + og.id + ',\'reject\')">拒绝邀请</button>';
+            } else if (invitation === 'outgoing') {
+              h += '<span>等待对方接受</span><button type="button" class="guild-op-btn" onclick="Game.Guild.respondFriendship(' + og.id + ',\'withdraw\')">撤回邀请</button>';
+            } else if (ogStatus !== 'friendly') {
+              h += '<button type="button" class="guild-op-btn ok" onclick="Game.Guild.updateRelation(' + og.id + ',\'friendly\')">[邀请友好]</button>';
             }
             if (ogStatus !== 'hostile') {
               h += '<button type="button" class="guild-op-btn danger" onclick="Game.Guild.updateRelation(' + og.id + ',\'hostile\')">[设为敌对]</button>';
             }
             if (ogStatus !== 'neutral') {
-              h += '<button type="button" class="guild-op-btn" onclick="Game.Guild.updateRelation(' + og.id + ',\'neutral\')">[重置中立]</button>';
+              h += '<button type="button" class="guild-op-btn" onclick="Game.Guild.updateRelation(' + og.id + ',\'neutral\')">[解除关系]</button>';
             }
             h += '</div>';
           }

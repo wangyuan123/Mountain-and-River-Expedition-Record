@@ -37,12 +37,16 @@ public class BattleSession extends VersionedEntity {
     @Column(name = "defender_commander_id")
     private Long defenderCommanderId;
     /** 本场实际装备配置组的派兵人；历史战报不重新读取驻军或账号配装。 */
-    @Column(name = "defender_equipment_sources", columnDefinition = "longtext")
-    private String defenderEquipmentSources;
+    @Column(name = "defender_support_sources", columnDefinition = "longtext")
+    private String defenderSupportSources;
 
     /** 新规则完整来源快照，null 的进行中战斗沿用旧引擎。 */
     @Column(name = "joint_defense", columnDefinition = "longtext")
     private String jointDefense;
+
+    /** 跨回合技能状态，与本场冻结兵力一同持久化。 */
+    @Column(name = "skill_state", columnDefinition = "longtext")
+    private String skillState;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

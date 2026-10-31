@@ -29,7 +29,7 @@ public class ChatService {
 
     public static final int MAX_LENGTH = 80;
     public static final int MAX_SYSTEM_LENGTH = 512;
-    public static final int MIN_WORLD_CHAT_PRESTIGE = 10000;
+    public static final int MIN_WORLD_CHAT_PRESTIGE = com.wargame.model.constants.GameConstants.WORLD_CHAT_PRESTIGE_THRESHOLD;
     public static final long COOLDOWN_MS = 5000L; // 5 秒单次发言冷却
     public static final long BURST_WINDOW_MS = 60000L; // 1 分钟滑动窗口
     public static final int BURST_MAX_COUNT = 5; // 1 分钟内最多发言 5 次
@@ -85,6 +85,12 @@ public class ChatService {
         return result;
     }
 
+    /**
+     * 保存世界频道发言；账号达到声望门槛后永久保留发言资格。
+     * @param playerId 发言玩家 ID
+     * @param rawContent 玩家提交的原始消息
+     * @return 已保存并过滤后的聊天消息
+     */
     @Transactional
     public ChatDtos.MessageResponse send(Long playerId, String rawContent) {
         String content = normalize(rawContent);
@@ -94,7 +100,10 @@ public class ChatService {
         // 只限制玩家发言；世界频道历史和系统广播仍对新手开放。
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        if (player.getPrestige() == null || player.getPrestige() < MIN_WORLD_CHAT_PRESTIGE) {
+        if (player.getPrestige() != null && player.getPrestige() >= MIN_WORLD_CHAT_PRESTIGE) {
+            player.setWorldChatUnlocked(true);
+        }
+        if (!player.isWorldChatUnlocked()) {
             throw new IllegalArgumentException("声望达到 10000 后才能在世界频道发言");
         }
 

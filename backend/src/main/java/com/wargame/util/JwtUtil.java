@@ -30,6 +30,9 @@ public class JwtUtil {
     @Value("${jwt.expiration}")
     private long expiration;
 
+    @Value("${jwt.admin-expiration:7200000}")
+    private long adminExpiration;
+
     @Value("${game.server.id:jiangsu-1}")
     private String serverId;
 
@@ -38,6 +41,8 @@ public class JwtUtil {
 
     @PostConstruct
     void validateSecret() {
+        if (adminExpiration < 300_000 || adminExpiration > 28_800_000)
+            throw new IllegalStateException("jwt.admin-expiration 必须为 5 分钟到 8 小时");
         if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < MIN_SECRET_BYTES) {
             throw new IllegalStateException(
                 "jwt.secret must be at least " + MIN_SECRET_BYTES + " bytes (got "
@@ -74,13 +79,19 @@ public class JwtUtil {
     }
 
     public String generateAdminToken(String username, Long adminId, String role) {
+        return generateAdminToken(username, adminId, role, 0L);
+    }
+
+    /** 管理员单独使用短会话；凭据版本必须与数据库当前值匹配，无版本的历史凭据不再被接受。 */
+    public String generateAdminToken(String username, Long adminId, String role, long authVersion) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date expiryDate = new Date(now.getTime() + adminExpiration);
         return Jwts.builder()
                 .subject(username)
                 .claim("adminId", adminId)
                 .claim("role", role)
                 .claim("isAdmin", true)
+                .claim("authVersion", authVersion)
                 .claim("serverId", serverId)
                 .id(java.util.UUID.randomUUID().toString())
                 .issuedAt(now)

@@ -11,10 +11,10 @@ window.Game = window.Game || {};
   // 连续消息只显示昵称和内容，间隔五分钟或跨天时插入一次时间分隔线。
   var CHAT_TIME_GAP_MS = G.Constants.chatTimeGapMs;
 
-  /** 世界频道发言按当前玩家声望开放，历史消息始终可读。 */
+  /** 达到声望门槛后永久开放世界频道；历史消息始终可读。 */
   function canSend() {
     var state = G.state || (G.Core && G.Core.state);
-    return !!state && Number(state.prestige) >= MIN_WORLD_CHAT_PRESTIGE;
+    return !!state && state.worldChatUnlocked === true;
   }
 
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }

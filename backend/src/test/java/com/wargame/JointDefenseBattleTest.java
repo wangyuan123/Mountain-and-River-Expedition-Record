@@ -36,6 +36,23 @@ class JointDefenseBattleTest {
         assertTrue(result.log().contains("【援军·团友甲·将领李某】"), result.log());
         assertEquals(1, state.getFormations().get("0").getFirstCombatRound());
     }
+    @Test void bulwarkAndBorrowedArmorStackWithinTheSameFormation() {
+        var army = Map.of("infantry", 10000);
+        var bulwark = state(army, army, Map.of());
+        bulwark.getFormations().get("0").getSkills().put("bulwark", 5);
+        var combined = JointDefenseState.read(JsonUtil.toJson(bulwark));
+        combined.getFormations().get("0").getSkills().put("borrow_armor", 5);
+        var positions = Map.of("infantry", 0);
+        round(bulwark, army, army, positions, positions, 1);
+        var result = round(combined, army, army, positions, positions, 1);
+        double baseDamage = bulwark.getFormations().get("attack").getDamage().get("infantry");
+        double combinedDamage = combined.getFormations().get("attack").getDamage().get("infantry");
+        double defense = com.wargame.model.constants.UnitDef.UNITS.get("infantry").def();
+        assertEquals((100 + 5 * defense * 1.5) / (100 + 5 * defense * 1.8),
+                combinedDamage / baseDamage, 1e-8, "借甲独立追加防御，不再被坚守放大");
+        assertTrue(result.log().contains("坚守阵地") && result.log().contains("借甲御敌"));
+    }
+
     @Test void bonusLogsFollowEachFormationCombatWindowWithoutChangingDamage() {
         var a = Map.of("infantry", 1000000);
         var d = Map.of("htank", 10000, "htank~s1", 10000);
@@ -139,7 +156,10 @@ class JointDefenseBattleTest {
         round(state, a, d, Map.of("infantry", 0), Map.of("htank", 0, "htank~s1", 0), 1);
         var hits = state.getEvents().stream().filter(e -> "FIRE".equals(e.get("type")) && "infantry".equals(e.get("targetUnit"))).toList();
         assertEquals(2, hits.size()); assertEquals(hits.get(0).get("batch"), hits.get(1).get("batch"));
-        assertTrue(hits.stream().noneMatch(e -> e.containsKey("targetLosses")));
+        assertTrue(hits.stream().allMatch(e -> e.get("targetLosses") instanceof Number), "每次命中的战损归因必须由服务端下发");
+        int attributed = hits.stream().mapToInt(e -> ((Number) e.get("targetLosses")).intValue()).sum();
+        assertEquals(state.getEvents().stream().filter(e -> "LOSSES".equals(e.get("type")) && "infantry".equals(e.get("unit")))
+                .mapToInt(e -> ((Number) e.get("losses")).intValue()).sum(), attributed);
         assertEquals(1, state.getEvents().stream().filter(e -> "LOSSES".equals(e.get("type")) && hits.get(0).get("batch").equals(e.get("batch"))
                 && "infantry".equals(e.get("unit"))).count());
     }

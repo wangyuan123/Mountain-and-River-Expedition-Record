@@ -33,6 +33,7 @@ class FreeArmySpeedUpTest extends BaseServiceTest {
         queue.setCostSteel(50);
         queue.setCostOil(0);
         queue.setCostRare(0);
+        queue.setPrestigeReward(7);
         queueRepository.save(queue);
 
         var res = armyService.freeSpeedUp(playerId, queue.getId());
@@ -42,10 +43,12 @@ class FreeArmySpeedUpTest extends BaseServiceTest {
         var units = unitRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, "infantry");
         assertFalse(units.isEmpty());
         assertEquals(50, units.get(0).getCount());
+        assertEquals(7, playerRepository.findById(playerId).orElseThrow().getPrestige());
 
         // 重复点击返回失败
         var resRepeat = armyService.freeSpeedUp(playerId, queue.getId());
         assertEquals(false, resRepeat.get("success"));
+        assertEquals(7, playerRepository.findById(playerId).orElseThrow().getPrestige());
     }
 
     @Test

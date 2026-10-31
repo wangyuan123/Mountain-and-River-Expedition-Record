@@ -99,6 +99,7 @@ class VipClaimControllerTest extends BaseServiceTest {
         PlayerCity city = new PlayerCity();
         city.setWorldId(1L); city.setOwnerId(player.getId()); city.setCitySlot(1);
         city.setName("受领分城"); city.setX(25); city.setY(25);
+        city.setLastTick(com.wargame.util.GameClock.now());
         playerCityRepository.saveAndFlush(city);
         Resources resources = new Resources();
         resources.setPlayerId(player.getId()); resources.setCitySlot(1);

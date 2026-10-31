@@ -2,12 +2,13 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function loadConstants() {
   const context = vm.createContext({ window: null });
   context.window = context;
   require('./load-constants.cjs')(context);
+  require('./server-gameplay.cjs').install(context);
   return context.Game.Constants;
 }
 

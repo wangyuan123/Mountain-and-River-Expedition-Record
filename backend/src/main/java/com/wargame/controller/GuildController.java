@@ -14,6 +14,7 @@ import java.util.Map;
 public class GuildController {
     private final GuildService guildService;
     private final AuthService authService;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.GuildRelationService relations;
 
     public GuildController(GuildService guildService, AuthService authService) {
         this.guildService = guildService;
@@ -38,6 +39,10 @@ public class GuildController {
     @PostMapping("/relations/{targetGuildId}")
     public ResponseEntity<Map<String, Object>> relation(@PathVariable Long targetGuildId, @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(guildService.updateRelation(playerId(), targetGuildId, (String) body.get("status")));
+    }
+    @PostMapping("/relations/{targetGuildId}/respond")
+    public ResponseEntity<Map<String, Object>> respondRelation(@PathVariable Long targetGuildId, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(relations.respondFriendship(playerId(), targetGuildId, body.get("action")));
     }
     @PostMapping("/members/{targetPlayerId}/role")
     public ResponseEntity<Map<String, Object>> role(@PathVariable Long targetPlayerId, @RequestBody GameDtos.GuildRoleRequest request) { return ResponseEntity.ok(guildService.updateRole(playerId(), targetPlayerId, request.role())); }

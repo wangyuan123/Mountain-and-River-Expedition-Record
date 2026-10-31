@@ -30,8 +30,9 @@ import java.util.*;
  */
 @Service
 public class ArmyService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodTimeline timeline;
     @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
-    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
 
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -80,6 +81,7 @@ public class ArmyService {
 
     @Transactional
     public Map<String, Object> recruit(Long playerId, String unitType, int count) {
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Map<String, Object> result = new LinkedHashMap<>();
 
         // 1. 校验兵种 (JS: var u = D.units[id])
@@ -122,36 +124,19 @@ public class ArmyService {
             return result;
         }
 
-        double trMul = trainMul(playerId);
-        int totalMaxBatch = 0;
-        int totalParallel = 0;
-        double totalWeightedSpeed = 0;
-        int activeLanes = 0; // 等级 > 0 的兵工厂参与求和
-        for (Building fb : factoryBuildings) {
-            int lv = fb.getLevel() != null ? fb.getLevel() : 0;
-            if (lv <= 0) continue;
-            totalMaxBatch += (int) Math.floor(lv * 10 * trMul);
-            totalMaxBatch = Math.min(totalMaxBatch, MAX_QUEUE_CAPACITY);
-            int lanes = 1 + lv / 5;
-            totalParallel += lanes;
-            double laneSpeed = 1.0 + Math.min(4.0, lv * 0.05) + Math.max(0, trMul - 1.0);
-            totalWeightedSpeed += laneSpeed * lanes;
-            activeLanes += lanes;
-        }
-        if (totalMaxBatch <= 0) {
+        TrainingStats training = trainingStats(playerId, u.build());
+        if (training.maxBatch() <= 0) {
             result.put("success", false);
             result.put("message", "训练建筑等级过低");
             return result;
         }
-        int parallel = Math.max(1, Math.min(20, totalParallel));
-        double avgSpeed = activeLanes > 0 ? totalWeightedSpeed / activeLanes : 1.0;
+        int parallel = training.parallel();
+        double avgSpeed = training.avgSpeed();
 
         // 3. 单次可征召数由当前平民与资源共同决定；生产队列按并行通道排期，不再用兵工厂等级限制数量。
         int civilians = player != null && cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
         Resources resources = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
-        int maxByPopulation = u.pop() > 0 ? civilians / u.pop() : Integer.MAX_VALUE;
-        int maxByResources = maxAffordableByResources(resources, u.cost());
-        int dynamicMaxBatch = Math.min(maxByPopulation, maxByResources);
+        int dynamicMaxBatch = recruitLimit(u, resources, civilians);
         if (count > dynamicMaxBatch) {
             result.put("success", false);
             result.put("message", "当前最多可征召 " + dynamicMaxBatch + " 个（受平民和资源限制），当前输入 " + count);
@@ -197,23 +182,15 @@ public class ArmyService {
         }
         deductCosts(playerId, resCost);
 
-        // 10. 增加声望 (JS: Core.addPrestige(cost))
-        int totalCost = 0;
-        for (int v : resCost.values()) totalCost += v;
-        int prestigeGain = totalCost > 0 ? Math.max(1, totalCost / 100) : 0;
-        if (player != null) {
-            cityScope.economy(playerId).setCivilianPopulation(civilians - popNeeded);
-            if (prestigeGain > 0) {
-                player.setPrestige((player.getPrestige() != null ? player.getPrestige() : 0) + prestigeGain);
-            }
-            playerRepository.save(player);
+        // 征召仅预告声望，实际奖励随部队完工入库发放，撤单不产生声望。
+        long totalCost = resCost.values().stream().mapToLong(Integer::longValue).sum();
+        int prestigeGain = totalCost > 0 ? Math.toIntExact(Math.max(1, totalCost / 100)) : 0;
+        cityScope.economy(playerId).setCivilianPopulation(civilians - popNeeded);
         cityScope.saveEconomy(playerId);
-        }
 
         long now = GameClock.now();
         // 方案B: parallel 与 avgSpeed 已在上方按栋独立计算后求和得到, 这里直接使用
-        int baseSeconds = 30 + u.cost().values().stream().mapToInt(Integer::intValue).sum() / 10;
-        int duration = Math.max(5, (int) Math.ceil(baseSeconds * n / avgSpeed));
+        int duration = productionDuration(u, n, avgSpeed);
         long startsAt = productionStartsAt(playerId, u.build(), parallel, now);
         ArmyProductionQueue queue = new ArmyProductionQueue();
         queue.setPlayerId(playerId);
@@ -232,13 +209,15 @@ public class ArmyService {
         queue.setCostOil(cost.getOrDefault("oil", 0));
         queue.setCostRare(cost.getOrDefault("rare", 0));
         queue.setCostPopulation(popNeeded);
+        queue.setPrestigeReward(prestigeGain);
         armyProductionQueueRepository.save(queue);
 
         result.put("success", true);
         long waitingMs = Math.max(0, queue.getStartedAt() - now);
         result.put("message", "已加入生产队列 " + u.name() + " x" + n + "，自身工期 " + DurationText.seconds(duration)
                 + (waitingMs > 0 ? "，排队等待 " + DurationText.millis(waitingMs) : "，立即开工")
-                + "，预计交付 " + DurationText.millis(Math.max(0, queue.getFinishesAt() - now)));
+                + "，预计交付 " + DurationText.millis(Math.max(0, queue.getFinishesAt() - now))
+                + "（完工获得 +" + prestigeGain + " 声望）");
         result.put("unitType", unitType);
         result.put("count", n);
         result.put("durationSeconds", duration);
@@ -297,8 +276,7 @@ public class ArmyService {
 
         Player player = playerRepository.findById(playerId).orElse(null);
         if (player != null) {
-            int civilians = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
-            cityScope.economy(playerId).setCivilianPopulation((int) Math.min(popMax(playerId), civilians + populationRefund));
+            returnPopulation(playerId, populationRefund);
             playerRepository.save(player);
         cityScope.saveEconomy(playerId);
         }
@@ -332,7 +310,9 @@ public class ArmyService {
         for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotOrderByStartedAtAscIdAsc(playerId, cityScope.slot(playerId))) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", q.getId()); item.put("unitType", q.getUnitType()); item.put("count", q.getUnitCount());
-            item.put("startedAt", q.getStartedAt()); item.put("finishesAt", q.getFinishesAt());
+            item.put("startedAt", q.getStartedAt());
+            item.put("speedUpCounts", speedUpSupport.suggestedCounts(playerId, q.getFinishesAt())); item.put("finishesAt", q.getFinishesAt());
+            item.put("freeSpeedUpAt", q.getFinishesAt() - BuildService.FREE_SPEED_UP_SECONDS * 1000L);
             item.put("durationSeconds", q.getDurationSeconds());
             item.put("remainingSeconds", Math.max(0, (q.getFinishesAt() - GameClock.now() + 999) / 1000));
             result.add(item);
@@ -342,25 +322,42 @@ public class ArmyService {
 
     @Transactional
     public boolean cancelProduction(Long playerId, Long queueId) {
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        long now = GameClock.now();
+        completeProduction(playerId, now);
         ArmyProductionQueue q = armyProductionQueueRepository.findById(queueId).orElse(null);
         if (q == null || !playerId.equals(q.getPlayerId()) || q.getCitySlot() != cityScope.slot(playerId)) return false;
+        // 删除前沿用加速的通道映射，将该单视为释放占用；等待单不能保留已取消订单的空档。
+        shortenProductionOrder(playerId, q, now, now, true);
         armyProductionQueueRepository.delete(q);
         refund(playerId, q.getCostFood(), q.getCostSteel(), q.getCostOil(), q.getCostRare());
         UnitDef unit = GameData.UNITS.get(q.getUnitType());
         Player player = playerRepository.findById(playerId).orElse(null);
         if (unit != null && player != null) {
-            int civilians = cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0;
-            cityScope.economy(playerId).setCivilianPopulation((int) Math.min(popMax(playerId),
-                    (long) civilians + ArmyPopulationService.paidPopulation(q)));
+            returnPopulation(playerId, ArmyPopulationService.paidPopulation(q));
             playerRepository.save(player);
         cityScope.saveEconomy(playerId);
         }
         return true;
     }
 
+    /** 只限制本次新增返还，民居降级后的已有超容人口留给自然逃亡处理。 */
+    private void returnPopulation(Long owner, long returned) {
+        CityEconomy city = cityScope.economy(owner);
+        double existing = Objects.requireNonNullElse(city.getCivilianPopulation(), 0)
+                + Objects.requireNonNullElse(city.getPopulationGrowthRemainder(), 0.0);
+        double room = Math.max(0, popMax(owner) - existing);
+        double after = Math.min(Integer.MAX_VALUE, existing + Math.min(room, Math.max(0L, returned)));
+        int whole = (int) Math.floor(after);
+        city.setCivilianPopulation(whole);
+        city.setPopulationGrowthRemainder(after - whole);
+    }
+
     @Transactional
     public void completeProduction(Long playerId, long now) {
+        if (timeline != null && timeline.eventTime() == null) { timeline.advance(playerId, now, null); return; }
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         for (ArmyProductionQueue q : armyProductionQueueRepository.findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, cityScope.slot(playerId), now)) {
             populationCosts.complete(playerId, q);
@@ -369,7 +366,12 @@ public class ArmyService {
             unit.setCitySlot(q.getCitySlot());
             unit.setCount((unit.getCount() == null ? 0 : unit.getCount()) + q.getUnitCount());
             armyUnitRepository.save(unit);
-            equipmentProgress.event(playerId, "train", "production-" + q.getId(), q.getUnitCount());
+            // 老订单已在创建时领过声望，待发奖励为0；新订单与完工入库原子兑现。
+            if (q.getPrestigeReward() > 0) {
+                Player owner = playerRepository.findById(playerId).orElseThrow();
+                owner.setPrestige(Math.addExact(Objects.requireNonNullElse(owner.getPrestige(), 0), q.getPrestigeReward()));
+                playerRepository.save(owner);
+            }
             armyProductionQueueRepository.delete(q);
             try { questService.onEvent(playerId, "ARMY_RECRUIT", q.getUnitType(), q.getUnitCount()); questService.onEvent(playerId, "ARMY_TOTAL"); } catch (Exception ignored) {}
         }
@@ -393,7 +395,7 @@ public class ArmyService {
             return result;
         }
         long now = GameClock.now();
-        if (target.getFinishesAt() != null && target.getFinishesAt() - now > 300 * 1000L) {
+        if (target.getFinishesAt() != null && target.getFinishesAt() - now > BuildService.FREE_SPEED_UP_SECONDS * 1000L) {
             result.put("message", "剩余生产时间不超过5分钟时才可免费加速");
             return result;
         }
@@ -482,6 +484,11 @@ public class ArmyService {
 
     /** 缩短订单后按原并行通道前移等待订单；已开工订单和其他制造设施不受影响。 */
     private void shortenProductionOrder(Long playerId, ArmyProductionQueue target, long finishAt, long now) {
+        shortenProductionOrder(playerId, target, finishAt, now, false);
+    }
+
+    /** 取消等待订单不能让其占用新的生产通道；只调整同设施尚未开工订单。 */
+    private void shortenProductionOrder(Long playerId, ArmyProductionQueue target, long finishAt, long now, boolean cancelled) {
         String building = productionBuilding(target);
         int parallel = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), building)
                 .stream().mapToInt(b -> 1 + Objects.requireNonNullElse(b.getLevel(), 0) / 5).sum();
@@ -493,11 +500,12 @@ public class ArmyService {
             int lane = 0;
             for (int i = 1; i < parallel; i++) if (oldAvailable[i] < oldAvailable[lane]) lane = i;
             long oldStart = q.getStartedAt(), oldFinish = q.getFinishesAt();
-            if (q.getId().equals(target.getId())) {
+            boolean isTarget = q.getId().equals(target.getId());
+            if (isTarget && !cancelled) {
                 q.setFinishesAt(finishAt);
                 q.setStartedAt(Math.min(oldStart, finishAt));
                 armyProductionQueueRepository.save(q);
-            } else if (oldStart > now && newAvailable[lane] < oldAvailable[lane]) {
+            } else if (!isTarget && oldStart > now && newAvailable[lane] < oldAvailable[lane]) {
                 // 只移动等待段，保留订单自身已锁定的工期；超额加速不能转成后单的工作量。
                 long start = Math.min(oldStart, Math.max(now, newAvailable[lane]));
                 q.setStartedAt(start);
@@ -505,7 +513,7 @@ public class ArmyService {
                 armyProductionQueueRepository.save(q);
             }
             oldAvailable[lane] = Math.max(oldAvailable[lane], oldFinish);
-            newAvailable[lane] = Math.max(newAvailable[lane], q.getFinishesAt());
+            if (!isTarget || !cancelled) newAvailable[lane] = Math.max(newAvailable[lane], q.getFinishesAt());
         }
     }
 
@@ -571,6 +579,59 @@ public class ArmyService {
     //  trainMul - 对应 JS Core.trainMul: 1 + 0.05 * log_train
     // ================================================================
 
+    /** 通道上限只限制并行队列数，平均速度始终按原始通道加权。报价与生产共用。 */
+    public TrainingStats trainingStats(Long playerId, String building) {
+        double multiplier = trainMul(playerId), weighted = 0;
+        int lanes = 0, rawCapacity = 0, count = 0, sumLevel = 0;
+        for (Building factory : buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, cityScope.slot(playerId), building)) {
+            int level = Objects.requireNonNullElse(factory.getLevel(), 0);
+            if (level <= 0) continue;
+            count++; sumLevel += level;
+            rawCapacity += (int) Math.floor(level * 10 * multiplier);
+            int channels = 1 + level / 5;
+            lanes += channels;
+            weighted += (1 + Math.min(4, level * .05) + Math.max(0, multiplier - 1)) * channels;
+        }
+        return new TrainingStats(Math.min(MAX_QUEUE_CAPACITY, rawCapacity), rawCapacity,
+                Math.min(20, lanes), lanes > 0 ? weighted / lanes : 1, count, sumLevel, multiplier);
+    }
+
+    public record TrainingStats(int maxBatch, int rawMaxBatch, int parallel, double avgSpeed, int count, int sumLevel, double trainMul) {}
+
+    private int productionDuration(UnitDef unit, int count, double speed) {
+        return Math.max(5, (int) Math.ceil(baseProductionSeconds(unit) * (double) count / speed));
+    }
+
+    public int baseProductionSeconds(UnitDef unit) {
+        return 30 + unit.cost().values().stream().mapToInt(Integer::intValue).sum() / 10;
+    }
+
+    /** 周期快照、任意数量报价与正式征召共用同一人口及余额上限。 */
+    public int recruitLimit(UnitDef unit, Resources stock, int civilians) {
+        return Math.min(unit.pop() > 0 ? civilians / unit.pop() : Integer.MAX_VALUE,
+                maxAffordableByResources(stock, unit.cost()));
+    }
+
+    /** 任意数量只读报价，不扣资源或建立队列；实际征召仍重新验证库存、人口和准入。 */
+    public Map<String, Object> previewRecruit(Long playerId, String unitType, int count) {
+        UnitDef unit = GameData.UNITS.get(unitType);
+        if (unit == null || count < 0) throw new IllegalArgumentException("征召参数无效");
+        var training = trainingStats(playerId, unit.build());
+        var unlock = unitUnlocks.evaluate(playerId, cityScope.slot(playerId), unitType, false);
+        int civilians = Objects.requireNonNullElse(cityScope.economy(playerId).getCivilianPopulation(), 0);
+        Resources stock = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
+        int max = recruitLimit(unit, stock, civilians);
+        Map<String, Long> cost = new LinkedHashMap<>();
+        unit.cost().forEach((key, value) -> cost.put(key, (long) value * count));
+        cost.put("pop", (long) unit.pop() * count);
+        int duration = productionDuration(unit, count, training.avgSpeed());
+        long starts = productionStartsAt(playerId, unit.build(), Math.max(1, training.parallel()), GameClock.now());
+        return Map.of("cost", cost, "maxRecruitable", unlock.missing().isEmpty() ? max : 0,
+                "training", training, "baseSeconds", baseProductionSeconds(unit), "duration", duration,
+                "startsAt", starts, "finishesAt", starts + duration * 1000L,
+                "allowed", count > 0 && count <= max && unlock.missing().isEmpty() && training.parallel() > 0);
+    }
+
     public double trainMul(Long playerId) {
         int logTrain = getTechLevel(playerId, "log_train");
         return 1 + 0.05 * logTrain;
@@ -582,12 +643,12 @@ public class ArmyService {
     //  三军统帅技能只放大军衔基础；城防建筑与其他建筑、指挥官等级均不增加带兵上限。
     // ================================================================
 
-    /** 账号动员同时作用于所有城市的新行军和本城迎战。 */
+    /** 账号动员只提高所有城市的新出征容量；守城全部可战兵力参战。 */
     public int armyCap(Long playerId) {
         return armyCapAt(playerId, com.wargame.util.GameClock.now());
     }
 
-    /** 一次选兵共用同一个时间样本，避免到期瞬间出现临时编队配默认容量的混合状态。 */
+    /** 一次出征校验使用同一时间样本，避免动员到期瞬间容量不一致。 */
     public int armyCapAt(Long playerId, long now) {
         Player player = playerRepository.findById(playerId).orElse(null);
         return com.wargame.model.constants.MobilizationRules.apply(ordinaryArmyCap(playerId),
@@ -617,7 +678,7 @@ public class ArmyService {
         return (int) Math.floor(cap);
     }
 
-    /** 出城迎战与普通出征共用带兵上限，不再额外增加守方兵力。 */
+    /** 兼容旧调用的出征容量别名；守城不使用此上限。 */
     public int sortieCap(Long playerId) {
         return armyCap(playerId);
     }

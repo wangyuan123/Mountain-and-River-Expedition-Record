@@ -32,6 +32,8 @@ window.Game = window.Game || {};
     panelMode = 'list';
     var info = overview();
     var html = '<div class="city-overview"><b>我的城市 ' + info.count + ' / ' + info.cap + '</b><span>' + esc(info.rankName || '') + '</span></div>';
+    html += '<p class="city-hint">本城独立：粮食、钢铁、石油、稀矿、黄金、兵力和任职军官。账号共享：科技成果、钻石、道具与装备库存、军衔和声望。切城不会搬运物资。</p>';
+    if (G.PlayGuide) html += G.PlayGuide.foodOutlook();
     html += '<div class="city-list">';
     info.cities.forEach(function (city) {
       var pending = city.readyAt > G.gameNow();
@@ -124,9 +126,6 @@ window.Game = window.Game || {};
     select: function (cityId, goHome) {
       if (G.CityTeleport && G.CityTeleport.isBusy()) return;
       if (G.CityTeleport) G.CityTeleport.close();
-      if (G.UnitEquipment && G.UnitEquipment.isBusy()) return;
-      if (G.UnitEquipment && G.UnitEquipment.hasUnsaved()) { G.UnitEquipment.close(false); return; }
-      if (G.UnitEquipment) G.UnitEquipment.close(true);
       if (this.switching) return;
       var city = overview().cities.find(function (c) { return c.id === cityId; });
       if (!city || city.current || city.readyAt > G.gameNow()) return;
@@ -222,6 +221,7 @@ window.Game = window.Game || {};
       action = action === 'transport' ? 'transport' : supporting ? 'reinforce' : 'rebase';
       var transporting = action === 'transport';
       var html = '<p>从 <b>' + esc(s.player.cityName) + '</b> 前往 <b>' + esc(city.name) + '</b></p><form id="cityTransferForm"><input type="hidden" name="action" value="' + action + '"><p class="city-hint">' + (transporting ? '运输：卡车或运输机送达物资后返回出发城市。' : supporting ? '驻防部队和随队军官独立参战，由城主统一指挥；驻防粮耗由接收城市承担，缺粮时未参战驻军自动返程。可在军情中撤回。' : '派遣：选中的兵种抵达后留驻目标城市。') + '</p><div class="city-transfer-grid">';
+      if (supporting) html += '<details><summary>驻军的加成与战损归属</summary><p>随队将领：派遣者提供，仅加成本支驻军。战斗科技与司令官：使用被驻军城市配置。驻防粮耗：接收城市承担。幸存者、战损和伤兵：归派遣者，伤兵仍按原派兵城市规则收容；城主统一指挥。</p></details>';
       Object.keys(s.army || {}).forEach(function (key) {
         if (s.army[key] <= 0) return;
         if (transporting && key !== 'truck' && key !== 'transport') return;
@@ -256,7 +256,7 @@ window.Game = window.Game || {};
       }).forEach(function (o) { html += '<option value="' + o.id + '">' + esc(o.name) + '</option>'; });
       html += '</select></label><div id="cityRoutePreview" class="city-hint" aria-live="polite"></div><button type="submit" class="btn ok city-wide">确认' + (transporting ? '运输' : supporting ? '驻防' : '派遣') + '</button></form><button class="btn city-wide" onclick="Game.Cities.' + (supporting ? 'close()">关闭' : 'back()">返回城市列表') + '</button>'; contents(html);
       var routeForm=document.getElementById('cityTransferForm');
-      if(G.World&&G.World.bindRoutePreview)G.World.bindRoutePreview(routeForm,document.getElementById('cityRoutePreview'),function(){var army={};routeForm.querySelectorAll('[data-unit]').forEach(function(el){army[el.dataset.unit]=Math.max(0,parseInt(el.value,10)||0);});return {targetKind:'player',targetId:cityId,action:routeForm.elements.action.value,army:army};},{start:s.player.cityName,end:city.name,updateOnInput:true});
+      if(G.World&&G.World.bindRoutePreview)G.World.bindRoutePreview(routeForm,document.getElementById('cityRoutePreview'),function(){var army={};routeForm.querySelectorAll('[data-unit]').forEach(function(el){army[el.dataset.unit]=Math.max(0,parseInt(el.value,10)||0);});return {targetKind:'player',targetId:cityId,action:routeForm.elements.action.value,army:army};},{start:s.player.cityName,end:city.name,updateOnInput:true,onQuote:function(route){var hint=document.getElementById('cityTransferLoad');if(hint)hint.textContent='部队负重 '+route.cargoLimit;}});
       document.getElementById('cityTransferForm').addEventListener('input', function (event) {
         var changed = event.target, dataset = changed.dataset || {};
         var kind = dataset.unitRange || dataset.unit ? 'unit' : 'resource';
@@ -273,12 +273,10 @@ window.Game = window.Game || {};
             remaining.textContent = G.fmt ? G.fmt(stock - selected) : String(stock - selected);
           }
         }
-        var load = 0, carry = 0;
-        this.querySelectorAll('[data-unit]').forEach(function (input) { load += Number(input.value) * (G.DATA.units[input.dataset.unit].load || 0) * (G.UnitEquipment ? G.UnitEquipment.mul(G.UnitEquipment.snapshot(), input.dataset.unit, 'load') : 1); });
+        var carry = 0;
         this.querySelectorAll('[data-resource]').forEach(function (input) { carry += Number(input.value); });
         var hint = document.getElementById('cityTransferLoad');
-        hint.textContent = '携带资源 ' + carry + ' / 部队负重 ' + load;
-        hint.style.color = carry > load ? 'var(--danger)' : '';
+        hint.textContent = '携带资源 ' + carry + '；部队负重等待服务端路线报价';
       });
       document.getElementById('cityTransferForm').addEventListener('submit', function (event) {
         event.preventDefault(); var form = event.target, button = form.querySelector('button'); if (button.disabled) return;
@@ -287,7 +285,7 @@ window.Game = window.Game || {};
         form.querySelectorAll('[data-resource]').forEach(function (input) { resources[input.dataset.resource] = Number(input.value); });
         if (!Object.keys(army).length) { G.toast('请至少选择一种兵种'); return; }
         if (transporting && !Object.keys(resources).some(function (key) { return resources[key] > 0; })) { G.toast('请填写要运输的物资'); return; }
-        var request = { unitEquipmentVersion: G.World && G.World._currentRoute && G.World._currentRoute.unitEquipmentVersion, targetKind: 'player', targetId: cityId, action: form.elements.action.value, army: army, carryRes: resources, commanderId: Number(form.elements.commander.value) || null };
+        var request = { actionSnapshotVersion: G.World && G.World._currentRoute && G.World._currentRoute.actionSnapshotVersion, targetKind: 'player', targetId: cityId, action: form.elements.action.value, army: army, carryRes: resources, commanderId: Number(form.elements.commander.value) || null };
         // 驻防他人城市属于军事参与，复用出征确认；取消时保留表单和保护。
         var send = function (confirmed) {
           if (button.disabled || document.getElementById('cityTransferForm') !== form) return;

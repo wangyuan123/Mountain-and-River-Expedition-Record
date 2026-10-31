@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup() {
   const nodes = new Map();
@@ -16,7 +16,7 @@ function setup() {
   let timerId = 0, renders = 0;
   const state = {
     player: { id: 1, citySlot: 0, cityName: '我城' }, resources: { food: 1000 }, tech: {}, buildings: {},
-    officers: [{ id: 7, role: 'idle', name: '将领' }], army: { infantry: 1000, truck: 10 }, reports: [],
+    officers: [{ id: 7, role: 'idle', name: '将领', dispatch: { allowed: true } }], army: { infantry: 1000, truck: 10 }, reports: [],
     world: { cityPos: { x: 10, y: 10 }, pos: { x: 10, y: 10 }, marches: [], incoming: [], npcCities: [],
       wildTiles: [{ id: 11, type: 'ironworks', level: 1, x: 12, y: 12, totalRes: 1000, mined: 0 }],
       bandits: [{ id: 22, name: '寇 Lv.1', x: 13, y: 13 }],
@@ -40,7 +40,7 @@ function setup() {
   context.window = context;
   const load = file => vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context, { filename: file });
   for (const file of ['constants.js', 'data.js', 'world.js']) load(file);
-  for (const id of ['dpCampaignAction', 'dpCampaignHeading', 'dpCampaignLimit', 'dpCampaignDescription', 'dpCampaignTroops', 'dpCampaignSummary']) nodes.set(id, {});
+  for (const id of ['dpCampaignAction', 'dpStrikeAction', 'dpStrikeDuration', 'dpCampaignHeading', 'dpCampaignLimit', 'dpCampaignDescription', 'dpCampaignTroops', 'dpCampaignSummary']) nodes.set(id, {});
   nodes.set('dqty_infantry', { value: '100', max: '1000' });
   nodes.set('dslider_infantry', { value: '100', max: '1000', style: { setProperty() {} } });
   nodes.set('dcarry_food', { value: '70' });
@@ -60,6 +60,7 @@ test('zero-load conquest warns without blocking combat and transport selection p
   f.nodes.set('dqty_battleship', { value: '100', max: '100' });
   const warning = { hidden: true };
   f.nodes.set('dispatchLoadWarning', warning);
+  f.game.World._currentRoute={cargoLimit:0,oil:10,seconds:123,distance:20};
   f.game.World.updateDispatchStats();
   assert.equal(warning.hidden, false);
   let focused = false;
@@ -68,9 +69,11 @@ test('zero-load conquest warns without blocking combat and transport selection p
   assert.equal(focused, true);
   assert.equal(f.nodes.get('dqty_transport').value, '0');
   f.nodes.get('dqty_transport').value = '1';
+  f.game.World._currentRoute={cargoLimit:500,oil:20,seconds:123,distance:20};
   f.game.World.updateDispatchStats();
   assert.equal(warning.hidden, true);
   f.nodes.get('dqty_transport').value = '0';
+  f.game.World.attack('player', 0, 'plunder');
   f.game.World.setCampaignAction('feint');
   assert.equal(warning.hidden, true);
 });
@@ -265,44 +268,39 @@ test('retired NPC cities cannot open or submit a dispatch, including cached draf
   assert.equal(f.routes.at(-1), 'world');
 });
 
-test('ordinary and legacy attack entries initialize a fresh campaign with the appropriate mode', () => {
+test('conquest and plunder entries initialize fixed purposes and normalize legacy drafts', () => {
   const f = setup();
-  for (const [entry, expected] of [['campaign', true], ['conquer', true], ['plunder', false]]) {
+  for (const [entry, purpose, action] of [['campaign', 'conquer', 'conquer'], ['conquer', 'conquer', 'conquer'], ['plunder', 'plunder', 'guerrilla']]) {
     f.game.World.attack('bandit', 0, entry);
     const draft = f.state.world._dispatchTarget;
     assert.equal(draft.action, 'campaign');
-    assert.equal(draft.occupyTarget, expected);
-    assert.equal(f.game.World.resolveDispatchAction(draft), expected ? 'conquer' : 'plunder');
+    assert.equal(draft.campaignPurpose, purpose);
+    assert.equal(draft.occupyTarget, purpose === 'conquer');
+    assert.equal(f.game.World.resolveDispatchAction(draft), action);
   }
-  f.game.World.setOccupyTarget(false);
-  f.game.World.attack('player', 0);
-  assert.equal(f.state.world._dispatchTarget.occupyTarget, true);
+  f.game.World.attack('player', 0, 'conquer');
+  assert.equal(f.state.world._dispatchTarget.campaignAction, 'conquer');
   f.game.World.attack('bandit', 0, 'scout');
   assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), 'scout');
+  const stale = { kind: 'wild', action: 'campaign', campaignAction: 'plunder', occupyTarget: false };
+  assert.equal(f.game.World.resolveDispatchAction(stale), 'guerrilla');
 });
 
-test('campaign dropdown precedes troops and mode changes preserve the form and selections', () => {
+test('conquest page fixes its round limit and retains garrison and troop configuration', () => {
   const f = setup();
-  f.game.World.attackWild(0);
+  f.game.World.attackWild(0, 'conquer');
   const view = { innerHTML: '' };
   f.game.World.renderDispatch(view);
-  assert.match(view.innerHTML, /行动:.*讨伐/);
-  assert.ok(view.innerHTML.indexOf('id="dpCampaignAction"') > 0);
-  assert.ok(view.innerHTML.indexOf('id="dpCampaignAction"') < view.innerHTML.indexOf('兵种配置'));
-  assert.match(view.innerHTML, /dispatch-campaign-hint.*role="status"/);
-  assert.doesNotMatch(view.innerHTML, /dpOccupyTarget|是否占领/);
-  assert.deepEqual([...view.innerHTML.matchAll(/<option value="(conquer|plunder|feint|harass|guerrilla)"[^>]*>([^<]+)/g)].map(match => match[2]), ['征服', '掠夺', '佯攻', '袭扰', '游击']);
-  assert.match(view.innerHTML, /出征讨伐/);
-  assert.doesNotMatch(view.innerHTML, /征服成功后操作|占领目标/);
+  assert.match(view.innerHTML, /行动:.*征服/);
+  assert.match(view.innerHTML, /最多 35 回合/);
+  assert.match(view.innerHTML, /出征征服/);
+  assert.match(view.innerHTML, /name="dpConquerMode"/);
+  assert.doesNotMatch(view.innerHTML, /id="dpCampaignAction"|id="dpStrikeAction"|出征讨伐/);
   const html = view.innerHTML;
   f.game.World.setConquerMode('occupy');
+  for (const action of ['feint', 'harass', 'guerrilla', 'plunder']) f.game.World.setCampaignAction(action);
+  assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), 'conquer');
   assert.match(f.nodes.get('dpCampaignSummary').textContent, /原地驻守/);
-  f.game.World.setOccupyTarget(false);
-  assert.equal(f.nodes.get('dpCampaignTroops').hidden, true);
-  assert.match(f.nodes.get('dpCampaignSummary').textContent, /仅夺取资源.*自动返城/);
-  f.game.World.setOccupyTarget(true);
-  assert.equal(f.nodes.get('dpCampaignTroops').hidden, false);
-  assert.equal(f.state.world._dispatchTarget.conquerMode, 'occupy');
   assert.equal(view.innerHTML, html);
   assert.equal(f.nodes.get('dqty_infantry').value, '100');
   assert.equal(f.nodes.get('dcarry_food').value, '70');
@@ -311,16 +309,17 @@ test('campaign dropdown precedes troops and mode changes preserve the form and s
   assert.equal(f.renders, 0);
 });
 
-test('wild dispatch freezes settlement action and normalizes hidden garrison selections', async () => {
-  for (const [occupyTarget, conquerMode, expectedMode] of [[true, 'withdraw', 'withdraw'], [true, 'occupy', 'occupy'], [false, 'occupy', 'withdraw']]) {
+test('wild conquest freezes its selected garrison result and plunder never submits hidden occupation', async () => {
+  for (const [entry, conquerMode, expectedAction, expectedMode] of [
+    ['conquer', 'withdraw', 'conquer', 'withdraw'], ['conquer', 'occupy', 'conquer', 'occupy'], ['plunder', 'occupy', 'guerrilla', 'withdraw']
+  ]) {
     const f = setup();
-    f.game.World.attackWild(0);
+    f.game.World.attackWild(0, entry);
     f.game.World.setConquerMode(conquerMode);
-    f.game.World.setOccupyTarget(occupyTarget);
     f.game.World.launchDispatch();
     await flush();
     assert.equal(f.requests.length, 1);
-    assert.equal(f.requests[0].action, occupyTarget ? 'conquer' : 'plunder');
+    assert.equal(f.requests[0].action, expectedAction);
     assert.equal(f.requests[0].conquerMode, expectedMode);
     assert.equal(f.requests[0].army.infantry, 100);
     assert.equal(f.requests[0].commanderId, 7);
@@ -330,41 +329,42 @@ test('wild dispatch freezes settlement action and normalizes hidden garrison sel
   }
 });
 
-test('resource-less wilds disable plunder but permit harassment; depleted resources still permit plunder', () => {
-  const f = setup();
+test('resource-less and depleted wilds retain conquest and the existing short combat rules', () => {
+  const f = setup(), view = { innerHTML: '' };
   f.state.world.wildTiles[0].type = 'mount';
-  f.game.World.attackWild(0, 'plunder');
-  f.game.World.setOccupyTarget(false);
-  assert.equal(f.state.world._dispatchTarget.occupyTarget, true);
-  const view = { innerHTML: '' };
+  f.game.World.attackWild(0, 'conquer');
   f.game.World.renderDispatch(view);
-  assert.match(view.innerHTML, /<option value="plunder" disabled>/);
-  assert.match(view.innerHTML, /没有可夺取资源，无法选择掠夺/);
-  f.game.World.setCampaignAction('guerrilla');
+  assert.match(view.innerHTML, /没有可夺取资源/);
+  assert.doesNotMatch(view.innerHTML, /id="dpStrikeAction"/);
+  f.game.World.attackWild(0, 'plunder');
+  f.game.World.renderDispatch(view);
   assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), 'guerrilla');
-  assert.equal(f.nodes.get('dpCampaignTroops').hidden, true);
+  assert.doesNotMatch(view.innerHTML, /name="dpConquerMode"/);
   f.state.world.wildTiles[0].type = 'ironworks';
   f.state.world.wildTiles[0].mined = 1000;
   f.game.World.attackWild(0, 'plunder');
   f.game.World.renderDispatch(view);
-  assert.equal(f.state.world._dispatchTarget.occupyTarget, false);
-  assert.doesNotMatch(view.innerHTML, /<option value="plunder"[^>]*disabled/);
-  assert.match(view.innerHTML, /剩余资源为0/);
+  assert.equal(f.state.world._dispatchTarget.campaignPurpose, 'plunder');
+  assert.match(view.innerHTML, /id="dpStrikeAction"/);
 });
 
-test('short combat modes retain actual action, limits and selections through dispatch', async () => {
-  for (const [action, name, limit] of [['feint', '佯攻', 10], ['harass', '袭扰', 15], ['guerrilla', '游击', 5]]) {
-    const f = setup();
-    f.game.World.attackWild(0);
-    f.game.World.setConquerMode('occupy');
+test('plunder page offers exactly three named round options and submits each actual action', async () => {
+  for (const [action, name, limit] of [['guerrilla', '游击', 5], ['feint', '佯攻', 10], ['harass', '袭击', 15]]) {
+    const f = setup(), view = { innerHTML: '' };
+    f.game.World.attackWild(0, 'plunder');
+    f.game.World.renderDispatch(view);
+    assert.match(view.innerHTML, /行动:.*掠夺/);
+    assert.match(view.innerHTML, /出征掠夺/);
+    assert.doesNotMatch(view.innerHTML, /id="dpCampaignAction"|name="dpConquerMode"/);
+    assert.deepEqual([...view.innerHTML.matchAll(/<option value="(guerrilla|feint|harass)"[^>]*>([^<]+)/g)].map(m => m[2]),
+      ['游击 · 5回合', '佯攻 · 10回合', '袭击 · 15回合']);
+    assert.ok(view.innerHTML.indexOf('id="dpStrikeAction"') < view.innerHTML.indexOf('兵种配置'));
     f.game.World.setCampaignAction(action);
-    const draft = f.state.world._dispatchTarget;
-    assert.equal(f.game.World.resolveDispatchAction(draft), action);
-    assert.equal(f.nodes.get('dpCampaignAction').value, action);
+    assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), action);
+    assert.equal(f.nodes.get('dpStrikeAction').value, action);
     assert.equal(f.nodes.get('dpCampaignHeading').textContent, name + '说明');
     assert.equal(f.nodes.get('dpCampaignLimit').textContent, '最多 ' + limit + ' 回合');
     assert.match(f.nodes.get('dpCampaignDescription').textContent, /不获得资源、不占领目标/);
-    assert.equal(f.nodes.get('dpCampaignTroops').hidden, true);
     assert.equal(f.nodes.get('dqty_infantry').value, '100');
     assert.equal(f.nodes.get('dcarry_food').value, '70');
     assert.equal(f.renders, 0);
@@ -375,6 +375,19 @@ test('short combat modes retain actual action, limits and selections through dis
     assert.equal(f.requests[0].commanderId, 7);
     assert.equal(f.requests[0].battleMode, 'manual');
   }
+});
+
+test('plunder only changes round options and preserves all other draft inputs', () => {
+  const f = setup();
+  f.game.World.attackWild(0, 'plunder');
+  f.game.World.setCampaignAction('harass');
+  for (const action of ['conquer', 'plunder', 'invalid']) f.game.World.setCampaignAction(action);
+  assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), 'harass');
+  assert.equal(f.nodes.get('dpStrikeAction').value, 'harass');
+  assert.equal(f.nodes.get('dqty_infantry').value, '100');
+  assert.equal(f.nodes.get('dcarry_food').value, '70');
+  assert.equal(f.nodes.get('officer').value, '7');
+  assert.equal(f.nodes.get('battleMode').value, 'manual');
 });
 
 test('NPC and player preparations explain actual ownership conditions and never show garrison choices', () => {
@@ -388,8 +401,10 @@ test('NPC and player preparations explain actual ownership conditions and never 
   assert.match(view.innerHTML, /战后民心为0/);
   assert.match(view.innerHTML, /未能接管时按幸存部队剩余负重掠取普通资源/);
   assert.doesNotMatch(view.innerHTML, /name="dpConquerMode"|name="dpBattleMode"/);
-  f.game.World.setOccupyTarget(false);
-  assert.match(f.nodes.get('dpCampaignDescription').textContent, /不接管城市，也不俘虏指挥官/);
+  f.game.World.attack('player', 0, 'plunder');
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /行动:.*掠夺/);
+  assert.doesNotMatch(view.innerHTML, /name="dpConquerMode"|name="dpBattleMode"/);
 });
 
 test('scout and incoming army interceptions show fixed automatic settlement even with stale battle modes', () => {
@@ -448,35 +463,35 @@ test('failed dispatch retains the same draft and fields; state replacement on su
 
 test('mode changes invalidate preview responses and submission waits for the matching route', async () => {
   const f = setup(), pending = [], rendered = [];
-  f.game.World.attackWild(0);
+  f.game.World.attackWild(0, 'plunder');
   const draft = f.state.world._dispatchTarget;
   f.game.API.client = { post: (url, body) => new Promise((resolve, reject) => pending.push({ body, resolve, reject })) };
-  f.game.DispatchRoute = { loadTerrain: () => Promise.resolve(null), render: (hint, route) => rendered.push(route.unitEquipmentVersion) };
+  f.game.DispatchRoute = { loadTerrain: () => Promise.resolve(null), render: (hint, route) => rendered.push(route.actionSnapshotVersion) };
   const hint = { isConnected: true, setAttribute() {}, querySelector: () => null };
   f.game.World.bindRoutePreview({ addEventListener() {} }, hint, () => ({ targetKind: draft.kind,
     targetId: draft.target.id, action: f.game.World.resolveDispatchAction(draft), army: { infantry: 100 } }), {});
   f.runTimers();
-  assert.equal(pending[0].body.action, 'conquer');
-  f.game.World.setOccupyTarget(false);
+  assert.equal(pending[0].body.action, 'guerrilla');
+  f.game.World.setCampaignAction('feint');
   f.runTimers();
-  assert.equal(pending[1].body.action, 'plunder');
+  assert.equal(pending[1].body.action, 'feint');
   f.game.World.launchDispatch();
   assert.equal(f.requests.length, 0);
-  pending[0].resolve({ unitEquipmentVersion: 'old', distance: 10, seconds: 5 });
+  pending[0].resolve({ actionSnapshotVersion: 'old', distance: 10, seconds: 5 });
   await flush();
   assert.equal(f.game.World._currentRoute, null);
-  pending[1].resolve({ unitEquipmentVersion: 'current', distance: 10, seconds: 5 });
+  pending[1].resolve({ actionSnapshotVersion: 'current', distance: 10, seconds: 5 });
   await flush();
   assert.deepEqual(rendered, ['current']);
   f.game.World.launchDispatch();
   assert.equal(f.requests[0].action, pending[1].body.action);
-  assert.equal(f.requests[0].unitEquipmentVersion, 'current');
+  assert.equal(f.requests[0].actionSnapshotVersion, 'current');
   await flush();
 });
 
 test('a route failure blocks dispatch and retrying cannot reuse the previous mode preview', async () => {
   const f = setup(), pending = [];
-  f.game.World.attack('bandit', 0);
+  f.game.World.attack('bandit', 0, 'plunder');
   const draft = f.state.world._dispatchTarget;
   f.game.API.client = { post: (url, body) => new Promise((resolve, reject) => pending.push({ body, resolve, reject })) };
   const hint = { isConnected: true, setAttribute() {}, querySelector: () => null };
@@ -493,18 +508,18 @@ test('a route failure blocks dispatch and retrying cannot reuse the previous mod
   assert.equal(f.state.world._dispatchTarget, draft);
   assert.equal(f.nodes.get('dqty_infantry').value, '100');
 
-  f.game.World.setOccupyTarget(false);
+  f.game.World.setCampaignAction('feint');
   assert.equal(f.game.World._dispatchRouteError, false);
   f.runTimers();
   f.game.World.launchDispatch();
   assert.equal(f.requests.length, 0);
   assert.equal(f.messages.at(-1), '行军路线正在更新，请稍候再出征');
-  pending[1].resolve({ unitEquipmentVersion: 'current', distance: 10, seconds: 5 });
+  pending[1].resolve({ actionSnapshotVersion: 'current', distance: 10, seconds: 5 });
   await flush();
   f.game.World.launchDispatch();
   assert.equal(f.requests.length, 1);
-  assert.equal(f.requests[0].action, 'plunder');
-  assert.equal(f.requests[0].unitEquipmentVersion, 'current');
+  assert.equal(f.requests[0].action, 'feint');
+  assert.equal(f.requests[0].actionSnapshotVersion, 'current');
   await flush();
 });
 
@@ -531,7 +546,7 @@ test('reopening dispatch cannot leave a valid 5000-infantry airlift stuck updati
   assert.equal(pending.length, 1);
   assert.equal(pending[0].body.army.infantry, 5000);
   assert.equal(pending[0].body.army.transport, 1000);
-  pending[0].resolve({ mode: 'airlift', unitEquipmentVersion: 'current', distance: 50, seconds: 150 });
+  pending[0].resolve({ mode: 'airlift', actionSnapshotVersion: 'current', distance: 50, seconds: 150 });
   await flush();
   assert.equal(f.game.World._dispatchRoutePending, false);
 
@@ -544,7 +559,7 @@ test('reopening dispatch cannot leave a valid 5000-infantry airlift stuck updati
   assert.equal(f.requests.length, 1);
   assert.equal(f.requests[0].army.infantry, 5000);
   assert.equal(f.requests[0].army.transport, 1000);
-  assert.equal(f.requests[0].unitEquipmentVersion, 'current');
+  assert.equal(f.requests[0].actionSnapshotVersion, 'current');
   await flush();
 });
 
@@ -568,4 +583,59 @@ test('quest jumps preselect only the next matching campaign and ordinary later a
   assert.equal(f.state.world._campaignTaskMode, undefined);
   f.game.World.attackWild(0);
   assert.equal(f.state.world._dispatchTarget.occupyTarget, true);
+});
+
+test('城市战斗锁覆盖全部出征方式，禁止缓存表单提交且不扣兵或资源', () => {
+  const f = setup();
+  f.state.cityBattleLocked = true;
+  for (const action of ['campaign', 'conquer', 'plunder', 'feint', 'harass', 'guerrilla', 'scout', 'gather', 'station', 'transport', 'rebase', 'reinforce', 'intercept_scout']) {
+    f.state.world._dispatchTarget = { kind: 'wild', idx: 0, action };
+    f.game.World.launchDispatch();
+  }
+  assert.equal(f.messages.length, 13);
+  assert.ok(f.messages.every(message => message === '当前城市正在战斗，暂时无法出征，请等待战斗结束'));
+  assert.deepEqual(f.requests, []);
+  assert.equal(f.state.army.infantry, 1000);
+  assert.equal(f.state.resources.food, 1000);
+});
+
+test('锁定时出征页只显示提示，状态解锁后恢复表单并允许提交', async () => {
+  const f = setup();
+  f.game.World.dispatchWild(0, 'campaign');
+  const view = { innerHTML: '' };
+  f.state.cityBattleLocked = true;
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /当前城市正在战斗，暂时无法出征，请等待战斗结束/);
+  assert.doesNotMatch(view.innerHTML, /launchDispatch|dqty_/);
+  f.state.cityBattleLocked = false;
+  f.game.World.renderDispatch(view);
+  assert.match(view.innerHTML, /launchDispatch/);
+  f.game.World.launchDispatch();
+  await flush();
+  assert.equal(f.requests.length, 1);
+});
+
+
+test('explicit map entries take priority over task recommendations and clear consumed task hints', () => {
+  for (const [recommended, entry, action] of [[false, 'conquer', 'conquer'], [true, 'plunder', 'guerrilla']]) {
+    const f = setup();
+    f.state.world._campaignTaskMode = { kind: 'wild', occupyTarget: recommended };
+    const target = f.state.world.wildTiles[0];
+    f.game.World.mapAction({ ...target, kind: 'wild' }, entry);
+    assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), action);
+    assert.equal(f.state.world._campaignTaskMode, undefined);
+  }
+});
+
+test('wild NPC and player lists offer conquest and plunder instead of a campaign button', () => {
+  const f = setup();
+  f.game.WorldView = { ensure: () => true };
+  for (const tab of ['wild', 'npc', 'player']) {
+    f.state.world._activeTab = tab;
+    const view = { innerHTML: '' };
+    f.game.World.renderView(view);
+    assert.match(view.innerHTML, />征服<\/button>/, tab);
+    assert.match(view.innerHTML, />掠夺<\/button>/, tab);
+    assert.doesNotMatch(view.innerHTML, />讨伐<\/button>/, tab);
+  }
 });

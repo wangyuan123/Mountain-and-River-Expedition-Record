@@ -16,6 +16,18 @@ public final class OfficerExperienceRules {
         return Math.toIntExact(books * RAPID_BOOK_PRICE * 8 / 10);
     }
 
+    public record Growth(int level, long exp, int upgraded) {}
+
+    /** 预览与一键升级共用经验扣减顺序，满级时清空剩余经验。 */
+    public static Growth preview(int level, long experience) {
+        int initial = level;
+        while (level < MAX_LEVEL && experience >= expNeeded(level)) {
+            experience -= expNeeded(level);
+            level++;
+        }
+        return new Growth(level, level >= MAX_LEVEL ? 0 : experience, level - initial);
+    }
+
     /** 当前等级升到下一级的需求；满级不再消耗经验。与前端 G.expNeeded 保持一致。 */
     public static long expNeeded(int level) {
         if (level >= MAX_LEVEL) return 0L;

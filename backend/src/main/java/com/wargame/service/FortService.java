@@ -22,6 +22,9 @@ import java.util.*;
  */
 @Service
 public class FortService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private com.wargame.service.TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired private AccountService accounts;
+    @org.springframework.beans.factory.annotation.Autowired private ConstructionRepository construction;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -31,7 +34,7 @@ public class FortService {
     private final BuildingRepository buildingRepository;
 
     /** 四类城防武器共享容量，每级城防增加3000，10级可容纳30000。 */
-    private static final int FORT_CAP_PER_WALL_LEVEL = 3000;
+    public static final int FORT_CAP_PER_WALL_LEVEL = 3000;
     /** 拆除返还比例 - 对应 JS: Math.floor(cost.steel * n * 0.3) */
     private static final double DISMANTLE_REFUND_RATIO = 0.3;
 
@@ -50,6 +53,9 @@ public class FortService {
     @Transactional
     public Map<String, Object> build(Long playerId, String fortType, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
+        if (count <= 0) throw new IllegalArgumentException("修筑数量必须大于0");
+        accounts.lockPlayer(playerId);
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
 
         // 1. 校验城防类型 (JS: var f = D.forts[id])
         FortDef f = GameData.FORTS.get(fortType);
@@ -68,7 +74,7 @@ public class FortService {
         }
 
         // 四类工事合计占用当前城市容量；先校验再扣费，用长整数避免超大请求绕过上限。
-        int cap = fortCap(playerId);
+        int cap = admissionCap(playerId);
         int total = totalForts(playerId);
         if ((long) total + count > cap) {
             result.put("success", false);
@@ -121,6 +127,9 @@ public class FortService {
     @Transactional
     public Map<String, Object> dismantle(Long playerId, String fortType, int count) {
         Map<String, Object> result = new LinkedHashMap<>();
+        if (count <= 0) throw new IllegalArgumentException("拆除数量必须大于0");
+        accounts.lockPlayer(playerId);
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
 
         FortDef f = GameData.FORTS.get(fortType);
         if (f == null) {
@@ -191,6 +200,15 @@ public class FortService {
     /** 当前城市四类工事共享的总容量，升级城防只扩容，不赠送工事。 */
     public int fortCap(Long playerId) {
         return buildingLevel(playerId, "wall") * FORT_CAP_PER_WALL_LEVEL;
+    }
+
+    /** 降级工程先预留目标容量；升级未完工不得增加修筑额度。 */
+    public int admissionCap(Long playerId) {
+        int level = buildingLevel(playerId, "wall");
+        for (Construction job : construction.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId))) {
+            if ("wall".equals(job.getBuildingType())) level = Math.min(level, job.getTargetLevel());
+        }
+        return Math.max(0, level) * FORT_CAP_PER_WALL_LEVEL;
     }
 
     // ================================================================

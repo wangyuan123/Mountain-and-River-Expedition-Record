@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class TechnologyGoldCostsTest {
     @Test
-    void all240PricesMatchApprovedDesignWithoutChangingOtherResources() throws Exception {
+    void all230PricesMatchApprovedDesignWithoutChangingOtherResources() throws Exception {
         var design = new ObjectMapper().readTree(Path.of("../docs/balance/tech-research-gold-design-20261028.json").toFile());
         var service = new TechService(null, null, null, null);
         var covered = new HashSet<String>();
@@ -48,8 +48,8 @@ class TechnologyGoldCostsTest {
             }
         }
         assertEquals(GameData.TECHS.keySet(), covered);
-        assertEquals(24, covered.size());
-        assertEquals(2_019_962_000L, total);
+        assertEquals(23, covered.size());
+        assertEquals(1_942_766_000L, total);
         assertEquals(Map.of("steel", 240, "food", 120, "gold", 6000), service.calcTechCost("attack_tech", 0));
         assertEquals(20_000_000, service.calcTechCost("prod_food", 9).get("gold"));
         assertEquals(30_000_000, service.calcTechCost("attack_tech", 9).get("gold"));

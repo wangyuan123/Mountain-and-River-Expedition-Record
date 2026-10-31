@@ -31,24 +31,32 @@ public record ItemDef(
             Map.entry("expBookAdv", new ItemDef("expBookAdv", "高级经验书",  "img/items/exp-book-adv.svg", CAT_OFFICER, "每本提供100000经验，可批量使用", 0)),
             Map.entry("expBookRapid", new ItemDef("expBookRapid", "极速经验书", "img/items/exp-book-adv.svg", CAT_OFFICER, "每本提供500000经验，可批量使用", 0)),
             Map.entry("expBookMax", new ItemDef("expBookMax", "满级经验书",  "img/items/exp-book-max.svg", CAT_OFFICER, "使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点", 0)),
-            Map.entry("skillBook",  new ItemDef("skillBook",  "普通技能书",  "img/items/skill-book.svg", CAT_OFFICER, "军官使用，随机学习一个未掌握且不互斥的技能，初始等级受军官星级影响", 0)),
-            Map.entry("universalSkillBook", new ItemDef("universalSkillBook", "通用技能书", "img/items/universal-skill-book.svg", CAT_OFFICER, "从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级", 0)),
-            // —— 指定技能书：直接学习对应技能 Lv.1 ——
-            Map.entry("skillBook_frenzy", new ItemDef("skillBook_frenzy", "全军冲锋技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习全军冲锋 Lv.1", 0)),
-            Map.entry("skillBook_bulwark", new ItemDef("skillBook_bulwark", "坚守阵地技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习坚守阵地 Lv.1", 0)),
-            Map.entry("skillBook_blitz", new ItemDef("skillBook_blitz", "闪电突击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习闪电突击 Lv.1", 0)),
-            Map.entry("skillBook_suppress", new ItemDef("skillBook_suppress", "火力压制技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习火力压制 Lv.1", 0)),
-            Map.entry("skillBook_pierce", new ItemDef("skillBook_pierce", "破甲打击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习破甲打击 Lv.1", 0)),
-            Map.entry("skillBook_leadership", new ItemDef("skillBook_leadership", "三军统帅技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习三军统帅 Lv.1", 0)),
-            Map.entry("skillBook_medic", new ItemDef("skillBook_medic", "战地急救技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习战地急救 Lv.1", 0)),
-            Map.entry("skillBook_harvest", new ItemDef("skillBook_harvest", "屯田增产技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习屯田增产 Lv.1", 0)),
-            Map.entry("skillBook_construct", new ItemDef("skillBook_construct", "工程营造技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习工程营造 Lv.1", 0)),
-            Map.entry("skillBook_finance", new ItemDef("skillBook_finance", "精明理财技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习精明理财 Lv.1", 0)),
-            Map.entry("skillBook_research", new ItemDef("skillBook_research", "格物致知技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习格物致知 Lv.1", 0)),
-            Map.entry("skillBook_ration", new ItemDef("skillBook_ration", "军屯自给技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习军屯自给 Lv.1", 0)),
-            Map.entry("skillBook_counter", new ItemDef("skillBook_counter", "绝境反击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习绝境反击 Lv.1", 0)),
-            Map.entry("skillBook_learn", new ItemDef("skillBook_learn", "师夷长技技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习师夷长技 Lv.1", 0)),
-            Map.entry("skillBook_borrow_armor", new ItemDef("skillBook_borrow_armor", "借甲御敌技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习借甲御敌 Lv.1", 0)),
+            Map.entry("skillBook",  new ItemDef("skillBook",  "普通技能书",  "img/items/skill-book.svg", CAT_OFFICER, "军官使用，随机学习一个未掌握的技能，直接获得满级技能", 0)),
+            Map.entry("universalSkillBook", new ItemDef("universalSkillBook", "通用技能书", "img/items/universal-skill-book.svg", CAT_OFFICER, "从技能池自选一个未掌握的技能，直接获得满级技能，无需升级", 0)),
+            // —— 指定技能书：直接学习对应技能 满级 ——
+            Map.entry("skillBook_frenzy", new ItemDef("skillBook_frenzy", "全军冲锋技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习全军冲锋 满级", 0)),
+            Map.entry("skillBook_bulwark", new ItemDef("skillBook_bulwark", "坚守阵地技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习坚守阵地 满级", 0)),
+            Map.entry("skillBook_blitz", new ItemDef("skillBook_blitz", "闪电突击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习闪电突击 满级", 0)),
+            Map.entry("skillBook_suppress", new ItemDef("skillBook_suppress", "火力压制技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习火力压制 满级", 0)),
+            Map.entry("skillBook_pierce", new ItemDef("skillBook_pierce", "破甲打击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习破甲打击 满级", 0)),
+            Map.entry("skillBook_leadership", new ItemDef("skillBook_leadership", "三军统帅技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习三军统帅 满级", 0)),
+            Map.entry("skillBook_medic", new ItemDef("skillBook_medic", "战地急救技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习战地急救 满级", 0)),
+            Map.entry("skillBook_harvest", new ItemDef("skillBook_harvest", "屯田增产技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习屯田增产 满级", 0)),
+            Map.entry("skillBook_construct", new ItemDef("skillBook_construct", "工程营造技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习工程营造 满级", 0)),
+            Map.entry("skillBook_finance", new ItemDef("skillBook_finance", "精明理财技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习精明理财 满级", 0)),
+            Map.entry("skillBook_research", new ItemDef("skillBook_research", "格物致知技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习格物致知 满级", 0)),
+            Map.entry("skillBook_ration", new ItemDef("skillBook_ration", "军屯自给技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习军屯自给 满级", 0)),
+            Map.entry("skillBook_counter", new ItemDef("skillBook_counter", "绝境反击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习绝境反击 满级", 0)),
+            Map.entry("skillBook_learn", new ItemDef("skillBook_learn", "师夷长技技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习师夷长技 满级", 0)),
+            Map.entry("skillBook_borrow_armor", new ItemDef("skillBook_borrow_armor", "借甲御敌技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习借甲御敌 满级", 0)),
+            Map.entry("skillBook_ranging", new ItemDef("skillBook_ranging", "三轮校射技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习三轮校射 满级", 0)),
+            Map.entry("skillBook_barrier", new ItemDef("skillBook_barrier", "战地屏障技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习战地屏障 满级", 0)),
+            Map.entry("skillBook_last_stand", new ItemDef("skillBook_last_stand", "背水奋战技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习背水奋战 满级", 0)),
+            Map.entry("skillBook_execution", new ItemDef("skillBook_execution", "残阵收割技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习残阵收割 满级", 0)),
+            Map.entry("skillBook_smoke", new ItemDef("skillBook_smoke", "烟幕遮断技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习烟幕遮断 满级", 0)),
+            Map.entry("skillBook_reprisal", new ItemDef("skillBook_reprisal", "蓄势反攻技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习蓄势反攻 满级", 0)),
+            Map.entry("skillBook_ricochet", new ItemDef("skillBook_ricochet", "跳弹射击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习跳弹射击 满级", 0)),
+            Map.entry("skillBook_pursuit", new ItemDef("skillBook_pursuit", "乘胜追击技能书", "img/items/skill-book.svg", CAT_OFFICER, "军官使用，直接学习乘胜追击 满级", 0)),
             Map.entry("loyaltyBox", new ItemDef("loyaltyBox", "忠诚宝箱",    "img/items/loyalty-box.svg", CAT_OFFICER, "军官忠诚度+20", 0)),
             Map.entry("renameCard", new ItemDef("renameCard", "军官改名卡",  "img/items/rename-card.svg", CAT_OFFICER, "为军官更换新名字", 0)),
             Map.entry("recruitOrd", new ItemDef("recruitOrd", "征募令",      "img/items/recruit-ord.svg", CAT_OFFICER, "刷新军校,保底出现一名五星军官", 0)),
@@ -103,9 +111,9 @@ public record ItemDef(
             Map.entry("warSpeedOrder", new ItemDef("warSpeedOrder", "宣战加速令", "img/items/march-ord.svg", CAT_UTIL, "缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟", 0)),
             Map.entry("populationOrder", new ItemDef("populationOrder", "人口动员令", "img/items/population-order.svg", CAT_UTIL, "使用后立即增加500空闲人口,不超过人口上限", 0)),
             Map.entry("emergencyPopulationOrder", new ItemDef("emergencyPopulationOrder", "紧急人口动员令", "img/items/emergency-population-order.svg", CAT_UTIL, "使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限", 0)),
-            Map.entry("mobilizationOrder", new ItemDef("mobilizationOrder", "战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号出征与本城防守带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
-            Map.entry("advancedMobilizationOrder", new ItemDef("advancedMobilizationOrder", "高级战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号出征与本城防守带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
-            Map.entry("rapidMobilizationOrder", new ItemDef("rapidMobilizationOrder", "极速战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号出征与本城防守带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
+            Map.entry("mobilizationOrder", new ItemDef("mobilizationOrder", "战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号各城市出征带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
+            Map.entry("advancedMobilizationOrder", new ItemDef("advancedMobilizationOrder", "高级战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号各城市出征带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
+            Map.entry("rapidMobilizationOrder", new ItemDef("rapidMobilizationOrder", "极速战争动员令", "img/items/march-ord.svg", CAT_UTIL, "仓库使用后，全账号各城市出征带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成", 0)),
             Map.entry("cityRenameCard", new ItemDef("cityRenameCard", "城市改名卡", "img/items/city-rename-card.svg", CAT_UTIL, "为一座城市更换新名字", 0))
 
     );
@@ -134,10 +142,8 @@ public record ItemDef(
             items.put(gear.key(), new ItemDef(gear.key(), gear.name(), "🎖️", "equipment", gear.description(), 0));
             String box = "box_" + gear.setKey();
             items.putIfAbsent(box, new ItemDef(box, OfficerEquipmentDef.boxName(box), "img/items/officer-gear-box.svg", CAT_OFFICER,
-                    "固定获得十二件装备，每部位一件；Lv." + gear.requiredLevel() + "可穿戴；同套3/6/9/12件共鸣", 0));
+                    "固定获得十二件装备，每部位一件；军官Lv." + gear.requiredLevel() + "可穿戴；同套3/6/9/12件共鸣", 0));
         }
-        items.put("officerPreparationParts", new ItemDef("officerPreparationParts", "军备零件", "🧰", CAT_OFFICER,
-                "用于军官部位整备；完成军备日常和周常获得", 0));
         for (var rank : MilitaryRankDef.RANKS) {
             items.put(RankGiftDef.key(rank.tier()), new ItemDef(RankGiftDef.key(rank.tier()), RankGiftDef.name(rank.tier()),
                     RankGiftDef.ICON, CAT_RESOURCE, RankGiftDef.description(rank.tier(), RankGiftDef.diamonds(rank.tier())), 0));
@@ -145,10 +151,7 @@ public record ItemDef(
             items.put(rank.certificateKey(), new ItemDef(rank.certificateKey(), rank.certificateName(), "img/items/officer-gear-box.svg",
                     CAT_UTIL, "仅用于晋升" + rank.name() + "，授衔消耗1张；" + MilitaryRankDef.certificateSource(rank), 0));
         }
-        for (var equipment : UnitEquipmentDef.ITEMS.values()) {
-            items.put(equipment.key(), new ItemDef(equipment.key(), equipment.name(), "🧰", "unitEquipment",
-                    "本账号全部对应兵种生效；在军队页配置", 0));
-        }
+
         ITEMS = Map.copyOf(items);
     }
 }

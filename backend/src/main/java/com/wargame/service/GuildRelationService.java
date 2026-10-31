@@ -42,7 +42,7 @@ public class GuildRelationService {
     }
 
     /**
-     * 更新当前管理者所属军团与目标军团的共享外交关系。
+     * 友好需对方接受后生效；任一方可解除同盟或声明敌对。
      * @param playerId 操作玩家 ID，必须是团长或管理员
      * @param targetGuildId 目标军团 ID
      * @param rawStatus hostile、friendly 或 neutral
@@ -56,6 +56,7 @@ public class GuildRelationService {
         if (targetGuildId == null || member.getGuildId().equals(targetGuildId)) {
             throw new IllegalArgumentException("请选择其他军团");
         }
+        lockGuilds(member.getGuildId(), targetGuildId);
         Guild target = guildRepository.findById(targetGuildId).orElseThrow(() -> new IllegalArgumentException("目标军团不存在"));
         Guild myGuild = guildRepository.findById(member.getGuildId()).orElse(null);
         String myName = myGuild != null ? myGuild.getName() : "本军团";
@@ -65,21 +66,77 @@ public class GuildRelationService {
         Long low = Math.min(member.getGuildId(), target.getId());
         Long high = Math.max(member.getGuildId(), target.getId());
         GuildRelation relation = guildRelationRepository.findByGuildLowIdAndGuildHighId(low, high).orElse(null);
+        if (FRIENDLY.equals(status)) {
+            if (relation != null && FRIENDLY.equals(relation.getStatus())) return Map.of("success", true, "message", "双方已是友好同盟");
+            if (relation == null) {
+                relation = new GuildRelation(); relation.setGuildLowId(low); relation.setGuildHighId(high); relation.setStatus(NEUTRAL);
+            }
+            if (relation.getFriendshipRequestedBy() != null && !member.getGuildId().equals(relation.getFriendshipRequestedBy()))
+                throw new IllegalArgumentException("对方已发来友好邀请，请选择接受或拒绝");
+            relation.setFriendshipRequestedBy(member.getGuildId());
+            relation.setUpdatedAt(System.currentTimeMillis()); relation.setUpdatedByPlayerId(playerId);
+            guildRelationRepository.save(relation);
+            return Map.of("success", true, "message", "友好邀请已发送，等待对方管理者接受", "status", relation.getStatus(), "pending", true);
+        }
         if (NEUTRAL.equals(status)) {
+            boolean changed = relation != null && !NEUTRAL.equals(relation.getStatus());
             if (relation != null) guildRelationRepository.delete(relation);
-            broadcastRelationNotice(member.getGuildId(), target.getId(), myName, targetName, NEUTRAL);
+            // 只撤销未生效邀请时没有同盟解除事件，不发布误导性的世界公告。
+            if (changed) broadcastRelationNotice(member.getGuildId(), target.getId(), myName, targetName, NEUTRAL);
             return Map.of("success", true, "message", "已设为中立", "status", NEUTRAL);
         }
         if (relation == null) relation = new GuildRelation();
         relation.setGuildLowId(low);
         relation.setGuildHighId(high);
         relation.setStatus(status);
+        relation.setFriendshipRequestedBy(null);
         relation.setUpdatedByPlayerId(playerId);
         relation.setUpdatedAt(System.currentTimeMillis());
         guildRelationRepository.save(relation);
 
         broadcastRelationNotice(member.getGuildId(), target.getId(), myName, targetName, status);
         return Map.of("success", true, "message", HOSTILE.equals(status) ? "已设为敌对军团" : "已设为友好军团", "status", status);
+    }
+
+    /** 邀请必须由对方现任管理者确认；拒绝保持原外交状态，撤回仅限发起方。 */
+    @Transactional
+    public Map<String, Object> respondFriendship(Long playerId, Long otherId, String action) {
+        if (action == null || !java.util.Set.of("accept", "reject", "withdraw").contains(action))
+            throw new IllegalArgumentException("无效的外交操作");
+        GuildMember member = guildMemberRepository.findByPlayerId(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("尚未加入军团"));
+        if (!isManager(member)) throw new IllegalArgumentException("只有团长或管理员可以处理外交邀请");
+        lockGuilds(member.getGuildId(), otherId);
+        Long low = Math.min(member.getGuildId(), otherId), high = Math.max(member.getGuildId(), otherId);
+        GuildRelation relation = guildRelationRepository.findByGuildLowIdAndGuildHighId(low, high)
+                .orElseThrow(() -> new IllegalArgumentException("友好邀请已失效"));
+        Long sender = relation.getFriendshipRequestedBy();
+        if (sender == null) throw new IllegalArgumentException("友好邀请已处理或撤回");
+        boolean own = member.getGuildId().equals(sender);
+        if ("withdraw".equals(action) ? !own : own) throw new IllegalArgumentException("只能处理属于本方的外交邀请");
+        relation.setFriendshipRequestedBy(null);
+        relation.setUpdatedByPlayerId(playerId); relation.setUpdatedAt(System.currentTimeMillis());
+        if ("accept".equals(action)) {
+            relation.setStatus(FRIENDLY);
+            Guild mine = guildRepository.findById(member.getGuildId()).orElseThrow();
+            Guild other = guildRepository.findById(otherId).orElseThrow();
+            broadcastRelationNotice(mine.getId(), other.getId(), mine.getName(), other.getName(), FRIENDLY);
+        }
+        guildRelationRepository.save(relation);
+        return Map.of("success", true, "message", "accept".equals(action) ? "双方友好同盟已生效"
+                : "withdraw".equals(action) ? "友好邀请已撤回" : "友好邀请已拒绝");
+    }
+
+    /** 按固定军团ID顺序锁定，串行化空关系创建与双方同时确认。 */
+    private void lockGuilds(Long first, Long second) {
+        if (second == null || first.equals(second)) throw new IllegalArgumentException("请选择其他军团");
+        guildRepository.lockById(Math.min(first, second)).orElseThrow(() -> new IllegalArgumentException("军团不存在"));
+        guildRepository.lockById(Math.max(first, second)).orElseThrow(() -> new IllegalArgumentException("军团不存在"));
+    }
+
+    @Transactional
+    public void removeGuild(Long guildId) {
+        guildRelationRepository.deleteByGuildLowIdOrGuildHighId(guildId, guildId);
     }
 
     private void broadcastRelationNotice(Long myGuildId, Long targetGuildId, String myName, String targetName, String status) {
@@ -152,6 +209,8 @@ public class GuildRelationService {
             item.put("icon", other.getIcon());
             item.put("status", relation.getStatus());
             item.put("updatedAt", relation.getUpdatedAt());
+            item.put("friendshipInvitation", relation.getFriendshipRequestedBy() == null ? "none"
+                    : guildId.equals(relation.getFriendshipRequestedBy()) ? "outgoing" : "incoming");
             result.add(item);
         }
         return result;

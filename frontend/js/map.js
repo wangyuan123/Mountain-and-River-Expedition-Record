@@ -6,20 +6,10 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
   var Core = G.Core;
-  var WILD_BASE_CAP = G.Constants.wildOccupation.baseCap;
 
+  /** 旧战役只展示后端目录和准入状态，不在客户端解锁或重建奖励结算。 */
   function zoneUnlocked(zoneId) {
-    var z = D.zones[zoneId];
-    if (!z || !z.unlock) return true;
-    var p = Core.state.progress[z.unlock.zone] || {};
-    var st = p[z.unlock.stage] || {};
-    return !!st.cleared;
-  }
-
-  function stageState(zoneId, stageIdx) {
-    var p = Core.state.progress[zoneId] || {};
-    var stage = D.zones[zoneId].stages[stageIdx];
-    return p[stage.id] || { cleared: false, stars: 0 };
+    return !!(G.ServerRules.value('campaignAccess', {})[zoneId] || {}).allowed;
   }
 
   function enemyText(enemy) {
@@ -31,47 +21,27 @@ window.Game = window.Game || {};
   var Map = {
     refreshUnlock: function () {},
 
-    enterStage: function (zoneId, stageIdx) {
-      if (!zoneUnlocked(zoneId)) { G.toast('战区未解锁'); return; }
-      var stage = D.zones[zoneId].stages[stageIdx];
-      var prevCleared = stageIdx === 0 || (stageState(zoneId, stageIdx - 1).cleared);
-      if (!prevCleared) { G.toast('需先通关上一关'); return; }
-      G.toast('战斗由后端自动处理');
+    enterStage: function (zoneId) {
+      var access = G.ServerRules.value('campaignAccess', {})[zoneId];
+      G.toast(access && access.reason || '战役状态待同步');
     },
 
     renderView: function (v) {
       var h = '';
       h += '<div class="title">- 战场地图 -</div>';
-      h += '<div class="desc">推进战役解锁新战区。资源野地可在世界地图中侦察与占领。</div>';
+      h += '<div class="desc">战役资料仅供浏览。请通过世界地图侦察、出征与占领资源野地。</div>';
 
       h += '<div class="zone-head">=== 战役 ===</div>';
       h += '<div class="menu">';
       Object.keys(D.zones).forEach(function (zoneId) {
         var z = D.zones[zoneId];
-        var unlocked = zoneUnlocked(zoneId);
-        h += '<div class="zone-head">--- ' + z.name + ' ---' + (unlocked ? '' : ' (锁定)') + '</div>';
-        if (!unlocked) {
-          var u = z.unlock;
-          h += '<div class="desc">解锁条件: 通关 ' + D.zones[u.zone].name + ' 第' + u.stage + '关</div>';
-          return;
-        }
+        var access = G.ServerRules.value('campaignAccess', {})[zoneId];
+        h += '<div class="zone-head">--- ' + z.name + ' ---</div>';
         h += '<div class="desc">' + z.desc + '</div>';
+        h += '<div class="desc">' + (access && access.reason || '战役状态待同步') + '</div>';
         z.stages.forEach(function (stage, sIdx) {
-          var st = stageState(zoneId, sIdx);
-          var prevOk = sIdx === 0 || stageState(zoneId, sIdx - 1).cleared;
-          var can = prevOk;
-          var cls = can ? 'menu-item ok' : 'menu-item lock';
-          h += '<div class="' + cls + '" onclick="Game.Map.enterStage(\'' + zoneId + '\',' + sIdx + ')">';
-          h += '<span class="n">' + stage.name + '</span> ';
-          if (st.cleared) {
-            var stars = '';
-            for (var i = 0; i < 3; i++) stars += i < st.stars ? '★' : '☆';
-            h += '<span class="stars">' + stars + '</span>';
-          } else if (can) {
-            h += '<span class="lv">可挑战</span>';
-          } else {
-            h += '<span class="lv">未解锁</span>';
-          }
+          h += '<div class="menu-item lock" onclick="Game.Map.enterStage(\'' + zoneId + '\',' + sIdx + ')">';
+          h += '<span class="n">' + stage.name + '</span><span class="lv">仅供浏览</span>';
           h += '<div class="d">敌军: ' + enemyText(stage.enemy) + '</div>';
           h += '<div class="cost">奖励: 粮' + stage.reward.food + ' 钢' + stage.reward.steel + ' 油' + stage.reward.oil + ' 稀' + stage.reward.rare + ' 金' + stage.reward.gold + ' 经验' + stage.reward.exp + '</div>';
           h += '</div>';
@@ -98,13 +68,13 @@ window.Game = window.Game || {};
 
     renderView: function (v) {
       var s = Core.state;
-      var wilds = s.wilds || { commandLevel: s.buildings.command || 0, cap: WILD_BASE_CAP + (s.buildings.command || 0), owned: [] };
-      var commandLv = wilds.commandLevel == null ? (s.buildings.command || 0) : wilds.commandLevel;
-      var cap = wilds.cap == null ? WILD_BASE_CAP + commandLv : wilds.cap;
+      var wilds = s.wilds || {};
+      var commandLv = wilds.commandLevel == null ? '待同步' : wilds.commandLevel;
+      var cap = wilds.cap == null ? '待同步' : wilds.cap;
       var owned = wilds.owned || [];
       var h = '';
       h += '<div class="title">- 野地占领 -</div>';
-      h += '<div class="desc">本城市政厅 Lv.' + commandLv + '  野地上限 ' + owned.length + '/' + cap + '（基础' + WILD_BASE_CAP + '＋市政厅等级）。占领后持续产出对应资源。</div>';
+      h += '<div class="desc">本城市政厅 Lv.' + commandLv + '  野地上限 ' + owned.length + '/' + cap + '。占领资源野地后需派遣部队采集。</div>';
 
       h += '<div class="zone-head">=== 已占领 ===</div>';
       h += '<div class="menu">';
@@ -119,7 +89,7 @@ window.Game = window.Game || {};
         h += '<div class="menu-item ok">';
         h += '<span class="n">' + wtOwnedIcon + ' ' + wt.name + ' Lv.' + w.level + '</span>';
         if (wt.res) {
-          h += '<span class="lv">产 ' + G.DATA.resources[wt.res].name + ' +' + (20 * w.level) + '/h</span>';
+          h += '<span class="lv">可采集 ' + G.DATA.resources[wt.res].name + ' · 剩余 ' + (w.remainingRes == null ? '待同步' : w.remainingRes) + '</span>';
         } else {
           h += '<span class="lv" style="color:#888">无资源</span>';
         }
@@ -141,9 +111,9 @@ window.Game = window.Game || {};
         h += '<span class="n">' + wtScoutIcon + ' ' + wt.name + ' Lv.' + sc.level + '</span>';
         h += '<div class="d">守军: ' + enemyText(sc.garrison) + '</div>';
         if (wt.res) {
-          h += '<div class="cost">占领后产出: ' + G.DATA.resources[wt.res].name + ' +' + (20 * sc.level) + '/h</div>';
+          h += '<div class="cost">可采集: ' + G.DATA.resources[wt.res].name + ' · 剩余 ' + (sc.remainingRes == null ? '待同步' : sc.remainingRes) + '</div>';
         } else {
-          h += '<div class="cost">占领后无资源产出</div>';
+          h += '<div class="cost">无可采集资源</div>';
         }
         h += '<div class="btn-row"><button class="btn" onclick="Game.Wild.occupy()">出兵占领</button></div>';
         h += '</div>';

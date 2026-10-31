@@ -43,8 +43,9 @@
         '<div class="city-dialog-heading"><b id="cityTeleportTitle">城市传送</b><button type="button" class="btn sm" data-close aria-label="关闭传送">✕</button></div>' +
         '<p>传送城市：<b>' + esc(city ? city.name : (state().player || {}).cityName) + '</b>' + (city ? ' · (' + city.x + ', ' + city.y + ')' : '') + '</p>' +
         '<p class="city-hint">目的地以坐标为左上角，连续 2×2（共4格）必须全部为开放地图内的空闲陆地，避开城市、据点和野地。传送不占新城市名额。</p>' +
-        '<p>沿海发展：先在地图点击“海岸”寻找落点，再使用高级传送指定迁城；普通传送随机落点，无法保证沿海。道具可在商城查看所需钻石与当前余额，余额不足时请先积攒。</p>' +
+        '<p>本城有海军、海军生产队列、军港或造船厂（含建设中）时，只能迁往沿海或海岛；普通传送也会自动筛选。没有这些资产的城市可迁往任意合法陆地。道具可在商城查看所需钻石与当前余额，余额不足时请先积攒。</p>' +
         '<p class="city-hint">建设中、交战中或归降移交中不能传送；请先让本城外派部队返城，并结束来袭、运输、调遣和驻防。城市资产及已有道具效果随城保留；港口使用条件按新位置判断。</p>' +
+        '<section aria-label="迁城条件检查"><div data-readiness role="status">正在检查本城全部迁城条件…</div><button type="button" class="btn sm" data-recheck>重新检查迁城条件</button></section>' +
         '<form id="cityTeleportForm"><label>目的战场<select name="battlefield">' + fieldOptions + '</select></label><label>传送道具<select name="itemId"><option value="teleportNormal">普通传送 · 随机位置（持有 ' + normal + '）</option><option value="teleportAdvanced">高级传送 · 指定坐标（持有 ' + advanced + '）</option></select></label>' +
         '<div data-coordinates class="city-transfer-grid"><label>X 坐标<input name="x" type="number" min="0" max="' + max + '" step="1" aria-label="传送X坐标"></label>' +
         '<label>Y 坐标<input name="y" type="number" min="0" max="' + max + '" step="1" aria-label="传送Y坐标"></label></div>' +
@@ -64,7 +65,7 @@
       if (y != null) form.elements.y.value = String(y);
       var coordinates = mask.querySelector('[data-coordinates]'), preview = mask.querySelector('[data-preview]');
       var status = mask.querySelector('[data-status]'), confirm = mask.querySelector('[data-confirm]');
-      var revision = 0, validated = null, currentSession = session;
+      var revision = 0, validated = null, currentSession = session, cityReady = false, readinessRevision = 0;
       function alive() { return currentSession === session && identity() === owner && document.getElementById('cityTeleportMask') === mask; }
       function target() {
         var rawX = form.elements.x.value.trim(), rawY = form.elements.y.value.trim();
@@ -84,11 +85,38 @@
         coordinates.hidden = !specified; coordinates.style.display = specified ? '' : 'none'; preview.hidden = !specified;
         form.elements.x.disabled = !specified; form.elements.y.disabled = !specified;
         var count = specified ? advanced : normal;
-        confirm.disabled = specified || count < 1;
+        confirm.disabled = !cityReady || specified || count < 1;
         status.textContent = count < 1 ? '此道具数量不足，请先在商城购买。' : specified ? '请检查目的地，四格须完整位于' + field.name + '。X：' + form.elements.x.min + '～' + form.elements.x.max + '；Y：' + form.elements.y.min + '～' + form.elements.y.max + '。' : '将在' + field.name + '内随机选择合法四格落点；失败不扣道具。';
         confirm.textContent = specified ? '消耗1个高级传送并传送到指定位置' : '消耗1个普通传送并随机传送';
       }
       form.addEventListener('input', change); type.onchange = change; battlefield.onchange = change;
+      /** 服务端一次列出所有阻塞项；刷新检查不改动坐标和已填写的道具选择。 */
+      function checkReadiness() {
+        if (busy || !alive()) return;
+        var request = ++readinessRevision;
+        cityReady = false; confirm.disabled = true;
+        var panel = mask.querySelector('[data-readiness]');
+        panel.textContent = '正在检查本城全部迁城条件…';
+        G.API.client.get('/game/cities/teleport/readiness', { silent: true }).then(function (data) {
+          if (!alive() || request !== readinessRevision) return;
+          cityReady = data.ready === true;
+          var names = { construction: '城市已建成', surrender: '没有归降移交', departures: '没有本城外派部队', arrivals: '没有来袭或驻防等关联部队', battle: '没有交战', npc: '没有日寇来袭' };
+          panel.innerHTML = '<ul>' + (data.checks || []).map(function (check) {
+            return '<li>' + (check.passed ? '已通过：' + esc(names[check.key] || check.key) : '待处理：' + esc(check.message)
+              + ' <button type="button" class="btn sm" data-resolve="' + esc(check.route) + '">前往查看</button>') + '</li>';
+          }).join('') + '</ul><p>' + (data.requiresCoast ? '本城有海军资产：目的地还须为沿海或海岛。' : '本城无海军资产：可选择任意合法陆地。')
+            + '道具库存：普通 ' + normal + '、高级 ' + advanced + '；目的地四格占地另行检查，正式提交仍会重新校验。</p>';
+          panel.querySelectorAll('[data-resolve]').forEach(function (button) {
+            button.onclick = function () { var route = button.getAttribute('data-resolve'); G.CityTeleport.close(); G.go(route); };
+          });
+          var point = target(), specified = type.value === 'teleportAdvanced';
+          confirm.disabled = !cityReady || (specified ? advanced < 1 || !validated || !point || point.x !== validated.x || point.y !== validated.y : normal < 1);
+        }).catch(function (e) {
+          if (!alive() || request !== readinessRevision) return;
+          panel.textContent = e.message || '迁城条件查询失败，请重新检查';
+        });
+      }
+      mask.querySelector('[data-recheck]').onclick = checkReadiness;
       preview.onclick = function () {
         if (busy || !alive()) return;
         var point = target(); validated = null; confirm.disabled = true;
@@ -97,7 +125,7 @@
         status.textContent = '正在检查四格占地与城市状态…';
         G.API.client.get('/game/cities/teleport/site?battlefield=' + battlefield.value + '&x=' + point.x + '&y=' + point.y, { silent: true }).then(function (data) {
           if (!alive() || request !== revision) return;
-          validated = data.valid ? point : null; confirm.disabled = !validated || advanced < 1;
+          validated = data.valid ? point : null; confirm.disabled = !cityReady || !validated || advanced < 1;
           status.textContent = data.valid ? '目的地 (' + point.x + ', ' + point.y + ') 满足四格条件；提交时将再次校验。' + (advanced < 1 ? '高级传送数量不足。' : '') : '不能传送：' + data.reason;
         }).catch(function (e) { if (alive() && request === revision) status.textContent = e.message || '检查失败，请重试'; });
       };
@@ -131,7 +159,7 @@
           type.disabled = false; battlefield.disabled = false; preview.disabled = false; change(); status.textContent = e.message || '传送失败，请重新检查目的地';
         });
       };
-      change(); mask.querySelector('[data-close]').focus();
+      change(); checkReadiness(); mask.querySelector('[data-close]').focus();
       if (type.value === 'teleportAdvanced' && x != null && y != null) preview.onclick();
     }
   };

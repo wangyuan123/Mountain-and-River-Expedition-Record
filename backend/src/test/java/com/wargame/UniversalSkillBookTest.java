@@ -74,7 +74,7 @@ class UniversalSkillBookTest extends BaseServiceTest {
     }
 
     @Test
-    void buyAndChooseFixedLevelOneAndReplayDoesNotConsumeAgain() {
+    void buyAndChooseFullLevelAndReplayDoesNotConsumeAgain() {
         var buy = shop.buy(new GameDtos.ShopBuyRequest("universalSkillBook")).getBody();
         assertEquals(true, buy.get("success"));
         assertEquals(800, buy.get("price"));
@@ -84,12 +84,12 @@ class UniversalSkillBookTest extends BaseServiceTest {
         var learned = use("frenzy");
         assertEquals(true, learned.get("success"));
         assertEquals("frenzy", learned.get("skillId"));
-        assertEquals(1, learned.get("level"));
+        assertEquals(5, learned.get("level"));
         assertEquals(1, count("universalSkillBook"));
         assertNotNull(learned.get("state"));
         assertEquals(false, use("frenzy").get("success"));
         assertEquals(1, count("universalSkillBook"));
-        assertEquals(List.of(Map.of("id", "frenzy", "lv", 1)), JsonUtil.parseList(
+        assertEquals(List.of(Map.of("id", "frenzy", "lv", 5)), JsonUtil.parseList(
                 officerRepository.findById(officer.getId()).orElseThrow().getSkills()));
     }
 
@@ -112,28 +112,52 @@ class UniversalSkillBookTest extends BaseServiceTest {
     }
 
     @Test
-    void rejectsBothConflictDirectionsFullSlotsAndLegacyDuplicates() {
+    void allowsBothCombinationDirectionsButRejectsFullSlotsAndLegacyDuplicates() {
         give("universalSkillBook", 3);
         skills("bulwark");
-        assertEquals(false, use("borrow_armor").get("success"));
+        assertEquals(true, use("borrow_armor").get("success"));
+        assertEquals(List.of(Map.of("id", "bulwark", "lv", 5), Map.of("id", "borrow_armor", "lv", 5)),
+                JsonUtil.parseList(officerRepository.findById(officer.getId()).orElseThrow().getSkills()));
         skills("borrow_armor");
-        assertEquals(false, use("bulwark").get("success"));
+        assertEquals(true, use("bulwark").get("success"));
+        assertEquals(List.of(Map.of("id", "borrow_armor", "lv", 5), Map.of("id", "bulwark", "lv", 5)),
+                JsonUtil.parseList(officerRepository.findById(officer.getId()).orElseThrow().getSkills()));
         skills("supply");
         assertEquals(false, use("leadership").get("success"));
         skills("frenzy", "pierce", "blitz");
         assertEquals(false, use("medic").get("success"));
-        assertEquals(3, count("universalSkillBook"));
+        assertEquals(1, count("universalSkillBook"));
+    }
+
+    @Test
+    void specificBooksAllowBothCombinationDirectionsAndConsumeOneBook() {
+        give("skillBook_borrow_armor", 2);
+        give("skillBook_bulwark", 3);
+        for (var direction : List.of(
+                List.of("bulwark", "borrow_armor"),
+                List.of("borrow_armor", "bulwark"))) {
+            skills("frenzy", direction.get(0));
+            String itemId = "skillBook_" + direction.get(1);
+            int before = count(itemId);
+            var response = depot.useItem(new GameDtos.DepotUseRequest(
+                    itemId, officer.getId(), null, null)).getBody();
+            assertEquals(true, response.get("success"));
+            assertEquals(before - 1, count(itemId));
+            assertEquals(List.of(Map.of("id", "frenzy", "lv", 5),
+                            Map.of("id", direction.get(0), "lv", 5), Map.of("id", direction.get(1), "lv", 5)),
+                    JsonUtil.parseList(officerRepository.findById(officer.getId()).orElseThrow().getSkills()));
+        }
     }
 
     @Test
     void acceptsEveryFormalSkillAndNeverTreatsUniversalBookAsUpgradeMaterial() {
-        give("universalSkillBook", 20);
+        give("universalSkillBook", 30);
         for (String skillId : OfficerSkillDef.OFFICER_SKILLS.keySet()) {
             skills();
             assertEquals(true, use(skillId).get("success"), skillId);
             assertEquals(false, officers.upgradeSkill(player.getId(), officer.getId(), 0, "universalSkillBook").get("success"));
         }
-        assertEquals(5, count("universalSkillBook"));
+        assertEquals(7, count("universalSkillBook"));
     }
 
     @Test

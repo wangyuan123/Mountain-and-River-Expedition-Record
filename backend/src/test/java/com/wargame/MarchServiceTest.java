@@ -360,7 +360,7 @@ class MarchServiceTest extends BaseServiceTest {
         technology.setLevel(level == 10 ? 0 : 10);
         technologyRepository.save(technology);
         assertEquals(capacity, marchService.calcArmyLoad(JsonUtil.parseIntMap(march.getArmy()),
-                JsonUtil.parseIntMap(march.getUnitEquipmentSnapshot())), "在途负重不得因账号科技改变");
+                JsonUtil.parseIntMap(march.getActionSnapshot())), "在途负重不得因账号科技改变");
     }
 
     @Test
@@ -717,92 +717,48 @@ class MarchServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("野地采集流程: 采集 -> 返程 -> 收取资源")
+    @DisplayName("野地采集流程: 派遣进驻 -> 手动采集 -> 手动收获 -> 手动返城 -> 资源入库")
     void testWildGatherFlow() {
-        // Create a wild tile with resources for gathering
-        WildTile gatherTile = createWildTile(worldId, "grainfield", 20, 20, 1,
-                null, 1000); // totalRes=1000
-        // Mark as occupied (player owns it)
-        gatherTile.setOccupied(true);
-        gatherTile.setOccupiedBy(playerId);
-        wildTileRepository.save(gatherTile);
+        WildTile tile = createWildTile(worldId, "grainfield", 20, 20, 1, null, 1000);
+        tile.setOccupied(true);
+        tile.setOccupiedBy(playerId);
+        wildTileRepository.save(tile);
+        createArmyUnit(playerId, "truck", 10);
+        March station = marchService.createDispatch(playerId, new DispatchRequest(
+                "wild", tile.getId(), "station", Map.of("truck", 10), null, null));
+        marchService.processMarches(playerId, station.getArriveAt());
+        assertFalse(Boolean.TRUE.equals(tile.getGathering()));
+        assertNull(tile.getGatherStartAt());
 
-        // Give player trucks (load=50 each)
-        createArmyUnit(playerId, "truck", 10); // total load = 500
-
-        long now = System.currentTimeMillis();
-        long oneHourAgo = now - 3600_000L;
-
-        // Step 1: Create a gather march that has arrived at the tile
-        // (Army is "in the march" - deduct from player's home army)
-        March gatherMarch = createMarch(playerId, "wild_gather",
-                String.valueOf(gatherTile.getId()),
-                "粮田 Lv.1", 10, 10, 20, 20,
-                Map.of("truck", 10), "gather",
-                oneHourAgo, now - 1000, false, false);
-        // Simulate army being dispatched (deduct from home)
-        ArmyUnit dispatchedTruck = armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0);
-        dispatchedTruck.setCount(0);
-        armyUnitRepository.save(dispatchedTruck);
-
-        // Process: truck arrives, should start gathering
-        settleWithDefaultTactics(marchRepository.findByPlayerId(playerId).get(0), now);
-
-        // Verify gathering started
-        March gatheringMarch = marchRepository.findById(gatherMarch.getId()).orElseThrow();
-        assertTrue(gatheringMarch.getGathering(), "行军应进入采集状态");
-        assertTrue(gatheringMarch.getGatherEndAt() > now, "采集结束时间应在未来");
-        assertNotNull(gatheringMarch.getGatherRes(), "应设置采集资源类型");
-        assertTrue(gatheringMarch.getGatherAmount() > 0, "采集量应大于0");
-
-        // gatherAmount = min(remaining=1000, load=1000) = 1000
-        assertEquals(1000, gatheringMarch.getGatherAmount(), "采集量应为min(1000, 1000)=1000");
-
-        // 采满仍需玩家先收获、再下令回城，不能由 Tick 代替操作。
-        long afterGather = gatheringMarch.getGatherEndAt() + 1000;
-        marchService.processMarches(playerId, afterGather);
-        assertTrue(gatheringMarch.getGathering());
-        assertFalse(gatheringMarch.getReturning());
-        gatheringMarch.setGatherStartAt(System.currentTimeMillis() - 120_000L);
-        gatheringMarch.setGatherEndAt(System.currentTimeMillis() - 60_000L);
-        marchService.stopGatherMarch(playerId, gatherMarch.getId());
-        assertFalse(gatheringMarch.getReturning());
-        marchService.cancelMarch(playerId, gatherMarch.getId());
-        March returningMarch = marchRepository.findById(gatherMarch.getId()).orElseThrow();
-        assertFalse(returningMarch.getGathering(), "手动收获后应停止采集");
-        assertTrue(returningMarch.getReturning(), "手动下令后应开始返程");
-        assertTrue(returningMarch.getArriveAt() > returningMarch.getStartAt(), "返程仍需实际行军时间");
-
-        // Step 3: Fast-forward to after return arrival - should collect resources
-        long returnArrive = returningMarch.getArriveAt();
-        long afterReturn = returnArrive + 1000;
-
-        // Record resources before collection
-        Resources beforeReturn = getResources(playerId);
-        long foodBefore = beforeReturn.getFood();
+        marchService.startWildGather(playerId, tile.getId());
+        assertTrue(tile.getGathering());
+        assertEquals(1000, tile.getGatherLoad());
+        tile.setGatherStartAt(System.currentTimeMillis() - 120_000L);
+        tile.setGatherEndAt(System.currentTimeMillis() - 60_000L);
+        wildTileRepository.saveAndFlush(tile);
+        long foodBefore = getResources(playerId).getFood();
         long itemsBefore = playerItemRepository.count();
-
-        marchService.processMarches(playerId, afterReturn);
-
-        // March should be deleted after return
-        assertTrue(marchRepository.findById(gatherMarch.getId()).isEmpty(),
-                "返程到达后行军应被删除");
-
-        // Resources should increase
-        Resources afterResources = getResources(playerId);
-        assertTrue(afterResources.getFood() > foodBefore,
-                "采集返程后粮食应增加");
-
-        assertEquals(itemsBefore, playerItemRepository.count(), "采集只收取资源，不再产生额外道具");
-
-        // Trucks should be returned to player
-        ArmyUnit truckUnit = armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0);
-        assertEquals(10, truckUnit.getCount(), "卡车应归还给玩家");
-
-        // Wild tile mined should increase
-        WildTile finalTile = wildTileRepository.findById(gatherTile.getId()).orElseThrow();
-        assertEquals(0, finalTile.getTotalRes(), "野地资源被全部采完应为0");
-        assertEquals(0, finalTile.getMined());
+        marchService.processMarches(playerId, System.currentTimeMillis() + 3_600_000L);
+        assertTrue(tile.getGathering(), "采满后仍需玩家手动收获");
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        assertEquals(foodBefore, getResources(playerId).getFood());
+        marchService.harvestWild(playerId, tile.getId());
+        assertFalse(tile.getGathering());
+        assertEquals(1000, tile.getGatherHarvested());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty(), "收获不应自动返城");
+        assertEquals(foodBefore, getResources(playerId).getFood());
+        marchService.recallWild(playerId, tile.getId());
+        March returning = marchRepository.findByPlayerId(playerId).get(0);
+        marchService.processMarches(playerId, returning.getArriveAt() - 1);
+        assertEquals(foodBefore, getResources(playerId).getFood());
+        marchService.processMarches(playerId, returning.getArriveAt());
+        marchService.processMarches(playerId, returning.getArriveAt() + 1);
+        assertFalse(marchRepository.existsById(returning.getId()));
+        assertEquals(foodBefore + 1000, getResources(playerId).getFood());
+        assertEquals(10, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
+        assertEquals(itemsBefore, playerItemRepository.count());
+        assertEquals(0, tile.getTotalRes());
+        assertTrue(tile.getOccupied(), "采集及回城不会自动放弃野地");
     }
 
     @ParameterizedTest
@@ -1810,6 +1766,11 @@ class MarchServiceTest extends BaseServiceTest {
         Map<String, Integer> garrison = com.wargame.util.JsonUtil.parseIntMap(stationedTile.getGarrison());
         assertEquals(20, garrison.get("infantry"), "野地驻军应包含20名步兵");
         assertEquals(5, garrison.get("truck"), "野地驻军应包含5辆卡车");
+        assertFalse(Boolean.TRUE.equals(stationedTile.getGathering()), "派遣到达后必须等待玩家手动启动采集");
+        assertNull(stationedTile.getGatherStartAt());
+        marchService.processMarches(playerId, arriveAt + 3_600_000L);
+        assertEquals(1000, stationedTile.getTotalRes());
+        assertNull(stationedTile.getGatherStartAt());
 
         // 2. 原地开启资源采集
         Map<String, Object> gatherRes = marchService.startWildGather(playerId, tile.getId());

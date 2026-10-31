@@ -130,8 +130,8 @@ class TickServiceTest extends BaseServiceTest {
         tickService.tick(playerId);
 
         assertEquals(136, playerRepository.findById(playerId).orElseThrow().getCivilianPopulation());
-        assertEquals(82, getResources(playerId).getGold(),
-                "先结算人口增长，再以136人口、30%税率计算该结算周期税收，四舍五入为82");
+        assertEquals(71, getResources(playerId).getGold(),
+                "人口由100连续增至136，平均118人口按30%税率纳税，70.8黄金显示为71");
     }
 
     @Test
@@ -173,7 +173,7 @@ class TickServiceTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("黄金满额暂停税收但继续扣薪，低于2000万后恢复税收")
+    @DisplayName("黄金满额时按持续净收支扣薪与补税，低于2000万后继续正常税收")
     void testGoldTaxResumesBelowProductionCapacity() throws Exception {
         long now = System.currentTimeMillis();
         try (var ignored = GameClock.use(() -> now)) {
@@ -189,7 +189,7 @@ class TickServiceTest extends BaseServiceTest {
             giveResources(playerId, 0, 0, 0, 0, 20_000_000);
 
             tickService.tick(playerId);
-            assertEquals(19_999_950L, getResources(playerId).getGold());
+            assertEquals(20_000_000L, getResources(playerId).getGold());
             player.setLastTick(now - 3600_000L);
             getResources(playerId).setGold(19_990_000L);
             tickService.tick(playerId);
@@ -313,7 +313,7 @@ class TickServiceTest extends BaseServiceTest {
 
     @Test
     @DisplayName("安抚功能: 黄金安抚增加民心与降低民怨")
-    void testAppeaseGold() {
+    void testAppeaseGold() throws Exception {
         Player player = playerRepository.findById(playerId).orElseThrow();
         player.setCivilianPopulation(500);
         player.setMorale(50);
@@ -325,7 +325,9 @@ class TickServiceTest extends BaseServiceTest {
         resourcesRepository.save(res);
 
         // 500 civilians * 2 = 1000 gold
-        Map<String, Object> result = gameStateService.appease(playerId, "gold");
+        Map<String, Object> result;
+        long at = player.getLastTick();
+        try (var clock = GameClock.use(() -> at)) { result = gameStateService.appease(playerId, "gold"); }
         assertTrue(Boolean.TRUE.equals(result.get("success")));
         assertEquals(60, result.get("morale"), "民心应由50上升10点至60");
         assertEquals(15, result.get("resentment"), "民怨应由20下降5点至15");
@@ -336,7 +338,7 @@ class TickServiceTest extends BaseServiceTest {
 
     @Test
     @DisplayName("安抚功能: 钻石特赦大额提升民心并大幅消除民怨")
-    void testAppeaseDiamond() {
+    void testAppeaseDiamond() throws Exception {
         Player player = playerRepository.findById(playerId).orElseThrow();
         player.setMorale(60);
         player.setResentment(35);
@@ -346,7 +348,9 @@ class TickServiceTest extends BaseServiceTest {
         res.setDiamond(50);
         resourcesRepository.save(res);
 
-        Map<String, Object> result = gameStateService.appease(playerId, "diamond");
+        Map<String, Object> result;
+        long at = player.getLastTick();
+        try (var clock = GameClock.use(() -> at)) { result = gameStateService.appease(playerId, "diamond"); }
         assertTrue(Boolean.TRUE.equals(result.get("success")));
         assertEquals(85, result.get("morale"), "民心应由60上升25点至85");
         assertEquals(15, result.get("resentment"), "民怨应由35下降20点至15");

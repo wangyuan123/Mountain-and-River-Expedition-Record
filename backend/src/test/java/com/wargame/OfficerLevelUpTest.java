@@ -114,14 +114,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "expBookRapid", 2, 0L));
         var result = depotService.useItem(player.getId(), "expBookRapid", officer.getId(), null);
         int level = startingLevel;
-        long exp = initialExp;
-        if (level < 100) {
-            exp += 500_000;
-            while (level < 100 && exp >= com.wargame.model.constants.OfficerExperienceRules.expNeeded(level)) {
-                exp -= com.wargame.model.constants.OfficerExperienceRules.expNeeded(level++);
-            }
-            if (level == 100) exp = 0;
-        }
+        long exp = initialExp + (level < 100 ? 500_000 : 0);
         assertEquals(startingLevel < 100, result.get("success"));
         var updated = officerRepository.findById(officer.getId()).orElseThrow();
         assertEquals(level, updated.getLevel());
@@ -227,7 +220,7 @@ public class OfficerLevelUpTest extends BaseServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"50,expBook,333,50,10333", "50,expBookAdv,333,51,22833", "80,expBook,333,80,10333", "80,expBookAdv,333,80,100333", "99,expBookAdv,333,99,100333", "99,expBookAdv,856325,100,0"})
+    @CsvSource({"50,expBook,333,50,10333", "50,expBookAdv,333,50,100333", "80,expBook,333,80,10333", "80,expBookAdv,333,80,100333", "99,expBookAdv,333,99,100333", "99,expBookAdv,856325,99,956325"})
     void depotExperienceBooksUseSameCurve(int start, String itemId, long initialExp, int expectedLevel, long remaining) {
         Player player = createTestPlayer();
         Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
@@ -362,20 +355,21 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         officer.setStar(2);
         officer.setLevel(5); // (5 - 1) * 1 = 4 points
         officer.setAttrPoints(0);
+        officer.setAssignedMilitary(4);
         officerRepository.save(officer);
 
         Map<String, Object> res = officerService.wash(player.getId(), officer.getId());
         assertTrue((Boolean) res.get("success"));
         assertEquals(4, res.get("attrPoints"));
 
-        // Base for 2 star is 30 + 2 * 12 = 54
-        assertEquals(54, res.get("military"));
-        assertEquals(54, res.get("logistics"));
-        assertEquals(54, res.get("knowledge"));
+        // 只退还已记录的4点军事加点，保留实际出生资质。
+        assertEquals(66, res.get("military"));
+        assertEquals(50, res.get("logistics"));
+        assertEquals(40, res.get("knowledge"));
 
         Officer updated = officerRepository.findById(officer.getId()).orElseThrow();
         assertEquals(4, updated.getAttrPoints());
-        assertEquals(54, updated.getMilitary());
+        assertEquals(66, updated.getMilitary());
 
         // Check gold deducted by 200: 500 - 200 = 300
         long gold = resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getGold();
@@ -506,16 +500,16 @@ public class OfficerLevelUpTest extends BaseServiceTest {
         officer.setStar(5);
         officer.setLevel(10); // (10 - 1) * 1 = 9 points
         officer.setAttrPoints(0);
+        officer.setAssignedMilitary(9);
         officerRepository.save(officer);
 
         Map<String, Object> res = officerService.wash(player.getId(), officer.getId());
         assertTrue((Boolean) res.get("success"));
         assertEquals(9, res.get("attrPoints"));
 
-        // Military was highest, so it resets to 120 (mainBase), others reset to 75
-        assertEquals(120, res.get("military"));
-        assertEquals(75, res.get("defense"));
-        assertEquals(75, res.get("logistics"));
-        assertEquals(75, res.get("knowledge"));
+        assertEquals(141, res.get("military"));
+        assertEquals(30, res.get("defense"));
+        assertEquals(70, res.get("logistics"));
+        assertEquals(60, res.get("knowledge"));
     }
 }

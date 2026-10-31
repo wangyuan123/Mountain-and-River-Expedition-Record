@@ -1,0 +1,3709 @@
+{
+  "at": "2026-10-31T06:59:27.493936",
+  "files": {
+    "backend/src/main/java/com/wargame/WargameApplication.java": {
+      "sha256": "9351cab7962efa440c9aae1d65bb96ae834d5da79410dfa3b71bd080d342c6f8",
+      "mtime": 1789527314.3185704
+    },
+    "backend/src/main/java/com/wargame/config/AccountEmailProperties.java": {
+      "sha256": "7af04d61818cc7625971574460d7b8028db0e586bbca13152ad5eb698b506745",
+      "mtime": 1793342409.9614282
+    },
+    "backend/src/main/java/com/wargame/config/AccountEmailSchedulingConfig.java": {
+      "sha256": "9145f673d2c167744320393161b532eca3c35e46267974ab09a4770319585c38",
+      "mtime": 1793118053.9750972
+    },
+    "backend/src/main/java/com/wargame/config/AccountOperationConfig.java": {
+      "sha256": "0d83f4a950da5afef4c6693da9da47903b39c2a06ac4a1627cd90ece71ae7ec3",
+      "mtime": 1793079573.4964294
+    },
+    "backend/src/main/java/com/wargame/config/AdminAccountBootstrap.java": {
+      "sha256": "f3a30e05870a960d46843f5cf197df3776842186f407a60ff6d6d2e9c98d4758",
+      "mtime": 1793342367.571284
+    },
+    "backend/src/main/java/com/wargame/config/CityContextConfig.java": {
+      "sha256": "3784793a8b30bc5c503af474bd5546627843353837af3bedaf530a328da61a2d",
+      "mtime": 1793349550.0217326
+    },
+    "backend/src/main/java/com/wargame/config/ComplianceConfig.java": {
+      "sha256": "7fda868786e7b4b56a8089bfcf32c1f68238aea26bd36c6925f7a2efc686e40a",
+      "mtime": 1789692829.40044
+    },
+    "backend/src/main/java/com/wargame/config/ComplianceProperties.java": {
+      "sha256": "3e45215574516ab38844d14c3eccf5ff2bb5109cc9c0244feaac7a417329691f",
+      "mtime": 1789692829.4008555
+    },
+    "backend/src/main/java/com/wargame/config/CorsConfig.java": {
+      "sha256": "a9dc90f8c77b893f52aa1a10b06697496e28c5a363317e3fd8e5a26190d1d0db",
+      "mtime": 1793342409.9411724
+    },
+    "backend/src/main/java/com/wargame/config/GameSchedulingConfig.java": {
+      "sha256": "367118289c518995e37fb097cdcac5b14c18f0090afa8b053e8acf42c4cea762",
+      "mtime": 1792574268.0239205
+    },
+    "backend/src/main/java/com/wargame/config/GameServerIdentity.java": {
+      "sha256": "5b7adf7a6b555d80666407cef23a86af1796ae5b4f71e5c6cd90f68a6a4a6004",
+      "mtime": 1793253811.3492951
+    },
+    "backend/src/main/java/com/wargame/config/GameTimeAdvice.java": {
+      "sha256": "ecb078535f7887d1ae0c92b427d7e4ce21396ccabdb7d2ba11fa7c04a20d0e89",
+      "mtime": 1792494567.586537
+    },
+    "backend/src/main/java/com/wargame/config/GameWebSocketHandler.java": {
+      "sha256": "d0df076300d3715440685277c8b5ab5102fe85a5e19fbeefdbf80f7e2fe17ae8",
+      "mtime": 1792829310.2300408
+    },
+    "backend/src/main/java/com/wargame/config/GlobalExceptionHandler.java": {
+      "sha256": "14ea32cbb1b7014b4eba530ac04b032627d81c8deed6d68e90651637681c67dc",
+      "mtime": 1793342894.328565
+    },
+    "backend/src/main/java/com/wargame/config/JwtAuthenticationFilter.java": {
+      "sha256": "34d64504c49da49a2508e07956619f46e4d6efebdd7c4b52138fe837a68fa301",
+      "mtime": 1793342367.6166327
+    },
+    "backend/src/main/java/com/wargame/config/JwtHandshakeInterceptor.java": {
+      "sha256": "ff61f944073cb9c9b13554cd2588b7db7c9f35ee44b7eab40d242f71cc11d6c9",
+      "mtime": 1789645240.3785658
+    },
+    "backend/src/main/java/com/wargame/config/RadarPolicy.java": {
+      "sha256": "86d59738dcf3ba5f7d657bf098746d5691c67fd79baa679db1b5deadbebaf2bc",
+      "mtime": 1792836271.666221
+    },
+    "backend/src/main/java/com/wargame/config/RetentionPolicy.java": {
+      "sha256": "8c696dfe346067b1cb94ffb1e866bfd2aee08ab85fb597beb9b5ae68c111478a",
+      "mtime": 1792571177.8362288
+    },
+    "backend/src/main/java/com/wargame/config/SecurityConfig.java": {
+      "sha256": "39278e398a5c71d7a681c5a69f688e3f0a7a27f42cc3de2d690e79e044da992f",
+      "mtime": 1793342303.463867
+    },
+    "backend/src/main/java/com/wargame/config/SecurityOrigins.java": {
+      "sha256": "92c2ed4ac8d533f0698d55d46bbbb858efb826df331b363504b9ffafa3e72c3a",
+      "mtime": 1791336958.4835935
+    },
+    "backend/src/main/java/com/wargame/config/ServerDatabaseGuard.java": {
+      "sha256": "37c7326d37f93ce6a573145417982ad7c6de797a8767adc346c87f54e8700fe4",
+      "mtime": 1790653629.7871616
+    },
+    "backend/src/main/java/com/wargame/config/VipConfig.java": {
+      "sha256": "91d0eb3c3b6311cbec70222da1dbd39e052e4755d3a9bf144650cc58482aaa7e",
+      "mtime": 1793288842.457241
+    },
+    "backend/src/main/java/com/wargame/config/WebSocketConfig.java": {
+      "sha256": "d9b9d56ce3a6b1cd7caa7a8599709289c2d46f623cf4b07358452219ab1fdd6d",
+      "mtime": 1791336958.4819329
+    },
+    "backend/src/main/java/com/wargame/config/WorldBootstrap.java": {
+      "sha256": "3fd3c7380674bb6fd98c9b1681b1e2ba419ea7f0407f790123f8c1affa9ac56b",
+      "mtime": 1791788994.8491757
+    },
+    "backend/src/main/java/com/wargame/controller/ArmyController.java": {
+      "sha256": "079eec6775c55bc767a119a08a1bdfff8ed20e1d1ef6c2cad6ccfd1c66077d51",
+      "mtime": 1791014967.7438385
+    },
+    "backend/src/main/java/com/wargame/controller/AuthController.java": {
+      "sha256": "c66d04bdf9fbee057044fc7b8f37ba73b1e092ade48c0fd15a3948a18e9a6fd0",
+      "mtime": 1793342409.9031107
+    },
+    "backend/src/main/java/com/wargame/controller/BuildController.java": {
+      "sha256": "49d1ad5b5efc72d0e3c8c90db9253c1bdaf8856a9f07be90ab3471779880136e",
+      "mtime": 1789721393.8941917
+    },
+    "backend/src/main/java/com/wargame/controller/ChatController.java": {
+      "sha256": "e5cef812a48af2991cbc659735c2bbf51f602e10ce96833c4c4bc239946ca410",
+      "mtime": 1789527314.3304546
+    },
+    "backend/src/main/java/com/wargame/controller/CityController.java": {
+      "sha256": "aa9435c6016f472743644b83869322718cd1318bfc18abcd01cc9042933342b1",
+      "mtime": 1793013260.2947626
+    },
+    "backend/src/main/java/com/wargame/controller/CitySurrenderController.java": {
+      "sha256": "57f3d039799f2b0ac99da72e6fd90dbb413ad5fe3246436372d84d26d5439236",
+      "mtime": 1791767879.6772556
+    },
+    "backend/src/main/java/com/wargame/controller/CityTeleportController.java": {
+      "sha256": "de2788a95b2d65eb0a973a7c01f68825cbc65400b17dfbef23058bd81d2ff40d",
+      "mtime": 1793350805.8018336
+    },
+    "backend/src/main/java/com/wargame/controller/ComplianceController.java": {
+      "sha256": "e3b29a87495b9a116e40b2bb9711021f00d091b016cda79634b94bd5a23eb7c4",
+      "mtime": 1789646214.1052246
+    },
+    "backend/src/main/java/com/wargame/controller/DepotController.java": {
+      "sha256": "3621dc717eeaef2067d4be28f3a166d7be1be74e1f6e23398e157196cae361bb",
+      "mtime": 1793177387.169219
+    },
+    "backend/src/main/java/com/wargame/controller/FortController.java": {
+      "sha256": "53689d8cbc501a3a0111ab0b6c2ca72d72129526c417818558d46d7266498ac5",
+      "mtime": 1789527314.3312628
+    },
+    "backend/src/main/java/com/wargame/controller/ForumController.java": {
+      "sha256": "cbc334544995843e57d211e5e70a1daa239ad339487762d70d19843207adf773",
+      "mtime": 1791014967.7441971
+    },
+    "backend/src/main/java/com/wargame/controller/FriendController.java": {
+      "sha256": "57d213fe69a76f63382ba66195cf580d7bac2d7670638df03bc33f2b45e25e04",
+      "mtime": 1792141316.3102603
+    },
+    "backend/src/main/java/com/wargame/controller/GameController.java": {
+      "sha256": "6dffd5844f4751664f661259d8f0a2c7bb8f05d146d84ffa778110e8fd21c778",
+      "mtime": 1792745056.4981782
+    },
+    "backend/src/main/java/com/wargame/controller/GuildChatController.java": {
+      "sha256": "050bbac6a68fdf793765ab4ebe1f13e98706f3f3251a98d0e7002fe70be48313",
+      "mtime": 1791014967.7445686
+    },
+    "backend/src/main/java/com/wargame/controller/GuildController.java": {
+      "sha256": "2570fd53bbdae63ad3a75c7719b27b8af6fec1cec3fd6b7a0ec2e15b3203d3f5",
+      "mtime": 1790407920.4343536
+    },
+    "backend/src/main/java/com/wargame/controller/IncomingReportShareController.java": {
+      "sha256": "7339e01b98eaf005aec3ca52110d0d92dd847230c8bd8294bd2ff7516b7b8b4a",
+      "mtime": 1792494798.1044314
+    },
+    "backend/src/main/java/com/wargame/controller/ItemBuffController.java": {
+      "sha256": "e7a09cda32c9b2cebc60b8032486627d2007a316a6c57cf4005d1290876541da",
+      "mtime": 1793345303.055952
+    },
+    "backend/src/main/java/com/wargame/controller/LeaderboardController.java": {
+      "sha256": "63faca4f7ab31ced56cf6eeb04f6dab42ac4c2e505aeb07a781d204051fda479",
+      "mtime": 1791014967.7449322
+    },
+    "backend/src/main/java/com/wargame/controller/MailController.java": {
+      "sha256": "ff661d8b23717d40e41c4eaf6b10c5616adb8642321934f3d13c22d35e3f89df",
+      "mtime": 1792571818.1905031
+    },
+    "backend/src/main/java/com/wargame/controller/MapFavoriteController.java": {
+      "sha256": "34a51f02b75980090d9b1c6a0544238fee9389f29a8629f0ff5d8672c5e66128",
+      "mtime": 1792509931.3737466
+    },
+    "backend/src/main/java/com/wargame/controller/MarketController.java": {
+      "sha256": "a5f893b9c6915296844b593f6cd9c49b5da9da55409db731b436d32b47071db7",
+      "mtime": 1790515906.3699028
+    },
+    "backend/src/main/java/com/wargame/controller/OfficerController.java": {
+      "sha256": "6d746bc3d5f83b7f930c3ea3f575a9cf0a11a42319c6131ddb077571f3da6c0f",
+      "mtime": 1790513389.777879
+    },
+    "backend/src/main/java/com/wargame/controller/OfficerEquipmentController.java": {
+      "sha256": "c8dbd2cfb56eba1771318bd952623447f8f5c9582b45e42f10bf68b36bb7cf9e",
+      "mtime": 1793349193.7193067
+    },
+    "backend/src/main/java/com/wargame/controller/OnboardingController.java": {
+      "sha256": "b6d756b58496dd5ba21e95b8600df148c0bf87c865b6b3417c9559d13e53cd4a",
+      "mtime": 1791870613.8075526
+    },
+    "backend/src/main/java/com/wargame/controller/PrisonerController.java": {
+      "sha256": "f9cb0d4f004696d5f520dd89916bf608a2ab64e276746a747a15e06102d874f3",
+      "mtime": 1791475179.5879078
+    },
+    "backend/src/main/java/com/wargame/controller/PrivateChatController.java": {
+      "sha256": "a02d5c2ba7df69198d8c92503e2bc7d778e74f9a76eab2b046046b4bcd6e5b0b",
+      "mtime": 1792141368.8190358
+    },
+    "backend/src/main/java/com/wargame/controller/PvpPracticeController.java": {
+      "sha256": "9ed3f4002df87e15f8e4ac93f9a07203e39601fd470bc184a039b3ba6d9c723d",
+      "mtime": 1793173692.668856
+    },
+    "backend/src/main/java/com/wargame/controller/QuestController.java": {
+      "sha256": "bbddb85c28a531d3d5599f5ff96e17b679723c635cafe79a4487b35142c78ed5",
+      "mtime": 1793072475.9192054
+    },
+    "backend/src/main/java/com/wargame/controller/RadarController.java": {
+      "sha256": "0cc6ec8c7d9a24277a47acb85afd103efa856ed9848add1e6131884c0d873ec0",
+      "mtime": 1792827856.0792322
+    },
+    "backend/src/main/java/com/wargame/controller/RankController.java": {
+      "sha256": "a4e754b458f1492f4613d128b39b1445eae3fff29cbf1037691683d4e3d9de42",
+      "mtime": 1791459533.7337894
+    },
+    "backend/src/main/java/com/wargame/controller/ReportShareController.java": {
+      "sha256": "8708c1e020e2a428471c89c5eb610729305dfdb5999601f04556319fd12d63ef",
+      "mtime": 1791292450.7897208
+    },
+    "backend/src/main/java/com/wargame/controller/ShopController.java": {
+      "sha256": "467119f707d789ade5b48f84b79a66419580ac58183049a2977d0af55ea28470",
+      "mtime": 1793347396.614464
+    },
+    "backend/src/main/java/com/wargame/controller/TechController.java": {
+      "sha256": "5f491b03f1df872ea951a586a6f6d5d5714423ec81234a5f177d341bd604d9f0",
+      "mtime": 1789692829.401386
+    },
+    "backend/src/main/java/com/wargame/controller/VipController.java": {
+      "sha256": "47587a18fd7b963376eddce0df00dc0df9c1f54c138702495d88392f2ce6e0c4",
+      "mtime": 1793104075.5935025
+    },
+    "backend/src/main/java/com/wargame/controller/WildController.java": {
+      "sha256": "65799475ed7cf977e546baf178f85d20bbedd570961479fa142026a840f660b6",
+      "mtime": 1793379001.7637525
+    },
+    "backend/src/main/java/com/wargame/controller/WorldController.java": {
+      "sha256": "55e964b2eb3ac7b3b132f71695d22ee8c2f6c64d3632f9ac82fab25fd5ed07c3",
+      "mtime": 1793240007.1641915
+    },
+    "backend/src/main/java/com/wargame/controller/WorldMapController.java": {
+      "sha256": "b8d691726c52dfe34c60c5081fbb5e1ff6b636d3257bcf9451f302d79f1e10a6",
+      "mtime": 1789527314.333585
+    },
+    "backend/src/main/java/com/wargame/controller/WorldViewController.java": {
+      "sha256": "86ee24b00dec40e121fb7a4f54aa1d474e721dc9942d49405811dd8a77cf3a67",
+      "mtime": 1789527314.333645
+    },
+    "backend/src/main/java/com/wargame/controller/WoundedController.java": {
+      "sha256": "1ee563176d36ca808637b9801efa8d2ff33d986398b792fb1f43939ecd67b138",
+      "mtime": 1789527314.3337119
+    },
+    "backend/src/main/java/com/wargame/controller/account/AccountEmailController.java": {
+      "sha256": "7c32e30822596bf9b10a9641739619fa04f23446cbc21c59529fea8248ad572e",
+      "mtime": 1793342409.866012
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminAuditLogController.java": {
+      "sha256": "fe92ac2ff8e270d8d27d41d9833c6382099a05d4aff425a603a40393ad4b53cd",
+      "mtime": 1791014967.7465467
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminAuthController.java": {
+      "sha256": "d1fea74f1ced78a427a5d1fe953e3d28a8e2f8f38d74ef3c7f22c4a7ba3aaae2",
+      "mtime": 1793342367.594945
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminBotController.java": {
+      "sha256": "dbd3ebfcfd3672dfe9c0917fae0c469b050000a71529f5cbaf6f0982b3f68d83",
+      "mtime": 1792989696.8716376
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminGiftActivityController.java": {
+      "sha256": "51cd1c666375e9ec571cb64a364fa6b1b7f777f3fe8acb9ea9e39d7c2e72283a",
+      "mtime": 1792571818.2066603
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminGmController.java": {
+      "sha256": "4dad98d2de4f883d1d289bc7ba26d6af67fb4795c918c29b8d726617d601c613",
+      "mtime": 1791014967.747138
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminPlayerController.java": {
+      "sha256": "ec8fcc89c978a17b0ebe2a0a471d745c324135a9b4e0802f174fd4a94e692563",
+      "mtime": 1793144262.9852233
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminSpawnerController.java": {
+      "sha256": "5868c298b22dc588ae8ae413f1a6ed9fe9008d6833e9a57f2a86742154e889a5",
+      "mtime": 1793056545.3648317
+    },
+    "backend/src/main/java/com/wargame/controller/admin/AdminStatsController.java": {
+      "sha256": "68c2294a0d5096fee6a40e4dfc632823a441979961c0720a0a9c3f3c0880d7fc",
+      "mtime": 1791789103.255404
+    },
+    "backend/src/main/java/com/wargame/model/AdminPrincipal.java": {
+      "sha256": "579f93bbda0edcf920f9f85fa0150ea0a4901c02af01bdf6ca8aa949b895e86e",
+      "mtime": 1791014967.7480772
+    },
+    "backend/src/main/java/com/wargame/model/UserPrincipal.java": {
+      "sha256": "97f029311e70eac43d8ea8780cf1ffd74d1565c1098b6eac7bbab5ad354652d7",
+      "mtime": 1789635938.7954247
+    },
+    "backend/src/main/java/com/wargame/model/compliance/ComplianceRecords.java": {
+      "sha256": "6f733a15401c3beb4e63f04d008f3bf6bdb4b7c9f6aefde72a694baa1339f6c5",
+      "mtime": 1789644767.300498
+    },
+    "backend/src/main/java/com/wargame/model/constants/AcademyRecruitmentRules.java": {
+      "sha256": "dbe2fa3d2dec8aec9ddecf6ea7d0b8373162a80c7c119f791878cd16ea8a6e0a",
+      "mtime": 1792402610.8305898
+    },
+    "backend/src/main/java/com/wargame/model/constants/AvatarDef.java": {
+      "sha256": "5e68752cc13f79fea6f6f300faf16fc7e87aea1d2ccc825855486c7bafa26973",
+      "mtime": 1790442256.2091813
+    },
+    "backend/src/main/java/com/wargame/model/constants/BattlePrestige.java": {
+      "sha256": "98fecfba46732012eff9be72043833ef8b5d2d6c746da8ae7e3f4e993e85570d",
+      "mtime": 1793349602.6546478
+    },
+    "backend/src/main/java/com/wargame/model/constants/BattleRules.java": {
+      "sha256": "20e400977e7da41bc7f83adae34d69fcd12cbea720ce119a7284ff1a2a5bdf0a",
+      "mtime": 1793350090.4004278
+    },
+    "backend/src/main/java/com/wargame/model/constants/BattleScene.java": {
+      "sha256": "7b58acf3dfa72ccd8d93327d8b33987617aa0cef33f32341afa9ce9a195de65e",
+      "mtime": 1792132428.4749258
+    },
+    "backend/src/main/java/com/wargame/model/constants/BattleUnitIds.java": {
+      "sha256": "082dd3e6aeabea0d3aa6665513cc3169ef7461c574a7b07c0ec6663900c7054a",
+      "mtime": 1793349602.9868367
+    },
+    "backend/src/main/java/com/wargame/model/constants/BuildingDef.java": {
+      "sha256": "f99eebab71e55a9d38f535600b78604c5384ea938944a4969583021bbca759f2",
+      "mtime": 1792862557.362282
+    },
+    "backend/src/main/java/com/wargame/model/constants/CommanderRenamePolicy.java": {
+      "sha256": "3a791284f299ba5baf6a04d1c4a973f5fe4a7d24ecaafce4777ddecada4d1644",
+      "mtime": 1792642050.368729
+    },
+    "backend/src/main/java/com/wargame/model/constants/DisplayNamePolicy.java": {
+      "sha256": "4c35660c4f9d8d2e296b21ed068690f8aad77c67dd74c4a70328306513e9293c",
+      "mtime": 1790649427.0091767
+    },
+    "backend/src/main/java/com/wargame/model/constants/FactionDef.java": {
+      "sha256": "e18893aa55a524aba08f7e16ac940d5051ba40f6ad379664156e4a3f98c4e03d",
+      "mtime": 1789527314.3340344
+    },
+    "backend/src/main/java/com/wargame/model/constants/FortDef.java": {
+      "sha256": "e6df0d6023e40cbed3528a08455fca51fe3d7161038c5b4a7560a264d180734e",
+      "mtime": 1791854209.5747647
+    },
+    "backend/src/main/java/com/wargame/model/constants/GameConstants.java": {
+      "sha256": "ef90628c9aff400dc93ad39aff0dcb762bed770955e997d3131103d900982f5d",
+      "mtime": 1793374248.5660505
+    },
+    "backend/src/main/java/com/wargame/model/constants/GameData.java": {
+      "sha256": "4705477f1897b9f16e532788e01d2ebdc96e1efc00befad153e77fec30ad71ae",
+      "mtime": 1791789103.0846646
+    },
+    "backend/src/main/java/com/wargame/model/constants/HistoricalOfficers.java": {
+      "sha256": "103641d956940c6f6d9458bd47902bb36739bf1f50ff228329733b2939b5f0bb",
+      "mtime": 1790474823.7974725
+    },
+    "backend/src/main/java/com/wargame/model/constants/ItemDef.java": {
+      "sha256": "4419b865e46bc2931386617eae3e8faeabb3decca9e7fca0f7c07e10c6fd667c",
+      "mtime": 1793352646.5053995
+    },
+    "backend/src/main/java/com/wargame/model/constants/JapaneseOfficers.java": {
+      "sha256": "84e79cb3226edadebe31a2fc843fa10046cde5e01d0329694622b022dd0f689d",
+      "mtime": 1791590107.7221837
+    },
+    "backend/src/main/java/com/wargame/model/constants/JapaneseUnitDef.java": {
+      "sha256": "9857c862b3ed3e839f63466be68a65384f3ec5b2ac1611133514c12ad12669d9",
+      "mtime": 1792801212.083265
+    },
+    "backend/src/main/java/com/wargame/model/constants/LandNpcGarrison.java": {
+      "sha256": "95c08ae85569ecc1aa1832c8e9785cbb6b43c6dfa8e2d7c534f2e3b5b2fe4453",
+      "mtime": 1792051029.0798411
+    },
+    "backend/src/main/java/com/wargame/model/constants/MilitaryRankDef.java": {
+      "sha256": "b3d6833b4ac8555c32768cf903e99c87cabd47a0ab97bebd12c596f6103ec9b4",
+      "mtime": 1793195483.9940047
+    },
+    "backend/src/main/java/com/wargame/model/constants/MobilizationRules.java": {
+      "sha256": "ddb9ac76c208fcb8c4f6c5e226855d66d5c977c082a39a0a3e4c45a7c913d7c9",
+      "mtime": 1793331587.8253508
+    },
+    "backend/src/main/java/com/wargame/model/constants/NewbieProtection.java": {
+      "sha256": "9b3b76fe446ad0d75c8d3c8be74449fc822a77f69bf0a5267e924b098689522d",
+      "mtime": 1792279314.1648924
+    },
+    "backend/src/main/java/com/wargame/model/constants/OfficerEquipmentDef.java": {
+      "sha256": "107bf6fa38b4766ab575fe7cf5573a0d972260aae84db41a58d76535f1485d2f",
+      "mtime": 1793349193.6932096
+    },
+    "backend/src/main/java/com/wargame/model/constants/OfficerExperienceRules.java": {
+      "sha256": "e372c3086a18209198a2e00effc47c714d38fab2f36acf377e945a88c2dd9a14",
+      "mtime": 1793243063.472514
+    },
+    "backend/src/main/java/com/wargame/model/constants/OfficerNameGenerator.java": {
+      "sha256": "e2fd35399f0e8e1e68104a674c4c4add1cc87b637879e49a1c194167d0c75cc1",
+      "mtime": 1792319331.5179658
+    },
+    "backend/src/main/java/com/wargame/model/constants/OfficerSkillDef.java": {
+      "sha256": "9f3ac90bd17e1cec849a5f1dcc56d4678f10846a8edf2a7f89d0d905eb983d04",
+      "mtime": 1793352646.503759
+    },
+    "backend/src/main/java/com/wargame/model/constants/RankExamDef.java": {
+      "sha256": "f1889171c5a670293622a55a99adfc4cd2beb2cc5e3f67694d974c407435de23",
+      "mtime": 1791459677.0692592
+    },
+    "backend/src/main/java/com/wargame/model/constants/RankGiftDef.java": {
+      "sha256": "8a8dc416d527a458d9457402f8896b508243b84e7b4dbf147ee6230291bfd6e5",
+      "mtime": 1793200269.6906543
+    },
+    "backend/src/main/java/com/wargame/model/constants/ReconRules.java": {
+      "sha256": "7fb0baac0169e2dc7d4448335aef0b5d050585e742860d21237e83e3902828f5",
+      "mtime": 1791474131.6493928
+    },
+    "backend/src/main/java/com/wargame/model/constants/ResourceDef.java": {
+      "sha256": "005597a358e2c0d1d33b6e75d31bec9e21d0792eb25764e198ec422a04222a9e",
+      "mtime": 1789527314.3348382
+    },
+    "backend/src/main/java/com/wargame/model/constants/SeaNpcGarrison.java": {
+      "sha256": "a5d186580008cc9012fbe50b73eccc3bfac05aa8bb78c4a9fa4ac4292206e0bf",
+      "mtime": 1792166486.413804
+    },
+    "backend/src/main/java/com/wargame/model/constants/StarColor.java": {
+      "sha256": "5bc97c9b73b59a423b098666a6864f0a69f0a345d57c04ccae2708d1d8389d56",
+      "mtime": 1789527314.3349066
+    },
+    "backend/src/main/java/com/wargame/model/constants/StratagemRules.java": {
+      "sha256": "9136257e5d98c9a7e94e30c29dc9eae8f5bc9ae8c9159a3f789c2985e43cbe75",
+      "mtime": 1793240007.0816674
+    },
+    "backend/src/main/java/com/wargame/model/constants/TechDef.java": {
+      "sha256": "adcf560f690f06c6e7d3e7f6725985bdf4d5e9a0c647b72c7bcaab0fc82971c0",
+      "mtime": 1793349549.9968128
+    },
+    "backend/src/main/java/com/wargame/model/constants/TechnologyGoldCosts.java": {
+      "sha256": "d708850271564cd25c5020b5f4e0452551b35aa92c6e7666d43932b96707bbc0",
+      "mtime": 1793349549.9974122
+    },
+    "backend/src/main/java/com/wargame/model/constants/TechnologyRules.java": {
+      "sha256": "937333ef134badc8d186211b8472497e4faf9b5361a44db8653752108dc8b3f4",
+      "mtime": 1793349602.9872084
+    },
+    "backend/src/main/java/com/wargame/model/constants/UnitDef.java": {
+      "sha256": "2569ac44d6054265b282713ca853fa0b6fc445c3da2d07a1197318e7420a89c2",
+      "mtime": 1793206119.430706
+    },
+    "backend/src/main/java/com/wargame/model/constants/UnitPopulationCosts.java": {
+      "sha256": "18e58d440500b48d0dff32e765067d1aa573b7db24638ede554531bc79925794",
+      "mtime": 1793205966.07765
+    },
+    "backend/src/main/java/com/wargame/model/constants/WildTypeDef.java": {
+      "sha256": "a48a44977032dea71b6f4a10075df9f790cd6fb99605ab94dd194c69a945be8b",
+      "mtime": 1789527314.3351507
+    },
+    "backend/src/main/java/com/wargame/model/constants/WorldConfig.java": {
+      "sha256": "dbc0634a9318d631ae70f2a3f3a340238d0a2de0d4ecfccc3ff5df4f36490fab",
+      "mtime": 1793077567.3421474
+    },
+    "backend/src/main/java/com/wargame/model/dto/AuthDtos.java": {
+      "sha256": "7313cb3a082da91143f9f75716821dbd999da51fa20afe94b0b6f358d6044fa8",
+      "mtime": 1793118054.448467
+    },
+    "backend/src/main/java/com/wargame/model/dto/BattleResult.java": {
+      "sha256": "01a99a3bf658063f7d052407d42d23af997d09dae5f351e7c5cf7379c4506398",
+      "mtime": 1793349603.0212257
+    },
+    "backend/src/main/java/com/wargame/model/dto/BattleRoundState.java": {
+      "sha256": "0588722c421f668642bdcbbaae46b1da1d5042b42cf9ef9ee4cdd64f23846add",
+      "mtime": 1791883878.3583534
+    },
+    "backend/src/main/java/com/wargame/model/dto/BattleSkillState.java": {
+      "sha256": "86904703d09ba15ced401c8c5c558c529e14e819ef0de76d10a64708f1144641",
+      "mtime": 1793345008.4385934
+    },
+    "backend/src/main/java/com/wargame/model/dto/ChatDtos.java": {
+      "sha256": "5448806f899c7cb14780d88177f1db649e7da285400e2ec3178ebfda27abbad4",
+      "mtime": 1793099733.5464776
+    },
+    "backend/src/main/java/com/wargame/model/dto/CommandBonus.java": {
+      "sha256": "9a424a944c4f1dd79ea3612100b059ccfa87555b6eea2397272d0eb173bfce53",
+      "mtime": 1791562485.8928008
+    },
+    "backend/src/main/java/com/wargame/model/dto/ConquestWallState.java": {
+      "sha256": "2910e32f4e6cc3d8e744cb879fa7234fab987f56ac8a388a7607c9e771381a81",
+      "mtime": 1792140476.7827995
+    },
+    "backend/src/main/java/com/wargame/model/dto/DispatchRequest.java": {
+      "sha256": "da13ab4bc2518792dd54e68f89c0aa5e6f92a9df6bde5da3d0f294d37ff429d3",
+      "mtime": 1793378952.1145155
+    },
+    "backend/src/main/java/com/wargame/model/dto/ForumDtos.java": {
+      "sha256": "6702058b612f64eaa67934c5116955738c7203d049c0f02c378fea72e7238027",
+      "mtime": 1793097440.9094877
+    },
+    "backend/src/main/java/com/wargame/model/dto/FriendDtos.java": {
+      "sha256": "1043e337583c8321ee18643be617a7ae41c591dcf36f0949f15c054f7d960c30",
+      "mtime": 1793076658.8799114
+    },
+    "backend/src/main/java/com/wargame/model/dto/GameDtos.java": {
+      "sha256": "7a6829cfc08b5121063a946c90548c2cfe1dc9ac6d293cbeec9aa6cc958428ef",
+      "mtime": 1793240007.1451797
+    },
+    "backend/src/main/java/com/wargame/model/dto/GameStateDto.java": {
+      "sha256": "b92dca785f96ab58824669d7e2cb43685706239363a81988816c4ceebc9c6755",
+      "mtime": 1793097355.3640249
+    },
+    "backend/src/main/java/com/wargame/model/dto/JointDefenseState.java": {
+      "sha256": "93aad848599472cbf0ae0e85b05fa16170658c58bac10c295717e6b9520ada58",
+      "mtime": 1793349602.9971824
+    },
+    "backend/src/main/java/com/wargame/model/dto/PrivateChatDtos.java": {
+      "sha256": "7e85fff531ebf4745fecba61a13bf758e1952b6e7f59d6734f0e58c92cb8cc76",
+      "mtime": 1793099737.0836682
+    },
+    "backend/src/main/java/com/wargame/model/dto/VipDtos.java": {
+      "sha256": "088c2b02bcba7c828cfe724c79551b9aaac397266c5004b3c53918ec1113f9d5",
+      "mtime": 1793011305.057256
+    },
+    "backend/src/main/java/com/wargame/model/dto/pvp/PvpBattleData.java": {
+      "sha256": "981b7a4ea1c03978ecc58e222b35d88143d6ddb73d6ff7725a88aece1011973a",
+      "mtime": 1793345059.1857696
+    },
+    "backend/src/main/java/com/wargame/model/dto/pvp/PvpPreset.java": {
+      "sha256": "0774338dd73b4b2add6d5cdfbd00a8d17fb0c0199bcfe9c9fdc8116a7e96dd1a",
+      "mtime": 1791593942.3133547
+    },
+    "backend/src/main/java/com/wargame/model/dto/pvp/PvpSnapshot.java": {
+      "sha256": "bdbfc72cb7c8bd5e6e490bdb4ec918c892f7976b1789fad8653cf7a128a8066c",
+      "mtime": 1793349913.7083044
+    },
+    "backend/src/main/java/com/wargame/model/entity/Academy.java": {
+      "sha256": "eacf247cde709fd066735125d2b44f247fe8431e7b41a49c36991301ce304e04",
+      "mtime": 1793353110.5740955
+    },
+    "backend/src/main/java/com/wargame/model/entity/AccountEmailRecords.java": {
+      "sha256": "19db7eee73b8a260514ab36615914568787b0448527e9a7422d39554f2bc4bdf",
+      "mtime": 1793117599.105355
+    },
+    "backend/src/main/java/com/wargame/model/entity/AdminOperationLog.java": {
+      "sha256": "a591cf9a1a155cea17add09c143b0ccf8e968e1cb61612362e63a79875b67969",
+      "mtime": 1791014967.751419
+    },
+    "backend/src/main/java/com/wargame/model/entity/AdminUser.java": {
+      "sha256": "aecf8251f258ce0eafb3c3f8ed733d045781172fed854fca9d7d6e03e448c216",
+      "mtime": 1793342303.3902006
+    },
+    "backend/src/main/java/com/wargame/model/entity/ArmyPopulationBalance.java": {
+      "sha256": "3ff9307d9b89e5325242d678e3dad04d1873fd791dd4eb6816cd78dd0d0d0573",
+      "mtime": 1793205966.1011062
+    },
+    "backend/src/main/java/com/wargame/model/entity/ArmyProductionQueue.java": {
+      "sha256": "ab1210b6aaf75975d23aebac45a946dc81e2cff58d462eea7ba8d83b43c69d1f",
+      "mtime": 1793352526.8383741
+    },
+    "backend/src/main/java/com/wargame/model/entity/ArmyUnit.java": {
+      "sha256": "0ed4061402cdb82dc6e9c1953e1df1847e79870d26bfd722f8995683af4c83df",
+      "mtime": 1789527314.3359308
+    },
+    "backend/src/main/java/com/wargame/model/entity/Bandit.java": {
+      "sha256": "66ce8037255cf909531dd8da9aebdc9ca9fded63d041422b1ad939352ef884a5",
+      "mtime": 1790475988.5903468
+    },
+    "backend/src/main/java/com/wargame/model/entity/BattleSession.java": {
+      "sha256": "19f75880c60df57de23b5f6d3630f8c129e407b8a6f5554e8d153cfe98299935",
+      "mtime": 1793349652.8127754
+    },
+    "backend/src/main/java/com/wargame/model/entity/BattleSettlement.java": {
+      "sha256": "2a41456e223bff8f3952113c805dddee0095a0f8440f4e5c8022717ceec0f903",
+      "mtime": 1791473462.7107792
+    },
+    "backend/src/main/java/com/wargame/model/entity/Building.java": {
+      "sha256": "4d346d87a7c28775581ac5c08ad317f1defbdc6eea74495ea5053bb0d113c715",
+      "mtime": 1792827855.9930558
+    },
+    "backend/src/main/java/com/wargame/model/entity/ChatMessage.java": {
+      "sha256": "e1de2f14035d609ee9711d8759625b44b0f7e8424eadaeae39f5c290547f2961",
+      "mtime": 1792637898.0378125
+    },
+    "backend/src/main/java/com/wargame/model/entity/CityEconomy.java": {
+      "sha256": "d23a21a97f6bae906818e2cdf06be66ffc9cddafd72b273f4d7b037bd5602872",
+      "mtime": 1791014967.7520964
+    },
+    "backend/src/main/java/com/wargame/model/entity/CityOwnedEntity.java": {
+      "sha256": "91d2f0b0f46da013bd218e59b95b828f908eeb105aeecbd23b7dcd5eb8d3cb17",
+      "mtime": 1789527314.336219
+    },
+    "backend/src/main/java/com/wargame/model/entity/CityState.java": {
+      "sha256": "4cc75841f166ab83e54a433e0cf36ea676e78e09d97e669dcf25ed0c9a3b2087",
+      "mtime": 1793240273.464525
+    },
+    "backend/src/main/java/com/wargame/model/entity/CitySurrenderOffer.java": {
+      "sha256": "3efe76ecc5346e5e76f05241048cf46e219881314347d9fa66cf27388fda494a",
+      "mtime": 1792572428.9007475
+    },
+    "backend/src/main/java/com/wargame/model/entity/Construction.java": {
+      "sha256": "d8256c57e9ed911cfe8ce030539e0b4a0a6ae7e2b2800f00402b61423188d281",
+      "mtime": 1793377705.1092799
+    },
+    "backend/src/main/java/com/wargame/model/entity/DataRetentionControl.java": {
+      "sha256": "7d8f79a60149c2def1181ca15549f78297414c5ed1c3f63d2ebe5c03b5cd055a",
+      "mtime": 1792571177.868793
+    },
+    "backend/src/main/java/com/wargame/model/entity/Fortification.java": {
+      "sha256": "698c196bad529d55c64f035fdcb2adf1e01c25fc29461c3adc6a9c26b6d8da36",
+      "mtime": 1789527314.336403
+    },
+    "backend/src/main/java/com/wargame/model/entity/ForumBoard.java": {
+      "sha256": "198adde19c3793dc82d3ab8b321e60fdd90682c47f128414bc3e8003f19baa1c",
+      "mtime": 1791014967.752298
+    },
+    "backend/src/main/java/com/wargame/model/entity/ForumLike.java": {
+      "sha256": "7dda2b61b5648de0e6e7fdf208d5aef9100d5e790fc19c042c160cc7c7841fac",
+      "mtime": 1791014967.752566
+    },
+    "backend/src/main/java/com/wargame/model/entity/ForumReply.java": {
+      "sha256": "32bc4c0e515f50d66ecd6bf887005bc8101638bcddaa2da0a9e9aa7966fdd321",
+      "mtime": 1791014967.752854
+    },
+    "backend/src/main/java/com/wargame/model/entity/ForumTip.java": {
+      "sha256": "ac19ad5b9254a23067de538560dd4f1a46dfdd0a4b1a1b7d2a6ad615646575cb",
+      "mtime": 1791014967.7530856
+    },
+    "backend/src/main/java/com/wargame/model/entity/ForumTopic.java": {
+      "sha256": "0b9816f3477c22eca97ab2c957015e128fffb4c2c0255b1730aa8c9aa3de5811",
+      "mtime": 1792571770.8809547
+    },
+    "backend/src/main/java/com/wargame/model/entity/FriendContact.java": {
+      "sha256": "01fa9f40be02eb91a6df214f958aeba15ce5466d105b1b3202bcca200be0cb02",
+      "mtime": 1792141735.9830422
+    },
+    "backend/src/main/java/com/wargame/model/entity/FriendGroup.java": {
+      "sha256": "258116892a0c83880124c75fcc6f7d105da1266605f42f8019235dea2f008035",
+      "mtime": 1792141078.892872
+    },
+    "backend/src/main/java/com/wargame/model/entity/FriendRequest.java": {
+      "sha256": "592b164ea47557aa2b23ac4084b236032a04f866fa5faf5ac9ada9257a3f4732",
+      "mtime": 1792141316.2436075
+    },
+    "backend/src/main/java/com/wargame/model/entity/GameClockState.java": {
+      "sha256": "1cd71ac8bd9c2e8253c007ed910397dad8474ed453d267e873e138aac52e5aa0",
+      "mtime": 1792495506.0483196
+    },
+    "backend/src/main/java/com/wargame/model/entity/GameScheduleState.java": {
+      "sha256": "63952b8145878424014e5a2293a7b772cf852a06764ce27b9eda8b5e8586ed4c",
+      "mtime": 1792494757.6143663
+    },
+    "backend/src/main/java/com/wargame/model/entity/Guild.java": {
+      "sha256": "ee4ecd943cdffba796d08f5d4bff18122754e24660d44bc79233d79e0f61b125",
+      "mtime": 1789527314.3364606
+    },
+    "backend/src/main/java/com/wargame/model/entity/GuildApplication.java": {
+      "sha256": "06b90fbadfd2d30ff3c173ee8ff15577663959ea14ce3f1b20db5711cec3c558",
+      "mtime": 1789527314.336673
+    },
+    "backend/src/main/java/com/wargame/model/entity/GuildChatMessage.java": {
+      "sha256": "c80e7ae2e7f54d8c0a5cd9f247dbb24518d6029bbc011ab8de2b0eb59c101623",
+      "mtime": 1792571177.9160488
+    },
+    "backend/src/main/java/com/wargame/model/entity/GuildMember.java": {
+      "sha256": "97f61ede36be5b6172a474b73efcc0da4652a125264f7d723cac7489ad75f586",
+      "mtime": 1792827856.0149617
+    },
+    "backend/src/main/java/com/wargame/model/entity/GuildRelation.java": {
+      "sha256": "4fcb96812e2265f9ca4d545a3f327c92e24ab3c1788d1dea746a799b47a8463a",
+      "mtime": 1790039756.7912512
+    },
+    "backend/src/main/java/com/wargame/model/entity/IncomingMarch.java": {
+      "sha256": "c949c421e2068bcd315a690c5a78b6507bac830d147fb9c53a155a0eab2254a6",
+      "mtime": 1792563472.7756429
+    },
+    "backend/src/main/java/com/wargame/model/entity/Mail.java": {
+      "sha256": "8420066a469fc64f83e75606f2663e6c9e4e9502ff5c11486ee3b2dd3c2e9ce8",
+      "mtime": 1792762880.6570895
+    },
+    "backend/src/main/java/com/wargame/model/entity/MailGiftActivity.java": {
+      "sha256": "20b2477df21b48acbd73851a684e3ec91ddd4d0ab6eed9b1b0e8c7e91d82a0d0",
+      "mtime": 1792572500.9076488
+    },
+    "backend/src/main/java/com/wargame/model/entity/MailGiftDelivery.java": {
+      "sha256": "a4330512794d3ffb34121b64a18a06a3de3bf662c142c9674f0264ce4c2379b2",
+      "mtime": 1792571596.2337387
+    },
+    "backend/src/main/java/com/wargame/model/entity/March.java": {
+      "sha256": "bc864e5b7461a0400b4be16f389c2ba238dec837116e748213eb0f00b46b88bb",
+      "mtime": 1793350145.857322
+    },
+    "backend/src/main/java/com/wargame/model/entity/MarketOrder.java": {
+      "sha256": "6a531588e7590a1d2db6d0b9bed77c0a86b3183e7fd886997c842e714222737d",
+      "mtime": 1790515842.775174
+    },
+    "backend/src/main/java/com/wargame/model/entity/MobilizationUse.java": {
+      "sha256": "fda2b793448e0dd9fa13377d1b5180cb6fc97b61a714b6aa189fed509d139c25",
+      "mtime": 1793177387.1624606
+    },
+    "backend/src/main/java/com/wargame/model/entity/NpcCity.java": {
+      "sha256": "074e071d2ac05a3620bf8f50b2849c47d64ed5cfd0244cb6a8d695683a2d1e3d",
+      "mtime": 1790475995.0789552
+    },
+    "backend/src/main/java/com/wargame/model/entity/Officer.java": {
+      "sha256": "53f787ff2afb035d83ec51e14a88856c3e074911f2bbdee69f1261bbbe3b44e0",
+      "mtime": 1793352646.5032268
+    },
+    "backend/src/main/java/com/wargame/model/entity/OfficerEquipment.java": {
+      "sha256": "496e471f49855a5568cb845afea08e6ee650536431a72f54914b6156bc1ae3bc",
+      "mtime": 1789832603.6996398
+    },
+    "backend/src/main/java/com/wargame/model/entity/OfficerEquipmentProgress.java": {
+      "sha256": "2a09401454a8505e6ae6259fa31b7febd7daab39c4fdf43819ec0cf494d2d3a6",
+      "mtime": 1793349193.7199125
+    },
+    "backend/src/main/java/com/wargame/model/entity/Player.java": {
+      "sha256": "a2aaa8ab559329a7dc494235f59d2ad974e8533127cd242772030210afd50c3b",
+      "mtime": 1793331587.8255386
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerCity.java": {
+      "sha256": "520919617011d16354eb91b3f53560bcaae5d38acbbeaecaf53943ed705efada",
+      "mtime": 1793096713.8195174
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerGuide.java": {
+      "sha256": "e9eef965dc2e92d66eff94b5964b3ff85b1fac0b348b830d1086209e266e5b58",
+      "mtime": 1789527314.3372796
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerItem.java": {
+      "sha256": "c14a4a4f603997342cd2de6fa03ab6dde1c9614044366d8cf6d1bfccf6feef43",
+      "mtime": 1789527314.3373406
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerPowerSnapshot.java": {
+      "sha256": "627b00778af3815e4ad73cad7e4c78cd6cec3ba51db2a434777e88b95928f68f",
+      "mtime": 1793079896.5083616
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerQuest.java": {
+      "sha256": "1ad8a0d48202661d09e7c5ead73217b8c08192d7ef052c86326c5eb5c4353f07",
+      "mtime": 1789527314.3374126
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerQuestStage.java": {
+      "sha256": "874fab76623a72ed326959bdabb6a7be61975e4f399f9d1d22799544ce00b422",
+      "mtime": 1791388423.567279
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerVipMilestone.java": {
+      "sha256": "833613f67c74e65f25bde40384e1954dc21f6af427fd6b6bcd2d7a26b11046aa",
+      "mtime": 1793010942.710035
+    },
+    "backend/src/main/java/com/wargame/model/entity/PlayerVipReward.java": {
+      "sha256": "9eca9402a41c9ce3b41ac0d6a19f770f8703294c2e41a58a383c06bbf3d06475",
+      "mtime": 1793010934.375498
+    },
+    "backend/src/main/java/com/wargame/model/entity/PrisonerOperation.java": {
+      "sha256": "150ce27cc68c98d4965a4e94d1551ddc1a7f0df605ff5a95558f71cdb2f1d9a7",
+      "mtime": 1791473462.711969
+    },
+    "backend/src/main/java/com/wargame/model/entity/PrisonerUnit.java": {
+      "sha256": "9404255c080c452ef7017528dfeb573177292e83fb839ffb463b771a76c81dc0",
+      "mtime": 1791473462.7095613
+    },
+    "backend/src/main/java/com/wargame/model/entity/PrivateChatConversation.java": {
+      "sha256": "c00697ab30530055ea7bed18eacb951a2173d6c783e99625dbf35be2f299990a",
+      "mtime": 1792141368.6663177
+    },
+    "backend/src/main/java/com/wargame/model/entity/PrivateChatMessage.java": {
+      "sha256": "64f87d68bae242e7a5e0bf2ebaea1cd30ef66ff23ba9d544cdb523299c6df91f",
+      "mtime": 1792585502.2044246
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpMatchTicket.java": {
+      "sha256": "d40a9a84349972a5aa6d1018c8b881a8a3cedb1e585ffb961bd66f9175a48c56",
+      "mtime": 1792572500.8698802
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpPlayerState.java": {
+      "sha256": "ed909243936071386138b45c19d30bbb47b95929f2159ff72ceda97c759ff01e",
+      "mtime": 1791594229.9964533
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpPowerCalibration.java": {
+      "sha256": "2f92b3d48ef171efae050c35aedec0eaa8c153c767e4952474e99f6f89ac6f24",
+      "mtime": 1791593829.8261921
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpPracticeReport.java": {
+      "sha256": "1bd46d550f83682bfd3dc7cb7596f0d15eec444d5973771bdc7db85157b70896",
+      "mtime": 1792571177.9635966
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpPracticeSession.java": {
+      "sha256": "7b2274cff61cf51757619315ca787023252130e1c047ae677c563e051e5bf327",
+      "mtime": 1792572500.8901138
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpRequest.java": {
+      "sha256": "0bb258ac54fe50b6f6d5c0d3da47448706c371126122c792829336add61823d2",
+      "mtime": 1792572500.853079
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpRoundOrder.java": {
+      "sha256": "4a03d71e24875f7b14465d713f9303e33199a943cd5da29b514d4f7433c54370",
+      "mtime": 1791593829.8255718
+    },
+    "backend/src/main/java/com/wargame/model/entity/PvpRoundResult.java": {
+      "sha256": "ed13212b6a313e17651f7eb16d0e3907f0c09cb0b43849983f847aa995d378fe",
+      "mtime": 1791593829.8257306
+    },
+    "backend/src/main/java/com/wargame/model/entity/RadarContact.java": {
+      "sha256": "64bac83d3a94c95eb7dd30d4d0a0ab222671cce29ebe65534c07b5bf4c647390",
+      "mtime": 1792828403.8769875
+    },
+    "backend/src/main/java/com/wargame/model/entity/RadarMonitor.java": {
+      "sha256": "c8d926df41890ad12a41a25768d23a830905dd3c5c62af7d9bed063ecbbf7077",
+      "mtime": 1792827192.760548
+    },
+    "backend/src/main/java/com/wargame/model/entity/RankGiftReward.java": {
+      "sha256": "30c1400b509b5a24770eb25b37f8f2f1d58cc52cd9670d14c4c5d0785a405e97",
+      "mtime": 1793200269.654572
+    },
+    "backend/src/main/java/com/wargame/model/entity/Resources.java": {
+      "sha256": "be6576dbc288e5aa85c3dbd561f9e21cb51d0ce3b01f0c264b15769a5754f6ee",
+      "mtime": 1793352850.800006
+    },
+    "backend/src/main/java/com/wargame/model/entity/ScoutReport.java": {
+      "sha256": "76c18492729030ecbfa1f1252756b406e8b3bfc5c129c52ccd91a50d27f755bf",
+      "mtime": 1792571734.1354203
+    },
+    "backend/src/main/java/com/wargame/model/entity/SharedIncomingReport.java": {
+      "sha256": "f216bc8679ef5f657d9234bde24f38f90c2849ae802016e79cde0475e483ffde",
+      "mtime": 1792568616.9321318
+    },
+    "backend/src/main/java/com/wargame/model/entity/SharedReport.java": {
+      "sha256": "a63d97d42940705cd6826e8f3ce5e94074e07a0548355543145bf37bf563b843",
+      "mtime": 1792568616.914196
+    },
+    "backend/src/main/java/com/wargame/model/entity/TacticalBattleOutcome.java": {
+      "sha256": "0406359f2eb6bfa977b8b738b6283806cbc9758f2dce7044027b61958c8cddcf",
+      "mtime": 1792772431.0285008
+    },
+    "backend/src/main/java/com/wargame/model/entity/TechResearchQueue.java": {
+      "sha256": "ab9d36d32d5a464efc8cd724cc1c6aabdb11e74e3b639493ad3b3990bb243ec9",
+      "mtime": 1790510852.1084561
+    },
+    "backend/src/main/java/com/wargame/model/entity/Technology.java": {
+      "sha256": "a858309f8d14cff61bd0a69b221743b3af4a988ff33753fbc62f1f40e4ba9b1f",
+      "mtime": 1789527314.337596
+    },
+    "backend/src/main/java/com/wargame/model/entity/VersionedEntity.java": {
+      "sha256": "a686b9cc4a5d39814232c9d61cab05ed5bf959701fe7982d32830e5f14b7ceb6",
+      "mtime": 1792828872.9510727
+    },
+    "backend/src/main/java/com/wargame/model/entity/WildTile.java": {
+      "sha256": "1b41899424db7e12edc971e9b9a1b2dac71af9961f5dcccc67d6dbbe9c94450c",
+      "mtime": 1792827856.0376284
+    },
+    "backend/src/main/java/com/wargame/model/entity/WorldMap.java": {
+      "sha256": "3e9dd49d4dbda252e7a224d8184c543760749926f5d5f85c598c02b87ab6c901",
+      "mtime": 1790653721.2503426
+    },
+    "backend/src/main/java/com/wargame/model/entity/WoundedUnit.java": {
+      "sha256": "dc5cbbaaa1b792ce8b40fd9d56a01575029f4c6dd649f680853552f18a061dda",
+      "mtime": 1789527314.3380766
+    },
+    "backend/src/main/java/com/wargame/repository/AcademyRepository.java": {
+      "sha256": "9a35478f5edd25898043f462f4da0e2865d05b1c3936c55ed9e9a8c292022b17",
+      "mtime": 1789527314.338212
+    },
+    "backend/src/main/java/com/wargame/repository/AdminOperationLogRepository.java": {
+      "sha256": "01367093ece958a8232b376ba2df1593a2c96847adcdba63aea94c27bda5dc3f",
+      "mtime": 1791014967.7553074
+    },
+    "backend/src/main/java/com/wargame/repository/AdminUserRepository.java": {
+      "sha256": "9e3ead4c7f3f3b56be67a26805b0b9ff8faccbfdd3f0431815aa8f584aa5e4af",
+      "mtime": 1791014967.755515
+    },
+    "backend/src/main/java/com/wargame/repository/ArmyPopulationBalanceRepository.java": {
+      "sha256": "29c9a7124e75b7493d93be11500b8fcce7e93bac1156410f9f5e6556dea91340",
+      "mtime": 1793206601.3449454
+    },
+    "backend/src/main/java/com/wargame/repository/ArmyProductionQueueRepository.java": {
+      "sha256": "43b1712a49632bafa76e2bcf3f511416dca61e5ee33a65ab9e2d200a9627b716",
+      "mtime": 1789527314.3383784
+    },
+    "backend/src/main/java/com/wargame/repository/ArmyUnitRepository.java": {
+      "sha256": "baf16c8c3c5f892d76e51371bfcd767ca0ba7726a8d8d7885141319599b4b4b3",
+      "mtime": 1789527314.3384578
+    },
+    "backend/src/main/java/com/wargame/repository/BanditRepository.java": {
+      "sha256": "477e98c31e4cf7857eaada9886b563dd1d0505cc9c5145b484c1672108d781dd",
+      "mtime": 1789527314.3385258
+    },
+    "backend/src/main/java/com/wargame/repository/BattleSessionRepository.java": {
+      "sha256": "93a8ad668faf108e5d3802079b7046341f613f0c0598a4f05a8096d887cc1fbd",
+      "mtime": 1792821523.4453027
+    },
+    "backend/src/main/java/com/wargame/repository/BattleSettlementRepository.java": {
+      "sha256": "3084414c85c496700e3bc287439e26154fe55bff0391bc445a28f0d041505b9b",
+      "mtime": 1791475179.5869703
+    },
+    "backend/src/main/java/com/wargame/repository/BuildingRepository.java": {
+      "sha256": "972eff6e0c5ef976d415e92532d10c271a7824732da56855a8cf4e2f712b00f7",
+      "mtime": 1791792347.5645044
+    },
+    "backend/src/main/java/com/wargame/repository/ChatMessageRepository.java": {
+      "sha256": "6e73c88d407adeb4a38345a7db6b21174ee9eab5b03299a8aac377502e83bd5e",
+      "mtime": 1792570744.5183222
+    },
+    "backend/src/main/java/com/wargame/repository/CityStateRepository.java": {
+      "sha256": "e10c179e53fb6a58a386754eef54cfa8cf41ea8e01c7f4331a0b6c9f29215891",
+      "mtime": 1793345303.0097027
+    },
+    "backend/src/main/java/com/wargame/repository/CitySurrenderOfferRepository.java": {
+      "sha256": "c8306115508634acfa1b1557bcc8db12b8974c61cdae6dde4288fd1431a32d47",
+      "mtime": 1791767376.502316
+    },
+    "backend/src/main/java/com/wargame/repository/ConstructionRepository.java": {
+      "sha256": "eda395e3ad62a74109b1a5d10786cdcac204014cc3d91b486b0a86d9812260f0",
+      "mtime": 1789527314.3387804
+    },
+    "backend/src/main/java/com/wargame/repository/FortificationRepository.java": {
+      "sha256": "7d49297c604e88077a75ca1438c87e11b439d0d82b753c81e055fb554ca848ad",
+      "mtime": 1789527314.3388379
+    },
+    "backend/src/main/java/com/wargame/repository/ForumBoardRepository.java": {
+      "sha256": "7315090c41100da574070b3613fb3780a5166994f46326db3fe9cdeb765be971",
+      "mtime": 1793246394.16092
+    },
+    "backend/src/main/java/com/wargame/repository/ForumLikeRepository.java": {
+      "sha256": "7ce7825bd65eeeb0e09bb7f16351e0737a36a4508bab1cbf9779a6bcdc7a97da",
+      "mtime": 1793248522.5588207
+    },
+    "backend/src/main/java/com/wargame/repository/ForumReplyRepository.java": {
+      "sha256": "02f9cc53dc6b3d10d28f1e57c9a0a669264d82bd0aee18043b73dddaa7cb0757",
+      "mtime": 1793248522.5230353
+    },
+    "backend/src/main/java/com/wargame/repository/ForumTipRepository.java": {
+      "sha256": "4eacf87205498379850763d65b3e6afde62c60f51e8051f910e0b39e9a16dee3",
+      "mtime": 1793248522.5783775
+    },
+    "backend/src/main/java/com/wargame/repository/ForumTopicRepository.java": {
+      "sha256": "6d8da4279b888035bb25a5c9f5f7fa8aa4587c47a8e874f1ebb92d68018b5f4a",
+      "mtime": 1793246394.160263
+    },
+    "backend/src/main/java/com/wargame/repository/FriendContactRepository.java": {
+      "sha256": "3fe7ffffdbc26e03e686199c600ae2557bfa3347eef69b7967b8a84cc7794d64",
+      "mtime": 1792141078.9203837
+    },
+    "backend/src/main/java/com/wargame/repository/FriendGroupRepository.java": {
+      "sha256": "8093b0a3e7c0169e6cdb328eecec07cdee660ff497ab5b259b769cf7f37ea3e4",
+      "mtime": 1792141078.9455588
+    },
+    "backend/src/main/java/com/wargame/repository/FriendRequestRepository.java": {
+      "sha256": "ac1de87274e77115f6b69ce4d41e67197dd07bd72a37b73cbaa184c9763ad079",
+      "mtime": 1792141368.858707
+    },
+    "backend/src/main/java/com/wargame/repository/GuildApplicationRepository.java": {
+      "sha256": "c46e608899286954a49cd5aa5d92caa9cce28c0eeff3bfdb78df73d91cb1f8e9",
+      "mtime": 1789527314.3388948
+    },
+    "backend/src/main/java/com/wargame/repository/GuildChatMessageRepository.java": {
+      "sha256": "d90c43ccfed891a11ee516ad6fba40138e003fb6b74ab50d1df7a196ceef1247",
+      "mtime": 1792570744.5372255
+    },
+    "backend/src/main/java/com/wargame/repository/GuildMemberRepository.java": {
+      "sha256": "e0397297f41de7de072d8e961387dbf2afbcfa65937345c453bfe3982d3e0781",
+      "mtime": 1789527314.3389606
+    },
+    "backend/src/main/java/com/wargame/repository/GuildRelationRepository.java": {
+      "sha256": "f2822605f57abb11411937e57effdb784bc54ccb8015738b1522aec5bf91c086",
+      "mtime": 1790039756.79137
+    },
+    "backend/src/main/java/com/wargame/repository/GuildRepository.java": {
+      "sha256": "db088665009425350544357a6a9195978b74ebba23e173fe3431664afdea1f0b",
+      "mtime": 1789527314.3390193
+    },
+    "backend/src/main/java/com/wargame/repository/IncomingMarchRepository.java": {
+      "sha256": "46f8e41f651f40f17e08b6891144e7cc5164dad854f3031eb8674007357f9ed4",
+      "mtime": 1789527314.339078
+    },
+    "backend/src/main/java/com/wargame/repository/MailGiftActivityRepository.java": {
+      "sha256": "54eec351a86633c6837ceac04d87eac8a0a66e1a9bc1eddec179d8a1402f0d7a",
+      "mtime": 1792572500.9665165
+    },
+    "backend/src/main/java/com/wargame/repository/MailGiftDeliveryRepository.java": {
+      "sha256": "bcd4669aacc9e26fa88e27c5382f3377bf30f1d5e84212099b45199254009a18",
+      "mtime": 1792571596.282587
+    },
+    "backend/src/main/java/com/wargame/repository/MailRepository.java": {
+      "sha256": "9f1e9cdca780619853b83e82c394a6a6ce761b2e5c285cb8362828f77a7f03b4",
+      "mtime": 1793275765.4450648
+    },
+    "backend/src/main/java/com/wargame/repository/MarchRepository.java": {
+      "sha256": "dd78516b51b23ac2da9cfe09497979e399cb83f643fc6cc470e7d2b9697f3269",
+      "mtime": 1793076674.0429957
+    },
+    "backend/src/main/java/com/wargame/repository/MarketOrderRepository.java": {
+      "sha256": "7015326556c7338869d0f97ef706037eb372e5cd36dcdaafc8d44f43d774441c",
+      "mtime": 1793374181.905089
+    },
+    "backend/src/main/java/com/wargame/repository/MobilizationUseRepository.java": {
+      "sha256": "97897f9f76c1e70dd1846cf44cee3c1a8c001d7a0b40315bc04fe08dff3551c4",
+      "mtime": 1793177387.1629813
+    },
+    "backend/src/main/java/com/wargame/repository/NpcCityRepository.java": {
+      "sha256": "7a7c54f780848575be357406237c31584a43e89c4a034b93615d996bb26050bd",
+      "mtime": 1789527314.3394606
+    },
+    "backend/src/main/java/com/wargame/repository/OfficerEquipmentProgressRepository.java": {
+      "sha256": "d86fc830e4776adac0716b32d8b2c880cbe7bf97d0a3d8cf46702c1e5c6dca1b",
+      "mtime": 1793349193.695404
+    },
+    "backend/src/main/java/com/wargame/repository/OfficerEquipmentRepository.java": {
+      "sha256": "487d0d9b5901fec1cee28945b77259580a8dc5172ce4fc0baef4809f29951cde",
+      "mtime": 1789527314.3396428
+    },
+    "backend/src/main/java/com/wargame/repository/OfficerRepository.java": {
+      "sha256": "2c6d1b2249f4cafbcae99b70c40da1f3c3ff78d940ad2bf08cb1d82680b374fa",
+      "mtime": 1789527314.3398266
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerCityRepository.java": {
+      "sha256": "90a4853112b0972eec6149a14fb064f6176d8cc94baf4018b3667875c35825a5",
+      "mtime": 1792827487.4052556
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerGuideRepository.java": {
+      "sha256": "a985f0957691ee940f2de2583fd9584b5d97f2581f876e0793968a3194301888",
+      "mtime": 1789637067.613096
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerItemRepository.java": {
+      "sha256": "6c8eba9a0dfb10a7305345c4d7b233b611c6b293eb61b5bff516ae8439947f90",
+      "mtime": 1793196513.7638345
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerPowerSnapshotRepository.java": {
+      "sha256": "6428d4eaea7bd7045cba232f93ed324122ee68c5160ac87c20db7bac90d8594c",
+      "mtime": 1793079896.4869068
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerQuestRepository.java": {
+      "sha256": "b48872dc7189bfd3f928bf61f3031a4137a5267e852cbcaf2feac87803cbbba0",
+      "mtime": 1789527314.3403058
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerQuestStageRepository.java": {
+      "sha256": "df7840a20721ff02cfef9269dabe32fca4c1c166eed8988392165f55c073cfeb",
+      "mtime": 1791388432.1493094
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerRepository.java": {
+      "sha256": "61e47decfc53e9a96cde3929beb43676a3ee596607e0f4f3b77ff7df2896cc30",
+      "mtime": 1793117783.834238
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerVipMilestoneRepository.java": {
+      "sha256": "75896047f130cdda732b21ed4400bfa3ecaf35551fe6c7b93ea3192fac580872",
+      "mtime": 1793010964.8261125
+    },
+    "backend/src/main/java/com/wargame/repository/PlayerVipRewardRepository.java": {
+      "sha256": "54c43b835869326bdd2a8040b36debe283246b596d53ea2b34daf6a372190ae0",
+      "mtime": 1793010953.0717976
+    },
+    "backend/src/main/java/com/wargame/repository/PrisonerOperationRepository.java": {
+      "sha256": "e540ad34dc5b401971c0d7b4a0ada2c2d214d159d242fc9da49782b631551ab6",
+      "mtime": 1791475179.586859
+    },
+    "backend/src/main/java/com/wargame/repository/PrisonerUnitRepository.java": {
+      "sha256": "9fd135c89dc09339b9bed98033507ea0fe56bd24846dfa5affb47c5d18643ea1",
+      "mtime": 1791473462.7130764
+    },
+    "backend/src/main/java/com/wargame/repository/PrivateChatConversationRepository.java": {
+      "sha256": "14d3ac8b5323f3ce65a2312439abca79314a2d8d3022f989354701f86541e523",
+      "mtime": 1791288266.4952948
+    },
+    "backend/src/main/java/com/wargame/repository/PrivateChatMessageRepository.java": {
+      "sha256": "5236bee35c6ad80396d9b6ef89b6b330d4b62fc101394e8fc22d36a81b1633fd",
+      "mtime": 1792570873.2812214
+    },
+    "backend/src/main/java/com/wargame/repository/PvpMatchTicketRepository.java": {
+      "sha256": "b78cd318f8eeb900c3d85810f59c5dbc4fa436095df9f92b1c369031bd42812b",
+      "mtime": 1791598089.344387
+    },
+    "backend/src/main/java/com/wargame/repository/PvpPlayerStateRepository.java": {
+      "sha256": "09f9822977daf4e181e1819043a06f8183d9ffde01bbf0f5744da431e64c0b8d",
+      "mtime": 1791593829.8250911
+    },
+    "backend/src/main/java/com/wargame/repository/PvpPowerCalibrationRepository.java": {
+      "sha256": "2e5a97f1eb881a5060462a82e16269876d3ac074677feb4131ae7d3a6e0ad6e4",
+      "mtime": 1791593829.8262749
+    },
+    "backend/src/main/java/com/wargame/repository/PvpPracticeReportRepository.java": {
+      "sha256": "726948ad0ed6d7798da4a9d1e6691c0e36cdba49a0139117bd9855e13fd84101",
+      "mtime": 1791593829.825954
+    },
+    "backend/src/main/java/com/wargame/repository/PvpPracticeSessionRepository.java": {
+      "sha256": "fc07e7df30a40537ab764ee8c27f7e0a605e6f43a387351b81d6190d23c7582b",
+      "mtime": 1791595389.4307983
+    },
+    "backend/src/main/java/com/wargame/repository/PvpRequestRepository.java": {
+      "sha256": "656e0d23ab78fdcdd45b5d4e92c801936e250cd0e88cca7c845da89def19d4d0",
+      "mtime": 1791593829.8261075
+    },
+    "backend/src/main/java/com/wargame/repository/PvpRoundOrderRepository.java": {
+      "sha256": "226916feea8841ce6a4216d51831a2cb16031e5974d010b8d08de35ae0bd45c6",
+      "mtime": 1791593829.825646
+    },
+    "backend/src/main/java/com/wargame/repository/PvpRoundResultRepository.java": {
+      "sha256": "8fe83166ebde9f054bb1e94a6cc55bf53b3b1fa3d0188f0b91306f484e6724d0",
+      "mtime": 1791593829.825801
+    },
+    "backend/src/main/java/com/wargame/repository/RadarContactRepository.java": {
+      "sha256": "5aa421a1496193830862afa3d4b99b3bce01f6f977af6ef4410f4cdad0e37589",
+      "mtime": 1792827487.4483647
+    },
+    "backend/src/main/java/com/wargame/repository/RadarMonitorRepository.java": {
+      "sha256": "fc526e96146eb504c87ea33d832b9b34b9727f4fdf0fac1ad02b1121fb4c4a4c",
+      "mtime": 1792827192.8121958
+    },
+    "backend/src/main/java/com/wargame/repository/RankGiftRewardRepository.java": {
+      "sha256": "22eb0a939ba7072cebd9a5c2a4c201be5a4d8e17fd43997fab8425823c9f3e74",
+      "mtime": 1793200269.6726801
+    },
+    "backend/src/main/java/com/wargame/repository/ResourcesRepository.java": {
+      "sha256": "20ecea79abfc96e8d772b597bdbb68dd84a6f722c481008429d4d9ed2a3516cf",
+      "mtime": 1792638928.7055411
+    },
+    "backend/src/main/java/com/wargame/repository/ScoutReportRepository.java": {
+      "sha256": "2d5d46c13011acbb38773d8f82f6ec871d3c739662a68a91d08774ce3ab2bb0a",
+      "mtime": 1792799172.806829
+    },
+    "backend/src/main/java/com/wargame/repository/SharedIncomingReportRepository.java": {
+      "sha256": "2c47bc02ed0a1194ec44947cccaac5e4163f689187f879c6002fd65d10713ca0",
+      "mtime": 1792494798.0529156
+    },
+    "backend/src/main/java/com/wargame/repository/SharedReportRepository.java": {
+      "sha256": "67c488e6aaf10412bb09ab2c00cf24fde36a785e867684172285ed09577dab90",
+      "mtime": 1791292450.758441
+    },
+    "backend/src/main/java/com/wargame/repository/TacticalBattleOutcomeRepository.java": {
+      "sha256": "79631b9d2bc1e51fd65f33de734c50cb82fb1d9cee5827392d8ad29e000887b7",
+      "mtime": 1792772431.0300324
+    },
+    "backend/src/main/java/com/wargame/repository/TechResearchQueueRepository.java": {
+      "sha256": "5aaba4cd0c0ddc2c306b7745fd7f86a85e4802b98b267ff1fe1e65e737df1db8",
+      "mtime": 1791774590.7583153
+    },
+    "backend/src/main/java/com/wargame/repository/TechnologyRepository.java": {
+      "sha256": "052d8ba040481afd13642db8230f84256a58c9d063ad5fdb54fa5aae3fc9f62e",
+      "mtime": 1789527314.3410733
+    },
+    "backend/src/main/java/com/wargame/repository/WildTileRepository.java": {
+      "sha256": "c5c4cdaa769d551c827c8c15c62bfe1891a2be64a7a7f383f9689744561200a9",
+      "mtime": 1792724335.9059343
+    },
+    "backend/src/main/java/com/wargame/repository/WorldMapRepository.java": {
+      "sha256": "37d739449edce4e0378a88adec6feabb79c4d7f84fd2855734a768ac18dbf2f3",
+      "mtime": 1789527314.3413115
+    },
+    "backend/src/main/java/com/wargame/repository/WoundedUnitRepository.java": {
+      "sha256": "0f4e07ec273500a296f460d88f72fe95e1671ae536db5b90d2b7451bf252b0d5",
+      "mtime": 1789527314.341461
+    },
+    "backend/src/main/java/com/wargame/security/AccountException.java": {
+      "sha256": "37b9c8c9a7307f501d864ab218bdc3863ac00bff1068321b756f3517868f9776",
+      "mtime": 1789636079.906959
+    },
+    "backend/src/main/java/com/wargame/security/AdminCredentials.java": {
+      "sha256": "6cefdbf737b87536da7ef86da4e90dc7abf18656869dbfda12c6c53e1470d3ac",
+      "mtime": 1793342367.5239632
+    },
+    "backend/src/main/java/com/wargame/security/ClientIpResolver.java": {
+      "sha256": "42bfe04ae8da1707d295cc9187209e6ab6be6df3b5f8b397b8062b48ecee9ef7",
+      "mtime": 1793342271.279416
+    },
+    "backend/src/main/java/com/wargame/security/GameAccessException.java": {
+      "sha256": "96e334c22af93c97110fb5e62f147483f0a84d4c6c5a5e795513c1902c06166f",
+      "mtime": 1789644767.1972976
+    },
+    "backend/src/main/java/com/wargame/security/RateLimiter.java": {
+      "sha256": "315c66d8a72ec4a4d229637dc6907076bfb9f501f7f2fcc136f3f9851e9a471a",
+      "mtime": 1792575527.030466
+    },
+    "backend/src/main/java/com/wargame/security/RequestLimitProperties.java": {
+      "sha256": "df5d8431f074e50a8710b0d70faccd3a6c96d0640858bf17aaf0890694bbb5b6",
+      "mtime": 1793342271.3022146
+    },
+    "backend/src/main/java/com/wargame/security/RequestRateLimits.java": {
+      "sha256": "48e8787fdaaba33230b2f3139e49dcfbc0854cb7e43c35370f1eb6224a5171e6",
+      "mtime": 1793342409.9819453
+    },
+    "backend/src/main/java/com/wargame/service/AcademyRefreshPolicy.java": {
+      "sha256": "8cde14a953672b341d3d0b4c3387a08665aee0b26bb1144ff98278c99b4b0694",
+      "mtime": 1792496727.5841336
+    },
+    "backend/src/main/java/com/wargame/service/AccountCredentialService.java": {
+      "sha256": "ec273385edf002068e8bba1a37ef4033bbcefe31987c6888b09772008374bff8",
+      "mtime": 1793120068.916556
+    },
+    "backend/src/main/java/com/wargame/service/AccountDeletionScheduler.java": {
+      "sha256": "3a6979fe749fa1c13278e6f148346c814acfe2f408abcb58213993b27f4e49e8",
+      "mtime": 1789636079.910775
+    },
+    "backend/src/main/java/com/wargame/service/AccountEmailDeliveryService.java": {
+      "sha256": "a11c6c80859b9db54412fb3e050a2ebe31f9ce328a1c7a644ce36dae3dbc0798",
+      "mtime": 1793120969.8569832
+    },
+    "backend/src/main/java/com/wargame/service/AccountEmailService.java": {
+      "sha256": "182d9381a67872cf9e10e221fe60b479d3fa5f8db6c8945dd2289bc864a0d00e",
+      "mtime": 1793120969.838551
+    },
+    "backend/src/main/java/com/wargame/service/AccountEmailVault.java": {
+      "sha256": "f4a3ecbb3e627e43b7e927e250199791f8fc0f00bf80f2edec8dd206f6707180",
+      "mtime": 1793120423.8631907
+    },
+    "backend/src/main/java/com/wargame/service/AccountMailSender.java": {
+      "sha256": "bd66589ab2aacc1e61f46137df141b9843794db81870ebed590848c2c47f4451",
+      "mtime": 1793117599.137528
+    },
+    "backend/src/main/java/com/wargame/service/AccountService.java": {
+      "sha256": "799e2f7dfbe33ef78cb583f2e44fde9381858afbf3f9027846bc2664c08a01e1",
+      "mtime": 1793349550.093552
+    },
+    "backend/src/main/java/com/wargame/service/AccountSessionScheduler.java": {
+      "sha256": "442eb1b782d911bf9dc2808daab54e67c4dd2bc3406dd9a0560abe93b4a7fa77",
+      "mtime": 1789637692.0467908
+    },
+    "backend/src/main/java/com/wargame/service/ArmyPopulationService.java": {
+      "sha256": "afd577650bf30ee1ce0015431d83f83851c3a786d30196379b15acd0c70fd622",
+      "mtime": 1793206764.876331
+    },
+    "backend/src/main/java/com/wargame/service/ArmyService.java": {
+      "sha256": "bf3544528696d34b47c69eb8e9a7f1042bb26cd27922ecbb44c0a6bd2adbf14e",
+      "mtime": 1793377673.0514374
+    },
+    "backend/src/main/java/com/wargame/service/AuthService.java": {
+      "sha256": "eb8776e304db6a4b90007a0cd9c7100e36f9233e360c7006834f0b2e983a17db",
+      "mtime": 1793343360.2652218
+    },
+    "backend/src/main/java/com/wargame/service/AvatarCleanupScheduler.java": {
+      "sha256": "44a377bafb44f8b335edbba1a74646666df88e12dd85f7001f8fa0663b77bbb5",
+      "mtime": 1793103752.1532202
+    },
+    "backend/src/main/java/com/wargame/service/AvatarStorageService.java": {
+      "sha256": "64ea91e846345bf232ee2962083b7e242cc0a2268135b6c5ceda4741d6d10e1b",
+      "mtime": 1793104897.5642624
+    },
+    "backend/src/main/java/com/wargame/service/BattleActionPreferences.java": {
+      "sha256": "cb9887cc3738370e7fcbf14eaba521c38f50616fa5d6a047293c88ffd7fd4b3c",
+      "mtime": 1793349602.827699
+    },
+    "backend/src/main/java/com/wargame/service/BattleService.java": {
+      "sha256": "9fb3ec00aa01b3ff5df3d6f27618bd6310f8d27244048b0dc3ff612c0b7d7ebf",
+      "mtime": 1793349602.993913
+    },
+    "backend/src/main/java/com/wargame/service/BattleSkillEffects.java": {
+      "sha256": "3f9a06b7495e85dbfd950d380ffa0da5e05052a983cfba57d45fa1a6c60aa573",
+      "mtime": 1793350090.5033891
+    },
+    "backend/src/main/java/com/wargame/service/BlockSpawnPlanner.java": {
+      "sha256": "cc0ee3e35d8ad47cd14607d87f419c7db42d62dacbe62d4ec0ed0bf02ee17e09",
+      "mtime": 1791732878.8127975
+    },
+    "backend/src/main/java/com/wargame/service/BuildService.java": {
+      "sha256": "735545ed68aaf32c3dd2d03594cd09e7ed81add813903adf76cde91e34384bf9",
+      "mtime": 1793377705.1347804
+    },
+    "backend/src/main/java/com/wargame/service/ChatKeywordFilter.java": {
+      "sha256": "5a35772208fbe2f436da99f14141e3e14981922b76ccdd4bbc32cf7750442413",
+      "mtime": 1792494798.1507373
+    },
+    "backend/src/main/java/com/wargame/service/ChatService.java": {
+      "sha256": "2c57ef155b62696fdba51c8ff95994b8631600b31c843fd4fa4ebcc84c96ba5d",
+      "mtime": 1793099766.6422112
+    },
+    "backend/src/main/java/com/wargame/service/CityBattleLockService.java": {
+      "sha256": "0cdba54486e10f0aa2bed1715f85c8e5f543c0454d5bb75af523d8e36df04286",
+      "mtime": 1793325891.9660957
+    },
+    "backend/src/main/java/com/wargame/service/CityConquestService.java": {
+      "sha256": "08f6f52ccf63a7033b5bb884acafcdf0dcc307f5cb120eb58a179a17b0a7d2f2",
+      "mtime": 1793349550.1393514
+    },
+    "backend/src/main/java/com/wargame/service/CityScope.java": {
+      "sha256": "e00eeacf9e71b54e3f2cbf2b406f9c695fab3e4581df631d5bf47061bdd1b8f6",
+      "mtime": 1792494638.7253582
+    },
+    "backend/src/main/java/com/wargame/service/CityService.java": {
+      "sha256": "2abc739084c0d70de78aa1090279b19557a0409f9b5408639bd29041c64ac176",
+      "mtime": 1793030574.33721
+    },
+    "backend/src/main/java/com/wargame/service/CitySurrenderService.java": {
+      "sha256": "f60e94b5eceb32e04416712c59dda6ee5f8b197c1404689c2cf3213a88b03044",
+      "mtime": 1793374181.8835406
+    },
+    "backend/src/main/java/com/wargame/service/CityTeleportService.java": {
+      "sha256": "ae96423e70f8e06b4649ebfdf228876bcba921dfd1b1fb76fecb194bc621eb5e",
+      "mtime": 1793350829.9545295
+    },
+    "backend/src/main/java/com/wargame/service/CommanderRenameService.java": {
+      "sha256": "b4968edaba88eab0e5b86ec09dd500d8557020978c83e602c3e363dfdf1d5929",
+      "mtime": 1792642799.035053
+    },
+    "backend/src/main/java/com/wargame/service/CommanderReportSnapshot.java": {
+      "sha256": "74181f35a2f25ffcd9a68d8e489b1546fc5ff4c7dbcbea50aeafbc74adb283c3",
+      "mtime": 1793143030.3018193
+    },
+    "backend/src/main/java/com/wargame/service/CustomUserDetailsService.java": {
+      "sha256": "b77750db7e8d781db106920f0cbada1f4f775658df1c5bf93e5a9a16ca6373be",
+      "mtime": 1789527314.342649
+    },
+    "backend/src/main/java/com/wargame/service/DataRetentionScheduler.java": {
+      "sha256": "c6f72b0551968588a953ec73fb07793889675e9c65e6039c92f2f2993ce4186f",
+      "mtime": 1792571369.5575266
+    },
+    "backend/src/main/java/com/wargame/service/DepotService.java": {
+      "sha256": "5fddf8e00c1245c19691d0b1eaf498764510e6e64169c18d92fa3e62f1e3c59e",
+      "mtime": 1793377638.4910593
+    },
+    "backend/src/main/java/com/wargame/service/EquipmentService.java": {
+      "sha256": "bcda14a1e5848592b59b6820d12c2752af4dc626e6c4bde5a8b0f4acd5eea2f7",
+      "mtime": 1793349193.6939163
+    },
+    "backend/src/main/java/com/wargame/service/FortService.java": {
+      "sha256": "e55090889f229aa90248459ae86efeca21153d7e8d333f28dd86c2cfbfa8b8e4",
+      "mtime": 1793377673.002633
+    },
+    "backend/src/main/java/com/wargame/service/ForumService.java": {
+      "sha256": "76be399bc051d2970ef15f6c0b077462e6106856f798127bb04fdcf8ff54781e",
+      "mtime": 1793248522.6048908
+    },
+    "backend/src/main/java/com/wargame/service/FriendService.java": {
+      "sha256": "ae99d69a2952f3994d7ee907c298c0589547aa55ae96176e3924acf5ec21060d",
+      "mtime": 1793076658.8802245
+    },
+    "backend/src/main/java/com/wargame/service/GameClockRuntime.java": {
+      "sha256": "bc56182da2c04d89cff94b18481d3182245cc5290299a217bd9db2b1042d9895",
+      "mtime": 1792497103.297993
+    },
+    "backend/src/main/java/com/wargame/service/GameClockScheduler.java": {
+      "sha256": "442330c720e4808d8a64512af0241fececba12f01722b4410b0ac4f9fd00968a",
+      "mtime": 1792495921.7660239
+    },
+    "backend/src/main/java/com/wargame/service/GameStateService.java": {
+      "sha256": "4d3c5afac06a4a5297c65b4be2fcadf71f0912597937b5f9b33dc869a9eac2c9",
+      "mtime": 1793377638.510365
+    },
+    "backend/src/main/java/com/wargame/service/GarrisonFoodService.java": {
+      "sha256": "ca142b36c134585b9bb671b8b63c234690c899e185914aabb7ee3e3a6ea1e96b",
+      "mtime": 1793349602.6871662
+    },
+    "backend/src/main/java/com/wargame/service/GarrisonFoodTimeline.java": {
+      "sha256": "2858f40d0ef3f08eff5b4cf8c5e4aa45e4b62fc4434e48d98324ea40cd5012e8",
+      "mtime": 1792822949.2536645
+    },
+    "backend/src/main/java/com/wargame/service/GuildChatService.java": {
+      "sha256": "1f9d1f0a223a56937449aed2f76778499fb0bf77009008de001e3607c451e767",
+      "mtime": 1793099835.5641053
+    },
+    "backend/src/main/java/com/wargame/service/GuildRelationService.java": {
+      "sha256": "1e8eeb5626f1fc5256e06cc400d1d53d8e780aff76c0b9822564c989cee38772",
+      "mtime": 1791448184.6778617
+    },
+    "backend/src/main/java/com/wargame/service/GuildService.java": {
+      "sha256": "5c75b938ed595b43522a874f1098e05e4c02a0874ffcacc6ac267b1de3fb71b6",
+      "mtime": 1792772497.9605796
+    },
+    "backend/src/main/java/com/wargame/service/GuildSupportService.java": {
+      "sha256": "00f36b3b35b2a4e27b93d7a94a78d18294ea218d413196e6fb8d17985c47a9cf",
+      "mtime": 1793350090.484362
+    },
+    "backend/src/main/java/com/wargame/service/ImportService.java": {
+      "sha256": "5ba614c28267e73896fec6e8bd34d7fbe900bcf8686d326b5eb6937642aeec21",
+      "mtime": 1793349550.0856106
+    },
+    "backend/src/main/java/com/wargame/service/IncomingIntelligenceService.java": {
+      "sha256": "2a3ffe95e5e3665a3e5ec54a65456066e523915e52245b7793088369e97c7436",
+      "mtime": 1793349603.0317369
+    },
+    "backend/src/main/java/com/wargame/service/IncomingReportShareService.java": {
+      "sha256": "a74756b3035c1e92cdeb5e18c565fcc6e149e4c0d636d525ffc1b8fa57414886",
+      "mtime": 1792827856.1211333
+    },
+    "backend/src/main/java/com/wargame/service/InterceptionPlanner.java": {
+      "sha256": "26f5f49b924adeaba3be1a03fc4897b0bd4d64602fc17edee5775342e917400e",
+      "mtime": 1792564411.3886821
+    },
+    "backend/src/main/java/com/wargame/service/IslandContentService.java": {
+      "sha256": "f9f4f39b0b04fb6bd136fad0f180abd97728dd3b17850b9aff0985b5b73156c8",
+      "mtime": 1793081732.02761
+    },
+    "backend/src/main/java/com/wargame/service/ItemBuffService.java": {
+      "sha256": "e97904dd93c213bed9dbe4ebfeed2aefced607ad89c3fdfdb305f654d6edd269",
+      "mtime": 1793345303.0338945
+    },
+    "backend/src/main/java/com/wargame/service/JointBattleProjection.java": {
+      "sha256": "fe20485981279e7ba42f6624677994c0c2a5694c58d5a636a0500a6fc55e3a28",
+      "mtime": 1793143135.3346398
+    },
+    "backend/src/main/java/com/wargame/service/LandBanditPopulationService.java": {
+      "sha256": "35b4be5e2a788276260fc782423e1af1676469ea887812246851360629cc9146",
+      "mtime": 1792050389.2800686
+    },
+    "backend/src/main/java/com/wargame/service/LeaderboardService.java": {
+      "sha256": "c93bdde84baddedd6ad9ea3844c5bd548a05b792083f3d8d629d9ed43a5123cb",
+      "mtime": 1793076131.228257
+    },
+    "backend/src/main/java/com/wargame/service/MailGiftActivityService.java": {
+      "sha256": "78fc8c156111ff55c395fdb5ae43fbd095466d7fa5618b02015575aacb3c2232",
+      "mtime": 1792572500.9472895
+    },
+    "backend/src/main/java/com/wargame/service/MailService.java": {
+      "sha256": "653da34b3210db0ab8e4ecc4a017a0f05a984ca756d9671388b760423a0c420d",
+      "mtime": 1793377606.4537928
+    },
+    "backend/src/main/java/com/wargame/service/MapFavoriteService.java": {
+      "sha256": "479a93c9560d7c9baf41ce58e007973c49da0d34b3f7be9ca4f853de350f9746",
+      "mtime": 1793012005.961311
+    },
+    "backend/src/main/java/com/wargame/service/MarchRouteService.java": {
+      "sha256": "092c446cfc5e2533b091d22e44387e3188b0e800d8b59d656ea7ced031d9969a",
+      "mtime": 1793350090.4734113
+    },
+    "backend/src/main/java/com/wargame/service/MarchService.java": {
+      "sha256": "9fd3be31fe95516d660e489e9d6a6d0a437b7cb2d2a9a3070679f9f8bcdbbd9a",
+      "mtime": 1793379615.4864883
+    },
+    "backend/src/main/java/com/wargame/service/MarchTargetService.java": {
+      "sha256": "ada1dfa70a14ac33e5e476d4beb74119c2f6c44ecfeb0fc4fe5246c5ff005233",
+      "mtime": 1793349913.707392
+    },
+    "backend/src/main/java/com/wargame/service/MarketService.java": {
+      "sha256": "c5c8664da65b8bed9a2287273942d0cea5ffaa9366976ae0b871bcd010a0a402",
+      "mtime": 1793374181.9234254
+    },
+    "backend/src/main/java/com/wargame/service/MobilizationService.java": {
+      "sha256": "5f15e25de83dbfe16c13b46e27ec7fc75de8b1ec0a69972298dedcb93c43e547",
+      "mtime": 1793331587.8247283
+    },
+    "backend/src/main/java/com/wargame/service/NameChangePolicy.java": {
+      "sha256": "6ada583b754f89259771486f144515655573dcee3c278243ea19cbe326924c01",
+      "mtime": 1792496727.583015
+    },
+    "backend/src/main/java/com/wargame/service/NpcCitySpawnService.java": {
+      "sha256": "78a76a2a85cefad6e027da0476b8401797b5d55f5d65be556b43b4ef01a82f4f",
+      "mtime": 1791788994.7728686
+    },
+    "backend/src/main/java/com/wargame/service/NpcFootprintService.java": {
+      "sha256": "d5454fb2181ef2f967870416e09d3977254ac86d642c255974a70219f8391cdb",
+      "mtime": 1791857800.7636402
+    },
+    "backend/src/main/java/com/wargame/service/OfficerEquipmentProgressService.java": {
+      "sha256": "2a25334f04e6e9f2a07840f2161fdaab011e498c6acb1a92701e9cd4320c05e1",
+      "mtime": 1793349193.6947944
+    },
+    "backend/src/main/java/com/wargame/service/OfficerSalaryArrears.java": {
+      "sha256": "8f03e787256fd01c0a424cd2ba11e2c626856df24f62d35bb0c7a9dd154f3363",
+      "mtime": 1793377975.107807
+    },
+    "backend/src/main/java/com/wargame/service/OfficerService.java": {
+      "sha256": "24a2a6c8797015ae943b5db9ca38c9d2f248c8f31344dff7e4c7a60cd5263173",
+      "mtime": 1793377638.4716938
+    },
+    "backend/src/main/java/com/wargame/service/PlayerPowerHistoryService.java": {
+      "sha256": "7996d1daef80e86cc254e2554469753be6d1d0f5911c0850fda9f9ce836b05a7",
+      "mtime": 1793079433.8713381
+    },
+    "backend/src/main/java/com/wargame/service/PlayerPowerService.java": {
+      "sha256": "8fb281b981ecf623c8ea6bae67d5c9023992bcd611a092fb5f5eeccda9ddc795",
+      "mtime": 1793350090.5076954
+    },
+    "backend/src/main/java/com/wargame/service/PlayerPowerSnapshotScheduler.java": {
+      "sha256": "a3beeb966f6619864c098e8cbf70ddb6acf0ec4324bd1adcff792bfdd5d0ec16",
+      "mtime": 1793079573.5160058
+    },
+    "backend/src/main/java/com/wargame/service/PoliticalWordFilter.java": {
+      "sha256": "254828dd97d8c11e731eda824049132b29c73b8d3cdfad4a4002a0d4da16e967",
+      "mtime": 1790408292.500243
+    },
+    "backend/src/main/java/com/wargame/service/PrerequisiteService.java": {
+      "sha256": "975383305d61a9cedccf03498341c59498cbc25d9d4385130a066cc293ab9962",
+      "mtime": 1792490142.735854
+    },
+    "backend/src/main/java/com/wargame/service/PrisonerService.java": {
+      "sha256": "06d3d80608972c762604b2e82c56c45ed02a26e9c80895737a3abe05c86c2fa6",
+      "mtime": 1793377638.5492003
+    },
+    "backend/src/main/java/com/wargame/service/PrivateChatService.java": {
+      "sha256": "d39a673ddb19df4e273842b543682042e619f6c81b227d9dd701bd3c258a933b",
+      "mtime": 1793099829.264127
+    },
+    "backend/src/main/java/com/wargame/service/RadarChangeListener.java": {
+      "sha256": "32654568f1067fe4ed83856b67dff322d5a6da24e6d3b6809a550be158ca8a2b",
+      "mtime": 1792852734.0781474
+    },
+    "backend/src/main/java/com/wargame/service/RadarDeliveryService.java": {
+      "sha256": "2e2b403eba9a55565e1fa03223ab81f5c99738d51277eae2e94fbe8b6c2fed7e",
+      "mtime": 1792829310.250212
+    },
+    "backend/src/main/java/com/wargame/service/RadarDispatcher.java": {
+      "sha256": "fefb4af3c9311cebad9d5bbe95ca167e938ef1f083eba7e5e9e93943cc86af73",
+      "mtime": 1792831442.1528711
+    },
+    "backend/src/main/java/com/wargame/service/RadarEvents.java": {
+      "sha256": "39e8ae5ee0f67e3a3d5864d327b8d535b7219611a77167848838aab2d8472b78",
+      "mtime": 1792831442.1723127
+    },
+    "backend/src/main/java/com/wargame/service/RadarGeometry.java": {
+      "sha256": "895c387b4ee0ca802a07feaa1fc2e991fb73204ad1f135e65871c206b8a0c71e",
+      "mtime": 1792827192.7336607
+    },
+    "backend/src/main/java/com/wargame/service/RadarService.java": {
+      "sha256": "d9e2df68a77540e5e98731031710c04ae52dd9c949dd50ca199a10aad8aac695",
+      "mtime": 1793350934.796691
+    },
+    "backend/src/main/java/com/wargame/service/RankGiftService.java": {
+      "sha256": "eacef4d7429c6afa1a4191deb4c1044d7113f10c811027ec43922bad2d6cbb5d",
+      "mtime": 1793201905.5660038
+    },
+    "backend/src/main/java/com/wargame/service/RankService.java": {
+      "sha256": "63777f88a9b69b0968578059de946fdb0f54f74bc8536567c42095afd2305915",
+      "mtime": 1793200362.554577
+    },
+    "backend/src/main/java/com/wargame/service/ReconCombat.java": {
+      "sha256": "9eff8606e0919fe4596738f0022c249e25eccdd43e2fc27ffa32673549972420",
+      "mtime": 1793350090.4014852
+    },
+    "backend/src/main/java/com/wargame/service/ReportPrivacyService.java": {
+      "sha256": "b3c89706995fa9ba11a1e6abfc67728ceb773180ccfbde12df8786143e2c1c0a",
+      "mtime": 1789637319.4441748
+    },
+    "backend/src/main/java/com/wargame/service/ReportShareService.java": {
+      "sha256": "8da5d50c540958381df15cc2f43c60d37f9c59fc7fea797d72fa8aa27b7a1b4a",
+      "mtime": 1792818684.7862654
+    },
+    "backend/src/main/java/com/wargame/service/ReportSummary.java": {
+      "sha256": "190c245aef2180f95bee762fd9f9ef210966e9bc49de1c24d05c5c8867e13fd0",
+      "mtime": 1792773666.6588666
+    },
+    "backend/src/main/java/com/wargame/service/ResourceOverflowService.java": {
+      "sha256": "48878aa87c4a2d086c06de7fa0c9fc6393fd24f44165b97f3a34317b4062d485",
+      "mtime": 1792638869.2494502
+    },
+    "backend/src/main/java/com/wargame/service/RetentionBatchService.java": {
+      "sha256": "61d30b64c02a52f6bcd366ccafd870bcffe1827c0f380dd1b4c0adabf3f7a2a2",
+      "mtime": 1793096713.8211555
+    },
+    "backend/src/main/java/com/wargame/service/RetentionEntityListener.java": {
+      "sha256": "9d2692354cf58eb32c426e6cc8da3a534a7931cc4f5bd1fac17ea1419845ad79",
+      "mtime": 1792585496.2970634
+    },
+    "backend/src/main/java/com/wargame/service/RetentionMetricsService.java": {
+      "sha256": "1765f561d664241132c4fbc05bb7df4f3d1436fcd1239dfe84f788e04adfee9f",
+      "mtime": 1792585014.7553797
+    },
+    "backend/src/main/java/com/wargame/service/SpeedUpSupport.java": {
+      "sha256": "0bacab1131dacf87011c580e8952064d6d0e46e698c0594a929e4e2f41786da2",
+      "mtime": 1789527314.3440833
+    },
+    "backend/src/main/java/com/wargame/service/TacticalBattleOutcomeService.java": {
+      "sha256": "e99f752e145116980ea7e84595fbe2b99994f4f74bf99c0f3a9ef8dda57c06f6",
+      "mtime": 1792772497.9586446
+    },
+    "backend/src/main/java/com/wargame/service/TacticalBattleScheduler.java": {
+      "sha256": "15e636f7ce2e958192a06330b944b91e9207f85e8b2e8861d54a6d1f4c1d908c",
+      "mtime": 1792494638.7155836
+    },
+    "backend/src/main/java/com/wargame/service/TacticalOrderService.java": {
+      "sha256": "992b145963e8d0d8da0e9a6a33ce03c99111319651c55f5d57b86d3cac5d1a25",
+      "mtime": 1793240007.1007416
+    },
+    "backend/src/main/java/com/wargame/service/TechService.java": {
+      "sha256": "130dd6be7badda38aba5990016e2867e9accd43e0f038b2b2c484a2612357611",
+      "mtime": 1793349258.8725429
+    },
+    "backend/src/main/java/com/wargame/service/TickScheduler.java": {
+      "sha256": "3741e6137a761ea4f3e024e64b1db53e12a8a9b04e281d6ab4c4243816561bb5",
+      "mtime": 1792494638.7232506
+    },
+    "backend/src/main/java/com/wargame/service/TickService.java": {
+      "sha256": "457b5885cc6d61c0cdc90e8f8008a5fb5511b4623f9d6c482eb28e7ac426d123",
+      "mtime": 1793377638.4522917
+    },
+    "backend/src/main/java/com/wargame/service/UnitUnlockService.java": {
+      "sha256": "eb70d3d3d44d08217b238d24cd4db69e90205e94b9c69e5b086885856e15efba",
+      "mtime": 1792491275.3361866
+    },
+    "backend/src/main/java/com/wargame/service/VipService.java": {
+      "sha256": "1d3814a71a9ca44869cdfabb9fa2f151d99f217c5755f47135d69800eed94ec0",
+      "mtime": 1793103678.4179251
+    },
+    "backend/src/main/java/com/wargame/service/WarPowerProtectionService.java": {
+      "sha256": "6fc302c5251d6d765417a5726bd1083e4fb7ac7d434fb6dfec4e8c485a8273d5",
+      "mtime": 1793081500.9566853
+    },
+    "backend/src/main/java/com/wargame/service/WebSocketPushService.java": {
+      "sha256": "e496af00996090cc619855163eeae21147889cd765ff873157e5462a09864d74",
+      "mtime": 1792494638.8292506
+    },
+    "backend/src/main/java/com/wargame/service/WildOccupationService.java": {
+      "sha256": "c8e8956da79b7270cdcde3ccdb045302348ab085da77fe2cfbe12e247bbfb0a1",
+      "mtime": 1791792347.598736
+    },
+    "backend/src/main/java/com/wargame/service/WildTileRefreshScheduler.java": {
+      "sha256": "af35d21096e0e19f76cef5cefbf15402e4b92539bf847c82997505ab88cad916",
+      "mtime": 1793033349.6237516
+    },
+    "backend/src/main/java/com/wargame/service/WorldContentService.java": {
+      "sha256": "0f189e79f16e5a7e1beec73b8fab4b53ffe7fc6085c13ef5cc42e9a117be6681",
+      "mtime": 1792166486.4374216
+    },
+    "backend/src/main/java/com/wargame/service/WorldMapService.java": {
+      "sha256": "0246ee4eb8ebbf56c2a03338b69eec9d3ea64b72d5dba1db6ab71150606e564f",
+      "mtime": 1793079573.5544736
+    },
+    "backend/src/main/java/com/wargame/service/WorldService.java": {
+      "sha256": "378ff815932d27033fdc9120a77be89599e3efbfa8b3364ace6df83962a95a04",
+      "mtime": 1793325962.4124494
+    },
+    "backend/src/main/java/com/wargame/service/WorldTerrainService.java": {
+      "sha256": "f22535b5305b6085c220e8ca4ce3631a5182fcf0306d070b54315ff3e5fd106b",
+      "mtime": 1793096713.8294287
+    },
+    "backend/src/main/java/com/wargame/service/WorldViewService.java": {
+      "sha256": "c3fe9d905735780fe8165b140cdc3667d55baf9da65f0d3fbd2fdc856cad7781",
+      "mtime": 1793349763.6326513
+    },
+    "backend/src/main/java/com/wargame/service/WoundedExpiryScheduler.java": {
+      "sha256": "f1135578a0288a9b962c281bbed2cac961c4224d796b790aab3c2c5c03d88063",
+      "mtime": 1789527314.3451097
+    },
+    "backend/src/main/java/com/wargame/service/WoundedService.java": {
+      "sha256": "739bf0ad3b428dfc31e06b249bb9661e448ee047960b1eeb28ccb2cfd95cc8c4",
+      "mtime": 1793374181.9413068
+    },
+    "backend/src/main/java/com/wargame/service/admin/AdminAuditLogService.java": {
+      "sha256": "f449e51b77f27c801871fb63e5d425dc171d24b75afd107712e664f4ce9c1553",
+      "mtime": 1793342409.8846815
+    },
+    "backend/src/main/java/com/wargame/service/admin/AdminAuthService.java": {
+      "sha256": "a88cf6c76f6fd864be6afb715003bf00a58d0a8a5cafb514196b164b0847d16e",
+      "mtime": 1793342670.3867557
+    },
+    "backend/src/main/java/com/wargame/service/admin/AdminGmService.java": {
+      "sha256": "46ce2c9f6159b20ddcce68119c50800a851ec386802ce300d2610e7f3c69352f",
+      "mtime": 1792633374.2147827
+    },
+    "backend/src/main/java/com/wargame/service/admin/AdminIslandService.java": {
+      "sha256": "06affcb26cd0078832a55f086fb6d95a9a0c2944d48f0cf9c12fde57df709c07",
+      "mtime": 1793057451.2208793
+    },
+    "backend/src/main/java/com/wargame/service/admin/AdminPlayerService.java": {
+      "sha256": "8c61dbf09c75cf67d734575e689368d818a827a0cb4e3cb2ddde99a5479b9bdb",
+      "mtime": 1793206828.3868177
+    },
+    "backend/src/main/java/com/wargame/service/admin/AdminSpawnerService.java": {
+      "sha256": "48a411596b2ef5db38896884d4c0c928b48e44f38330931e6bdd95a4b6a6e02a",
+      "mtime": 1793349550.1433637
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotAction.java": {
+      "sha256": "ae805fbbe16a433342c6500d32efd5fce9d5ce114ea8c2749469f5ac614aef29",
+      "mtime": 1792989408.671162
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotPlanner.java": {
+      "sha256": "78b9693a46d6b90a80bd779ac465afb3f671a63d03f53e36acdfda0b843c20d0",
+      "mtime": 1792992278.6953406
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotPolicy.java": {
+      "sha256": "217969faa057b7e8d2c630aac3454b5ff485b8c0a5c60ed6a80b95f05790bd3c",
+      "mtime": 1793349602.9779124
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotScheduler.java": {
+      "sha256": "501450132281c061de2c3b82079bb0e939377058ee880a59111d5795429ce5f1",
+      "mtime": 1792990220.4211822
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotSchedulingConfig.java": {
+      "sha256": "92e97381ce6c25d64e847feced7ee7451537ec38f42e1e2f597af05bfa777044",
+      "mtime": 1792990220.4392633
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotService.java": {
+      "sha256": "2ae4e7506aa59717156261aa7beaf4b73161980a81bdfa41faa46b539a0f4ab9",
+      "mtime": 1792992857.7781732
+    },
+    "backend/src/main/java/com/wargame/service/bot/BotStore.java": {
+      "sha256": "ee069b5951f4b98f18feaaf6f9c0827b7a72a94302f8fde60a044aec55c75323",
+      "mtime": 1792990220.3607635
+    },
+    "backend/src/main/java/com/wargame/service/compliance/AntiAddictionService.java": {
+      "sha256": "e86c12332bf6848df7551e3868b62417fdddd503f5ba08d0825c41ee97ed57ff",
+      "mtime": 1793117783.984039
+    },
+    "backend/src/main/java/com/wargame/service/compliance/ComplianceMaintenance.java": {
+      "sha256": "13b94c315da2fd497ab09f9b31ffabfc1564162cff48d914a9aa692fb37339f1",
+      "mtime": 1789645717.9726715
+    },
+    "backend/src/main/java/com/wargame/service/compliance/IdentityVault.java": {
+      "sha256": "7ca952214be68928c38bf2578164d2ba7e7be70f029ce026109224dba8bcbc04",
+      "mtime": 1789644767.4055872
+    },
+    "backend/src/main/java/com/wargame/service/compliance/PlayCalendar.java": {
+      "sha256": "f98497e7bb81a1615699c5a90a2576c1c5719a89c7edfab13fea4963718a208a",
+      "mtime": 1789646133.9516108
+    },
+    "backend/src/main/java/com/wargame/service/compliance/RealNameProvider.java": {
+      "sha256": "cc35bab8b939cd80d41ffe2f2e0a86ffddcaef9a9eaac65e8d80d76014188412",
+      "mtime": 1789644767.352301
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpJson.java": {
+      "sha256": "0a05d1296320187726f02db6db443e879122917f9f134b4b3fe17ea77227592e",
+      "mtime": 1791594707.5061657
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpMatchService.java": {
+      "sha256": "d3150bdc2b699550d639e96a4150b86486dc948d55d175dfd309d9f4cb06bea7",
+      "mtime": 1792494638.7353802
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpPowerModel.java": {
+      "sha256": "4ef88f3138cc91a993d5e6bd771947515a4b434e6478c610add0f0fb0d8be3d1",
+      "mtime": 1793349913.7085276
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpPracticeScheduler.java": {
+      "sha256": "b9127ba86d2a5bbe062ddd1bc20eb0ec5b6a3df0fdc3bdfc4ed4305a8bbb2152",
+      "mtime": 1792494638.733649
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpPracticeService.java": {
+      "sha256": "16b218a1fefbf060a613962028f1cb86e405655bdf1019369e071ba5e064e108",
+      "mtime": 1793345059.186379
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpSnapshotService.java": {
+      "sha256": "bf19c8014e6c0def4e6b3bb356b568c94c3674699f3af78c88bb95e4ebdf38e3",
+      "mtime": 1793349603.0422084
+    },
+    "backend/src/main/java/com/wargame/service/pvp/PvpWaitEstimate.java": {
+      "sha256": "f484da89183c6502bb30934e38c3e91c8caee27236eaa7b9a2c98ea8947f7444",
+      "mtime": 1792494638.7344928
+    },
+    "backend/src/main/java/com/wargame/service/quest/OnboardingService.java": {
+      "sha256": "a40ab2ced92f4fa615b3161cd625a4b45a491127451b01b76238e44cbd14af18",
+      "mtime": 1793379420.1490605
+    },
+    "backend/src/main/java/com/wargame/service/quest/QuestCatalog.java": {
+      "sha256": "85595b02840e09d4ab2b7d820f8b8153e2c9622195734e36aa4fbdca1981b89f",
+      "mtime": 1793374492.3121004
+    },
+    "backend/src/main/java/com/wargame/service/quest/QuestService.java": {
+      "sha256": "826cd8a41a5b3a99f10df2424a3e6f73979d07ca55c45206d7213daddbf14932",
+      "mtime": 1793375026.4131932
+    },
+    "backend/src/main/java/com/wargame/util/DurationText.java": {
+      "sha256": "b2714916433ad0f558a28668e8a3592ab0e9a05f9d495f2d31f9374119141d51",
+      "mtime": 1792651395.0272567
+    },
+    "backend/src/main/java/com/wargame/util/GameClock.java": {
+      "sha256": "dfba83326e22e35c6651877d40086cfb2dd7d4cb47793fe3925c351204ebe931",
+      "mtime": 1792494567.510733
+    },
+    "backend/src/main/java/com/wargame/util/JsonUtil.java": {
+      "sha256": "68cc2c1a0c57fd3f7dc25c3dcfc35c4e2d401654441fb3e6c4a8637db7d34bfb",
+      "mtime": 1789527314.3456795
+    },
+    "backend/src/main/java/com/wargame/util/JwtUtil.java": {
+      "sha256": "99530aaaa803fba1d1a520f77b31d9a7ce43b094304b17a90dfa237b5c769090",
+      "mtime": 1793342303.4280145
+    },
+    "backend/src/main/java/com/wargame/util/PlayerNames.java": {
+      "sha256": "386843c3e024a554464690ef4ce9b9e209b0e3eb64635bc580d927ade8b139f4",
+      "mtime": 1792762663.9588034
+    },
+    "backend/src/main/java/db/migration/V116__commander_rename_card.java": {
+      "sha256": "e9cc49e23c1e9d24e8005ac1715de57ce609c6d90010fc1d0333c3b22137e5f8",
+      "mtime": 1792642527.2618299
+    },
+    "backend/src/main/java/db/migration/V120__scout_card_intelligence.java": {
+      "sha256": "d9e07bbf59ffa334aa91de4bea8067fac69ae10d5124dc449a79b0c7577f7762",
+      "mtime": 1792743532.050002
+    },
+    "backend/src/main/java/db/migration/V121__officer_twelve_piece_equipment.java": {
+      "sha256": "3def4653b60db37fbf6b952ea56d45463f104fc308e31eaf86c3ddad7bd1f232",
+      "mtime": 1792759311.0695825
+    },
+    "backend/src/main/java/db/migration/V122__notification_commander_names.java": {
+      "sha256": "2b32bd443d9a70667a4da70364b54ea11f3d6701e211b09622418145785f5fd8",
+      "mtime": 1792764032.5421457
+    },
+    "backend/src/main/java/db/migration/V124__report_commander_names.java": {
+      "sha256": "d3a3906017440026569e3e324e2004b95938e1a05b5fdcb84421dbb5298071de",
+      "mtime": 1792774219.3030694
+    },
+    "backend/src/main/java/db/migration/V125__transferred_officer_preparation.java": {
+      "sha256": "b1566260da12152fc02bb675de94531a246d12e7c14f848d67954269d8709b3f",
+      "mtime": 1792804307.025066
+    },
+    "backend/src/main/java/db/migration/V128__split_city_guild_radar.java": {
+      "sha256": "78490b2f9047674b9e714d33e872177767c12c12ca7d6b0daa8a515b80a6910d",
+      "mtime": 1792853484.0337298
+    },
+    "backend/src/main/java/db/migration/V144__retire_unit_equipment.java": {
+      "sha256": "cbb4a5fb65935bb00955d538f71dd3e5e268fe527c41393760922eb21e3b50c9",
+      "mtime": 1793349701.672913
+    },
+    "backend/src/main/java/db/migration/V147__construction_cost_snapshots.java": {
+      "sha256": "85dc5d2eb428e7c62ac4d4cce8d3b01d3126f4e76f13fbc26de5bb2e68d30fa4",
+      "mtime": 1793377705.1576555
+    },
+    "backend/src/main/resources/game/pvp-power-calibration-v1.json": {
+      "sha256": "e2a438dee1a4935859b9b8e4efb167ebf43dee212cb693825e42791cd8585494",
+      "mtime": 1793346115.4560237
+    },
+    "backend/src/main/resources/game/tech-building-prerequisites.json": {
+      "sha256": "728a52deee6196c4e550a8990786284de8d190f004173204096d9d08298d056e",
+      "mtime": 1793349550.0003617
+    },
+    "backend/src/main/resources/game/unit-unlock-prerequisites.json": {
+      "sha256": "b1a1b12b80ce65b99b204957ecc2a99573053a820c236644e542ee7dd4501cab",
+      "mtime": 1792490062.96682
+    },
+    "backend/src/main/resources/officer-equipment.json": {
+      "sha256": "a7562c076971539330e8ea4fe6607cc5950df6083f77d5b086fe461ce989e937",
+      "mtime": 1793349376.5035834
+    },
+    "backend/src/test/java/com/wargame/AccountDeletionMigrationTest.java": {
+      "sha256": "f794bccc7a60569ef979c132318bde4e9d2936dd4bf565e974447ca290ec202d",
+      "mtime": 1789636733.8192813
+    },
+    "backend/src/test/java/com/wargame/AccountDeletionSchedulerTest.java": {
+      "sha256": "71729bfd5d398f5ff419c5c46a92d9e238b4c21912b23edd8a07fc7c4b3abbb1",
+      "mtime": 1789636733.8177283
+    },
+    "backend/src/test/java/com/wargame/AccountDeletionTest.java": {
+      "sha256": "769c314e50fd2069ec0d9ec1baa84442927a2c00962b1b4b4b1a95d3f095e513",
+      "mtime": 1793104501.14144
+    },
+    "backend/src/test/java/com/wargame/AccountEmailIntegrationTest.java": {
+      "sha256": "1d781f4aae9fc145411ecdd6a151a52099a88c122ac07e0f2dd6fbcb2501b1d5",
+      "mtime": 1793120969.8752759
+    },
+    "backend/src/test/java/com/wargame/AccountEmailMigrationTest.java": {
+      "sha256": "fa740781a4b26292ddd7d6eceb5205b229d9485090c91872b6eef179a7aa85c6",
+      "mtime": 1793120618.7238955
+    },
+    "backend/src/test/java/com/wargame/AdminCredentialMigrationTest.java": {
+      "sha256": "18d5b46f157c0e6928fafe3074fa44df96f7d91a618530240c634c6241e5fdd6",
+      "mtime": 1793342923.6332648
+    },
+    "backend/src/test/java/com/wargame/AdminSecurityIntegrationTest.java": {
+      "sha256": "1ee8df8a6c4bf60db5fa1cee6cd921a58dac51891fb2957269764e73b9c2628a",
+      "mtime": 1793343360.2871728
+    },
+    "backend/src/test/java/com/wargame/AdminSystemTest.java": {
+      "sha256": "5726598acabe22132eeee7d1b7eebdeb2d81944914a63c8b12b5abf19c8c61a8",
+      "mtime": 1793342923.6124024
+    },
+    "backend/src/test/java/com/wargame/AntiAddictionTest.java": {
+      "sha256": "fb20916f357fd6d7869390f8d764bdc783e554456a1cf2a48ab1c23862022362",
+      "mtime": 1793119590.2785063
+    },
+    "backend/src/test/java/com/wargame/ApronAirMarchSpeedTest.java": {
+      "sha256": "4c0c212cff1d4e2ba0dd882b4dc97408687ccc4a6897c2d06477f428e17dca33",
+      "mtime": 1792863944.0793514
+    },
+    "backend/src/test/java/com/wargame/ArmyRecruitmentFoodTest.java": {
+      "sha256": "56aa781391a15777cb5cfd7fef66e240f0b7f4d90ace8248da659f1173d82eca",
+      "mtime": 1792491646.423962
+    },
+    "backend/src/test/java/com/wargame/AttackDesignTest.java": {
+      "sha256": "f434c65620f2b03f6608c290dc7663249c0dc84ceacab278f88ea47ff25f8930",
+      "mtime": 1791590037.2435656
+    },
+    "backend/src/test/java/com/wargame/AvatarStorageServiceTest.java": {
+      "sha256": "60efa90bb67b26f13b6f1986617c1d6864ae1f6c5371208e3faf4c274e6df8ea",
+      "mtime": 1793104714.5327973
+    },
+    "backend/src/test/java/com/wargame/BanditImportTest.java": {
+      "sha256": "f370bfbc48514c818e521236ff7403ad6feed6ea0cf9d2f0335706d92bb11ae3",
+      "mtime": 1791790234.5207925
+    },
+    "backend/src/test/java/com/wargame/BanditRefreshTest.java": {
+      "sha256": "3db68e2b9f9b9fe533fba44ed7aa79775fca4e8fa1c8dc218c59c805d5315e99",
+      "mtime": 1792166486.4598796
+    },
+    "backend/src/test/java/com/wargame/BaseServiceTest.java": {
+      "sha256": "7d4cef381f20227d9de522d6c36ac1cfdee6211ed5c9a2df1d14af7e2680954a",
+      "mtime": 1793119590.2175164
+    },
+    "backend/src/test/java/com/wargame/BattleActionPreferencesTest.java": {
+      "sha256": "d9b45a6b8d67ea9789749111265258522f1cb1c9f0329f7d3d52af522819978b",
+      "mtime": 1793331711.5245206
+    },
+    "backend/src/test/java/com/wargame/BattleBalanceTest.java": {
+      "sha256": "58a0416c7ab9bde0427f5fe10e807029eca14e5f18f2b40d5d5e4a67eb10d78c",
+      "mtime": 1792587796.526231
+    },
+    "backend/src/test/java/com/wargame/BattleCompositionTest.java": {
+      "sha256": "3d78102e41581ed144abba12c4e41d0cdb308b0cf95217b47a398234b72f302c",
+      "mtime": 1792283740.94422
+    },
+    "backend/src/test/java/com/wargame/BattleContactMovementTest.java": {
+      "sha256": "c63aea42ca1f83a41867904823824ccbbd5bbee80cd51700619495c9ea0379f8",
+      "mtime": 1793350090.5445974
+    },
+    "backend/src/test/java/com/wargame/BattleDamageTest.java": {
+      "sha256": "392e58f1b5bcc0165eaf5d821e3e883bf8c7edba1c9dbb229c7ca9790336ef0c",
+      "mtime": 1792142062.5265822
+    },
+    "backend/src/test/java/com/wargame/BattleDefaultsControllerTest.java": {
+      "sha256": "7e059b510c19f0f2b3ee1a14267620eeda21da7471481cd716041a562ecd19f5",
+      "mtime": 1793332177.094641
+    },
+    "backend/src/test/java/com/wargame/BattleDefaultsLockIntegrationTest.java": {
+      "sha256": "e3532c16b88939d1217e1c9d6f406a44a1b79c59533acfe3cfcb92be572ff43b",
+      "mtime": 1792220717.0958211
+    },
+    "backend/src/test/java/com/wargame/BattleFireDensityTest.java": {
+      "sha256": "d92b9a7750b5e79241ae668fe5e39c3964f6d704f645cafae0bc7fe6886b5d67",
+      "mtime": 1793350090.5453076
+    },
+    "backend/src/test/java/com/wargame/BattleMechanicsTest.java": {
+      "sha256": "c2624fb96f0a54b3043c7c9cc6a5b90d85d024097cc5ce1ea19b013640b589e6",
+      "mtime": 1793343600.4218984
+    },
+    "backend/src/test/java/com/wargame/BattleOpeningDistanceTest.java": {
+      "sha256": "fab52d1c8f5d349b6eb02bed58c23ec7b3c1cec3be16538478b0d6c370e3813d",
+      "mtime": 1792141219.9442368
+    },
+    "backend/src/test/java/com/wargame/BattlePrestigeTest.java": {
+      "sha256": "45067a5a2b1dfd6e80d60b5e5c97407b0624a3941083f53258b2b86cf6ff11aa",
+      "mtime": 1792587381.304576
+    },
+    "backend/src/test/java/com/wargame/BattleRoundLimitTest.java": {
+      "sha256": "c6453826d25f8ac00e01b3bc4fd4431a52a6450a77f6ca2ff5ef4cdf9f572844",
+      "mtime": 1792220367.494245
+    },
+    "backend/src/test/java/com/wargame/BattleServiceTest.java": {
+      "sha256": "c3894c3e56e4df09a0d5da9e3fd7557965d6fd9e947cb66c772e48e57905deae",
+      "mtime": 1792801212.0850904
+    },
+    "backend/src/test/java/com/wargame/BlockSpawnPlannerTest.java": {
+      "sha256": "9e49d2e5dff2551e44208410307d197feb7a4c8c42e2f86138ca936b2f974b17",
+      "mtime": 1791733154.9048145
+    },
+    "backend/src/test/java/com/wargame/BlockSpawnRefreshTest.java": {
+      "sha256": "a3baec83941d272f7fe1d1655b3649b82c692ea38dc59a8b8b4bc24c959266ea",
+      "mtime": 1792050453.299433
+    },
+    "backend/src/test/java/com/wargame/BotIntegrationTest.java": {
+      "sha256": "93e958c5621128db55c09411a1bf68ea276e6a2be4dedc19d95da804ab4fccee",
+      "mtime": 1793274931.8851075
+    },
+    "backend/src/test/java/com/wargame/BuildDismantleSettlementTest.java": {
+      "sha256": "9711cbd7f7a4c4e304943e75bdfc13c778db33328af57379bc6614b160082844",
+      "mtime": 1793153972.4443054
+    },
+    "backend/src/test/java/com/wargame/BuildServiceTest.java": {
+      "sha256": "e22187d5d3e3090c5cbfa09e8e273415977fdfa6a9e8e4467e21a87aafcf651b",
+      "mtime": 1792894941.07235
+    },
+    "backend/src/test/java/com/wargame/ChatServiceTest.java": {
+      "sha256": "645f92d4538db6ed30f3415bd3ff5feb2689569613301cb05d9069c3b15fb70a",
+      "mtime": 1793100117.5359766
+    },
+    "backend/src/test/java/com/wargame/CityBattleDispatchLockTest.java": {
+      "sha256": "1e19de62bf5d752ae7e31acfec4e7c94136bc972a30a2edfbbff8e5308f31174",
+      "mtime": 1793326267.493893
+    },
+    "backend/src/test/java/com/wargame/CityShieldServiceTest.java": {
+      "sha256": "ffd9f6bf7c9fadf5db7b707b460bf528c0b95ad5d885f9d5f276825ec6c95140",
+      "mtime": 1792495861.05264
+    },
+    "backend/src/test/java/com/wargame/CityTeleportTest.java": {
+      "sha256": "278e6b36bad9941fe40f02d0614da0a3457f6b52a6c86109594785ae012ebabc",
+      "mtime": 1793351105.9337275
+    },
+    "backend/src/test/java/com/wargame/CommandBonusBattleTest.java": {
+      "sha256": "723dda6761a802d0502476b6ee9320c49b2638b44cb1bbc4a0911fd27d4118d8",
+      "mtime": 1792132551.2635148
+    },
+    "backend/src/test/java/com/wargame/CommanderRenameMigrationTest.java": {
+      "sha256": "7cf99f84101766f9efc3ab362be1fe3c5e14f19ac3aaf80a7ff38c6e69920262",
+      "mtime": 1792642594.1391683
+    },
+    "backend/src/test/java/com/wargame/CommanderRenameTest.java": {
+      "sha256": "3432f86f9505e8eb05b6deab67860582f96dfaa21cdd396d55eda3c94b77ca54",
+      "mtime": 1792643737.3510838
+    },
+    "backend/src/test/java/com/wargame/ComplianceMigrationTest.java": {
+      "sha256": "d668d2e75ffd7952c904f5659d7aa284d18607f70ad12fa2a1ffac5cf9d2daec",
+      "mtime": 1789645888.2014437
+    },
+    "backend/src/test/java/com/wargame/ConcurrencyTest.java": {
+      "sha256": "b6204e32cc08b1bb031cd3c2e8f1cdab94f49e55b8a5658f394d58f4d9fcc04f",
+      "mtime": 1793255549.3396027
+    },
+    "backend/src/test/java/com/wargame/ConquestWallBreachTest.java": {
+      "sha256": "532e7b0db0d05c1f82b4e379e84ef3f2856d779b53c872ef9323559dfbd4c9ef",
+      "mtime": 1793350090.5568862
+    },
+    "backend/src/test/java/com/wargame/ConquestWallMigrationTest.java": {
+      "sha256": "e46bdc4aa1f08a903740833442af2d551c4658c84ec4f3ddf6018b8a93f65519",
+      "mtime": 1791884934.1098294
+    },
+    "backend/src/test/java/com/wargame/ConquestWallSessionTest.java": {
+      "sha256": "b86b41a0dffccf5a9d22e6a8ff5e6605a3aab517cc6cb3a2d7125a6d2f00ee89",
+      "mtime": 1792825485.3434982
+    },
+    "backend/src/test/java/com/wargame/ConstructionCostSnapshotMigrationTest.java": {
+      "sha256": "18292b72262a31872eecec57147e652adaadb74bd058ff35ede4589745aa3546",
+      "mtime": 1793378366.7615225
+    },
+    "backend/src/test/java/com/wargame/CounterReconRemovalTest.java": {
+      "sha256": "7d969d4a74f0b70b004b471e018dd49686586ad25737ee8c5c6fd912963eb8e1",
+      "mtime": 1789527314.351314
+    },
+    "backend/src/test/java/com/wargame/DataRetentionMigrationTest.java": {
+      "sha256": "10036e8d11976380b91ea8da386ef77993246bdf4d7a1179c039c7f98659d219",
+      "mtime": 1792575859.211428
+    },
+    "backend/src/test/java/com/wargame/DataRetentionTest.java": {
+      "sha256": "c2418298b8b8321c047238f4df6014f0d1859a9803ce74bf5707e8a767da45e2",
+      "mtime": 1792638327.8247364
+    },
+    "backend/src/test/java/com/wargame/DeclareWarMailTest.java": {
+      "sha256": "64130af34cdae5ace6c6c8031e0071331a7e1a6360d8877c7b97645d8f2247b5",
+      "mtime": 1792764032.543485
+    },
+    "backend/src/test/java/com/wargame/DepotItemBroadcastTest.java": {
+      "sha256": "7fca02e6a35bffadb17ab9d0a95720b851c95a927029bd0950c4f292ddcb9f25",
+      "mtime": 1793081370.4462097
+    },
+    "backend/src/test/java/com/wargame/DisplayNameTest.java": {
+      "sha256": "44c46d99a1f81ad4747017598068b98d4567d2d0e2d7d77adce9e5543210b958",
+      "mtime": 1793119590.277209
+    },
+    "backend/src/test/java/com/wargame/DurationTextTest.java": {
+      "sha256": "d77d11a3b1dc4ac7487dbd7a05e3a2ba19b607f72d439d01b7419e09d35b2b19",
+      "mtime": 1792651395.0451179
+    },
+    "backend/src/test/java/com/wargame/FieldHospitalServiceTest.java": {
+      "sha256": "ee146f6dde2dda6d42438d09ca8a7288ddc569d13c5627b4337c1f7901623cf3",
+      "mtime": 1792744297.281548
+    },
+    "backend/src/test/java/com/wargame/FortCapacityTest.java": {
+      "sha256": "e8c1756a4d2fd5803ab85369d715ee246f289c43c41f39f766f9534de32d3dfa",
+      "mtime": 1792638327.662426
+    },
+    "backend/src/test/java/com/wargame/ForumConcurrencyTest.java": {
+      "sha256": "612f98d7932579ceaeac442322084a4a291e6402c69f6c65805e6e3d3bee23c1",
+      "mtime": 1793246582.3309495
+    },
+    "backend/src/test/java/com/wargame/ForumLocalHarness.java": {
+      "sha256": "d45811ad2a87db4828d5ddef6dc39e003e19c9d7e92e09ae52b161a77fde22f5",
+      "mtime": 1793246439.7107728
+    },
+    "backend/src/test/java/com/wargame/ForumPostingTest.java": {
+      "sha256": "bcc11ae21c3f21cd0d740388767a735b12ec61de00b073a35201d05e93cf37ba",
+      "mtime": 1793248980.1306663
+    },
+    "backend/src/test/java/com/wargame/ForumServiceTest.java": {
+      "sha256": "0292495378cbb7a82193b7caee65083ed2789aae0caa544e23ce11ff8a5fd2d1",
+      "mtime": 1793097440.9099724
+    },
+    "backend/src/test/java/com/wargame/FreeArmySpeedUpTest.java": {
+      "sha256": "2943403a54cb608ef92bec96b93e45da2f6557252b15b5358be19fe5c3160350",
+      "mtime": 1793353526.739978
+    },
+    "backend/src/test/java/com/wargame/FreeBuildSpeedUpTest.java": {
+      "sha256": "22ac6087838b880dc170e4debf71f481925397e3b617642481dd5f4c9b6a7f32",
+      "mtime": 1789721566.3614073
+    },
+    "backend/src/test/java/com/wargame/FriendControllerTest.java": {
+      "sha256": "cc848648290ed98e87fb233fee1cb589135c3d697206475196d0da2835de3f22",
+      "mtime": 1792141844.5791826
+    },
+    "backend/src/test/java/com/wargame/FriendMigrationTest.java": {
+      "sha256": "3c7de59b40ca9b5950d46d97f6bec590fb99bbf634cf1d371edf67b9d5d75205",
+      "mtime": 1792141844.5638795
+    },
+    "backend/src/test/java/com/wargame/FriendServiceIntegrationTest.java": {
+      "sha256": "53cfe738f6d88ce29ea07954683ff5aa176cbaa934d94adcbb65c4c5ec062c44",
+      "mtime": 1793082128.2371838
+    },
+    "backend/src/test/java/com/wargame/GameClockStartupTest.java": {
+      "sha256": "406bd918dddbc2edd36ec2df938c0cf659b871abfac037082852e21f2f733c3d",
+      "mtime": 1793343164.4780028
+    },
+    "backend/src/test/java/com/wargame/GameControllerAvatarTest.java": {
+      "sha256": "b64f17ffb1ed586e4053268eaea54041c6725d8897bb3aa5c1707e29f01e5df7",
+      "mtime": 1790442365.4811506
+    },
+    "backend/src/test/java/com/wargame/GameControllerHomeModuleOrderTest.java": {
+      "sha256": "6524d341849aae06f4e88f0510471c60c11ab2b9464c35add0b22d97fcd2be20",
+      "mtime": 1790594557.6006837
+    },
+    "backend/src/test/java/com/wargame/GameFlowTest.java": {
+      "sha256": "c5b8b71248473e0cbfc8df956dc9551fcee115ddc0488c27ddc70c5635c8cf2f",
+      "mtime": 1793119590.2815335
+    },
+    "backend/src/test/java/com/wargame/GameRuleAdjustmentsTest.java": {
+      "sha256": "8a35629879890eb2613af656a5eecea762eb9abd944832e416165ced91c8b6b7",
+      "mtime": 1793353526.713659
+    },
+    "backend/src/test/java/com/wargame/GameTimeActivitiesTest.java": {
+      "sha256": "4010a512f9ceb051cd1337c9c720189f5f3fb40d9c0eff96f28bc5f5b64b60fe",
+      "mtime": 1793349763.636136
+    },
+    "backend/src/test/java/com/wargame/GameplayAuditFixesTest.java": {
+      "sha256": "ca4e10a1f09b2a14284178b256b16704dd7d3d383abb9f006f7318f4075d0400",
+      "mtime": 1793375066.2342327
+    },
+    "backend/src/test/java/com/wargame/GameplayAuditRound3FixesTest.java": {
+      "sha256": "8762c4ec03a113b8003172d4b63923d2d478dbdc8e4b450c855740036b7105f1",
+      "mtime": 1793378512.579513
+    },
+    "backend/src/test/java/com/wargame/GatherAutoAbandonConcurrencyTest.java": {
+      "sha256": "a928fd7154197e4de0f7b95d0778dddd6eeb7720f92452001aa68e308d380be2",
+      "mtime": 1793379109.9372017
+    },
+    "backend/src/test/java/com/wargame/GatherAutoAbandonMigrationTest.java": {
+      "sha256": "6a19a3d3b7794b9c57b43fa9e73223e63a8b9564362fbe1d8ae31abab61750eb",
+      "mtime": 1792654040.1335857
+    },
+    "backend/src/test/java/com/wargame/GatherAutoAbandonTest.java": {
+      "sha256": "9ca772b7394a25ae7734c5a2567afeb7a449e594410e0c400d2467569659b6b8",
+      "mtime": 1793379109.9366343
+    },
+    "backend/src/test/java/com/wargame/GatherModeTest.java": {
+      "sha256": "d8e8ea85ba30ca2b1cddb60626338d1cf77d6aa2f061b275e1987e3b3f0efacd",
+      "mtime": 1793379314.7192495
+    },
+    "backend/src/test/java/com/wargame/GuildChatServiceTest.java": {
+      "sha256": "6c991fb0100209ce4060298b1973a797c7fc7f9d6a5c7ae9bbc550b92391551d",
+      "mtime": 1793100141.6953056
+    },
+    "backend/src/test/java/com/wargame/GuildIconTest.java": {
+      "sha256": "89bc7c84983e96385a0cd00b6e9b6d29ae5054e33b3e94ac6e821190d7164c1a",
+      "mtime": 1791014967.7741866
+    },
+    "backend/src/test/java/com/wargame/GuildPresenceTest.java": {
+      "sha256": "c12f5918d79eeb0c178e03c3b23c2db4c822e8face09274d0e061136d43bf923",
+      "mtime": 1792774501.2635608
+    },
+    "backend/src/test/java/com/wargame/GuildRelationBroadcastTest.java": {
+      "sha256": "7df5a2e4207be99c76df5efdc1225aef4cdbe328f82a8756358c2a2ca39a0c93",
+      "mtime": 1792572100.5183856
+    },
+    "backend/src/test/java/com/wargame/GuildRelationServiceTest.java": {
+      "sha256": "30efd3e76613081a3da53669e67795546724ba1a8e6e5fd39c7b68a57aa59268",
+      "mtime": 1790040596.0250895
+    },
+    "backend/src/test/java/com/wargame/GuildSupportTest.java": {
+      "sha256": "322635ac9cc9d22d10ef9ee420c0145b0fbb82eaa27259644b84a5d141d0e17d",
+      "mtime": 1793349652.9205768
+    },
+    "backend/src/test/java/com/wargame/HeadquartersMigrationTest.java": {
+      "sha256": "81d30f4a82781619e1591d8f6d43227cffec6e545cc16ecc40e227602c594a19",
+      "mtime": 1791563167.0901816
+    },
+    "backend/src/test/java/com/wargame/HeadquartersServiceTest.java": {
+      "sha256": "6856df612d4b9fd2614042a44d8c89b00c539e0521d03528c4382848d510f934",
+      "mtime": 1792825485.3441765
+    },
+    "backend/src/test/java/com/wargame/HomeModuleOrderTest.java": {
+      "sha256": "7788329b3f3e46e97818824d7062afd05598c363204b0b7ddb8e51f7e1623fc7",
+      "mtime": 1790594414.8063564
+    },
+    "backend/src/test/java/com/wargame/IncomingIntelligenceTest.java": {
+      "sha256": "4ce796a44645ff1bcd6cf9c702d2c755f085f5087885ac8c3307234754ba06dd",
+      "mtime": 1792774501.2908583
+    },
+    "backend/src/test/java/com/wargame/IncomingReportShareIntegrationTest.java": {
+      "sha256": "64e6ef360d4c44f7953ed213b31d3693974ccf3e9a327c9c41b6afab5e565899",
+      "mtime": 1792495520.3134756
+    },
+    "backend/src/test/java/com/wargame/IncomingReportShareServiceTest.java": {
+      "sha256": "bbbf42eb594809ea29dca0f61968ee29b1f12405dcf054f251f506fd87eaad75",
+      "mtime": 1792495331.9425683
+    },
+    "backend/src/test/java/com/wargame/InterceptionAmbushConcurrencyTest.java": {
+      "sha256": "c1a4806fed8ee726acd12a090080b1d7c521f6495a350f03056d24f6b949e0c5",
+      "mtime": 1792564953.7081919
+    },
+    "backend/src/test/java/com/wargame/InterceptionAmbushEngineTest.java": {
+      "sha256": "ddb493a31dc4532ad824c3560bf48b844363f1f1c536f07afad9cbb4c9fc950c",
+      "mtime": 1792801212.0844584
+    },
+    "backend/src/test/java/com/wargame/InterceptionAmbushMigrationTest.java": {
+      "sha256": "70f47121ffd8dda135e0ec506d4af0c5a68f0b087ed715c4db6bbb11a16b57e5",
+      "mtime": 1792564579.9556832
+    },
+    "backend/src/test/java/com/wargame/InterceptionBattleTest.java": {
+      "sha256": "b9ab5cf77fea5c20143700f06194695f47f8ad165ddb185f31e105853f6a2ec9",
+      "mtime": 1792564953.7073421
+    },
+    "backend/src/test/java/com/wargame/InterceptionPlannerTest.java": {
+      "sha256": "b7a2c4f6be87d11d9b72edadb4f26acaf429bcd8467a3182a57762cbcc953074",
+      "mtime": 1792564320.2391639
+    },
+    "backend/src/test/java/com/wargame/IslandContentServiceTest.java": {
+      "sha256": "ea8d325edb226addd96ae17417b67c34eb78591bd71ec32f38924b601b5b385c",
+      "mtime": 1793081430.5888321
+    },
+    "backend/src/test/java/com/wargame/ItemBuffTest.java": {
+      "sha256": "182cb3ef550957dddb61ab088ec42160d1e49025594bd2f7bd6bb00b3e5e9410",
+      "mtime": 1793345609.7735748
+    },
+    "backend/src/test/java/com/wargame/JewelryRemovalMigrationTest.java": {
+      "sha256": "554f272f172fbe8ab42007df7e19326e16187b0e60dc1d09533034e5559a47b8",
+      "mtime": 1792032080.2355208
+    },
+    "backend/src/test/java/com/wargame/JointDefenseBattleTest.java": {
+      "sha256": "401c1189cc02ad3dbc9ef92f814d107526a34a0094aa2d49cd1f7e5ec2e86bc5",
+      "mtime": 1793343662.0038416
+    },
+    "backend/src/test/java/com/wargame/JointDefenseConcurrencyTest.java": {
+      "sha256": "7b42e9db376c40dc37cd1118ce23d4f68098d755891bc56d75f8885649b9262e",
+      "mtime": 1793326205.5959628
+    },
+    "backend/src/test/java/com/wargame/JointDefenseMigrationTest.java": {
+      "sha256": "1c7fbcd039339390899f9416404eb537ea36ee5de437d9ecdf4cf36af1220234",
+      "mtime": 1792820996.6473975
+    },
+    "backend/src/test/java/com/wargame/LandBanditPopulationTest.java": {
+      "sha256": "61de22a6a051cc1829f25dbf57f80b5c53d84a80e0b1f2c20723cd2144fb680d",
+      "mtime": 1792050453.298732
+    },
+    "backend/src/test/java/com/wargame/LandBanditQuestTest.java": {
+      "sha256": "ab401b66bfea9d27f99191b3321b9fa6c70d58c553c142e042bc2e6bb636dd5f",
+      "mtime": 1792279676.3175504
+    },
+    "backend/src/test/java/com/wargame/LandNpcGarrisonTest.java": {
+      "sha256": "d8b9c58e0f049bc0b2173f016fb85db6391dfd64ed284bf475c1bd64990de9d6",
+      "mtime": 1792050453.3455467
+    },
+    "backend/src/test/java/com/wargame/LeaderboardControllerTest.java": {
+      "sha256": "d6add3dbe4b0111f70bf7c7829f0a2fb8b780c2324cb536fb04fb6e7ca71c379",
+      "mtime": 1793088370.587667
+    },
+    "backend/src/test/java/com/wargame/LeaderboardServiceTest.java": {
+      "sha256": "be4e80217ae7ef6d933577f07a7707ae66d0f507e1101faf879c1b0c306dad55",
+      "mtime": 1793176418.387606
+    },
+    "backend/src/test/java/com/wargame/LegacyColumnRemovalMigrationTest.java": {
+      "sha256": "c56045a1cfa580ba040d04011694c8a7f95cf6265da836a6de40d242a485ace1",
+      "mtime": 1792034420.8329556
+    },
+    "backend/src/test/java/com/wargame/LegacySaveImportTest.java": {
+      "sha256": "dc4ead99e7594d5113a94d477c5bd2824a0d2552683a9cfb3acc7a7115c1ae54",
+      "mtime": 1792034420.8487506
+    },
+    "backend/src/test/java/com/wargame/MailServiceTest.java": {
+      "sha256": "d0353a7a25ed50f9ae7bfc58b7862ab9a7e76556cf575a5ed2c3cd8a89ac1dc5",
+      "mtime": 1793284512.044275
+    },
+    "backend/src/test/java/com/wargame/ManualGatherMigrationTest.java": {
+      "sha256": "5f3d43ad1bcc150b30976ed9cc17c7e9b8ee1ec5bf233738294c7d2a71a19d04",
+      "mtime": 1792724717.4022171
+    },
+    "backend/src/test/java/com/wargame/MapFavoriteMigrationTest.java": {
+      "sha256": "ae13539f2560f4922cd60fab79e5351b940db9871252d1ad328dae105868ea7e",
+      "mtime": 1792510438.657118
+    },
+    "backend/src/test/java/com/wargame/MapFavoritePersistenceTest.java": {
+      "sha256": "90a65e31dbe975db6f563fc262a816ff733e20575f425c1d4b78efec45ec9101",
+      "mtime": 1792511353.113774
+    },
+    "backend/src/test/java/com/wargame/MarchAccelerationConcurrencyTest.java": {
+      "sha256": "7e4882f0b326294073b74aecf47ea955079848430b41193b9cdd666e51cf2541",
+      "mtime": 1791590311.181084
+    },
+    "backend/src/test/java/com/wargame/MarchAccelerationMigrationTest.java": {
+      "sha256": "4d6bc76241d27c9d8f4c1530a31266e18c65cb55d6d02e367f10ba2628145cb5",
+      "mtime": 1793240273.5352027
+    },
+    "backend/src/test/java/com/wargame/MarchAccelerationTest.java": {
+      "sha256": "a09a7e7611ca3da9da0a563dd54391a8e0e91ce96474c2f114c72cda94c454ae",
+      "mtime": 1793379109.9391487
+    },
+    "backend/src/test/java/com/wargame/MarchCommanderBattleTest.java": {
+      "sha256": "49ffcc1a4539657e1538651fc6c3810b373dec83006366badbb13c6397ea03aa",
+      "mtime": 1792279687.439412
+    },
+    "backend/src/test/java/com/wargame/MarchLootCapacityTest.java": {
+      "sha256": "1ebd5cf908728d800187af1a5bdba24a66862bd607789b1b9955da58f8cff8c3",
+      "mtime": 1793350090.5506997
+    },
+    "backend/src/test/java/com/wargame/MarchOrderDurationTest.java": {
+      "sha256": "2913df1fd6ee24f705c5e8deb8c44ce897f69818f97e7f9fbcdfb0532e4e4e45",
+      "mtime": 1793240392.0266008
+    },
+    "backend/src/test/java/com/wargame/MarchServiceTest.java": {
+      "sha256": "f86c76b7ca9c38c6cd92a9a96dd09eacc4c9c0b7e805b21eaf8b42a7334d1019",
+      "mtime": 1793379314.7190583
+    },
+    "backend/src/test/java/com/wargame/MarchStratagemTest.java": {
+      "sha256": "2724112bbf157302e6d8d527a8ed6262a043f1539e3c4273f547dbdd05191cfd",
+      "mtime": 1793077092.5811334
+    },
+    "backend/src/test/java/com/wargame/MarketServiceTest.java": {
+      "sha256": "8bb7b61520842eac87d729911d14a15458924540a54804b87184edb52f273fbc",
+      "mtime": 1793353526.7704337
+    },
+    "backend/src/test/java/com/wargame/MobilizationMigrationTest.java": {
+      "sha256": "b9354455a7dceab5a70d58f46c32919cdd7bb17f1b49d9b1e14f5dfe2006c13d",
+      "mtime": 1793177888.1728096
+    },
+    "backend/src/test/java/com/wargame/MobilizationOrderConcurrencyTest.java": {
+      "sha256": "dc244821c98b4886f316214a20215087dc2a51b27bd070f6cb3be506ce7f907b",
+      "mtime": 1793177702.7595818
+    },
+    "backend/src/test/java/com/wargame/MobilizationOrderTest.java": {
+      "sha256": "168ee6b5f7e13b85e855cddcdbcf6ad54a17a23ff603f3865e04dac8093addea",
+      "mtime": 1793332177.0941007
+    },
+    "backend/src/test/java/com/wargame/MultiCityControllerTest.java": {
+      "sha256": "bcf9c9c237d1117fd436eefdba02ca51fae71f1474a818b5e663fb7a2cdb4b57",
+      "mtime": 1793119590.2810943
+    },
+    "backend/src/test/java/com/wargame/MultiCityTest.java": {
+      "sha256": "b93125918aa9ca0ef1869b1de619d56bd2e1899590b8cf728b6c8ca8ee4e8c5e",
+      "mtime": 1793188954.1413736
+    },
+    "backend/src/test/java/com/wargame/MySqlMigrationTest.java": {
+      "sha256": "c07626502c920273693c22a8534564b967548c041c87154670029e7892433d4b",
+      "mtime": 1791634706.338344
+    },
+    "backend/src/test/java/com/wargame/NewPlayerBriefingMigrationTest.java": {
+      "sha256": "b54e7245a923efa230e6da94716d3a1138cac50a23ed0f2b1ed71a2a61b6dc53",
+      "mtime": 1792473051.1275046
+    },
+    "backend/src/test/java/com/wargame/NewbiePackConcurrencyTest.java": {
+      "sha256": "e8d81a7a6352387026274d62eab261debaed494559e77bab6b03a0dedb668bbe",
+      "mtime": 1791947984.3177812
+    },
+    "backend/src/test/java/com/wargame/NewbieProtectionControllerTest.java": {
+      "sha256": "5f4701ab18aebfa4364cf0daf24fee1eda959a276ce069065b00e1333cb6dd7d",
+      "mtime": 1792280651.5158386
+    },
+    "backend/src/test/java/com/wargame/NewbieProtectionIntegrationTest.java": {
+      "sha256": "8d93b34aea3de30486ace86cff1a9676ad932a8bf35f2de687f15d28a59c76db",
+      "mtime": 1792825485.3423767
+    },
+    "backend/src/test/java/com/wargame/NewbieProtectionMigrationTest.java": {
+      "sha256": "a648969493b2de51175a5e823f8ff8f5cf8200f244c2d06ae41399439b248e56",
+      "mtime": 1792279974.2191627
+    },
+    "backend/src/test/java/com/wargame/NewbieProtectionRulesTest.java": {
+      "sha256": "bf1f58ff6479a8f7c0920372c29d26b0989a3411f8cb891e6ea7189a013b9384",
+      "mtime": 1792279974.2023878
+    },
+    "backend/src/test/java/com/wargame/NorthernSnowWildTest.java": {
+      "sha256": "8a2332210cfe7dba874002ae997e12e5b8b414ada2ab8ab3b593576b4dec6985",
+      "mtime": 1790412732.4810362
+    },
+    "backend/src/test/java/com/wargame/NotificationCommanderNamesMigrationTest.java": {
+      "sha256": "a08fe12f3cae274d04b1b08425d2bde2290538cae77444a1baebde9ac00befc1",
+      "mtime": 1792764032.542439
+    },
+    "backend/src/test/java/com/wargame/NpcCitySpawnServiceTest.java": {
+      "sha256": "e192ee7a15de36286faec01edeb86f26e8ae155fb20daa7c9e568ff40e7507a7",
+      "mtime": 1792638327.6984873
+    },
+    "backend/src/test/java/com/wargame/NpcJapaneseCommanderTest.java": {
+      "sha256": "f37d7c709256eef64a1b1cdbf1e2433a58c91f6ae51b267db56b06157b4e8943",
+      "mtime": 1792285348.897196
+    },
+    "backend/src/test/java/com/wargame/NpcJapaneseUnitTest.java": {
+      "sha256": "f28a4a8bfc708c1a993b504a2fc3fd33f7fd6272de933ccd99d93b89512892b3",
+      "mtime": 1792801298.489705
+    },
+    "backend/src/test/java/com/wargame/NpcRetirementMigrationTest.java": {
+      "sha256": "827e0f87991cf11fa1b6344b4f91d67949e93ddcaea2e771ceb70c660de448b1",
+      "mtime": 1792284185.540015
+    },
+    "backend/src/test/java/com/wargame/OceanMigrationTest.java": {
+      "sha256": "0d1622243ad3c49c14ad719bc2b89429c907f9ec35fe7897bd77980a1f364283",
+      "mtime": 1789527314.3523328
+    },
+    "backend/src/test/java/com/wargame/OceanPlacementConcurrencyTest.java": {
+      "sha256": "c831005d291b2cc904f8585b194c26819a2b8b1008ba26356a7cb322fe256eb4",
+      "mtime": 1792638327.7173307
+    },
+    "backend/src/test/java/com/wargame/OceanTerrainTest.java": {
+      "sha256": "730d84014b57d00270f1458247c038768e687bd36fab6f06b5e2c1306578033b",
+      "mtime": 1793081501.9389133
+    },
+    "backend/src/test/java/com/wargame/OfficerEquipmentConcurrencyTest.java": {
+      "sha256": "8ae39ee931b1aacfd826795de1eaa7182476d6a04b56b5f7794b71b9b4adfd20",
+      "mtime": 1793349258.8750215
+    },
+    "backend/src/test/java/com/wargame/OfficerEquipmentExpansionTest.java": {
+      "sha256": "ec460373f81e7b9b25b2914503a6a806ed8db87b722ee1427d891eab208f7236",
+      "mtime": 1793349258.8746183
+    },
+    "backend/src/test/java/com/wargame/OfficerEquipmentMigrationTest.java": {
+      "sha256": "cc9b16752d1b0aade2f18660ffbbc5c5c163af39bc9028b2aa646967d10cafd7",
+      "mtime": 1792761144.9163506
+    },
+    "backend/src/test/java/com/wargame/OfficerExperienceRulesTest.java": {
+      "sha256": "d99479e4d272f8bf821f8def0e7c9eec51cccc25b683625a08d474be57ac66dd",
+      "mtime": 1793071010.6169593
+    },
+    "backend/src/test/java/com/wargame/OfficerLevelUpTest.java": {
+      "sha256": "c01ecceb0f8cc58ea8ba790ff259b29c9427742288b876ffe6d2f3bbee366cb5",
+      "mtime": 1793243175.7700698
+    },
+    "backend/src/test/java/com/wargame/OfficerNameGeneratorTest.java": {
+      "sha256": "4a65e412108c298a86437a6fb6ea20716d5c2616f064606dc2730aa1bd681973",
+      "mtime": 1792319331.545769
+    },
+    "backend/src/test/java/com/wargame/OfficerRenameTest.java": {
+      "sha256": "03389e46857b758adee82fd4a7b9ea16ac31aa474335af5398b04495b2264ea0",
+      "mtime": 1792638327.86182
+    },
+    "backend/src/test/java/com/wargame/OfficerSalaryArrearsTest.java": {
+      "sha256": "52ac2dbfe005271a1cc92e3c8b07a19c262da7cb9a63b440382d874635f2b397",
+      "mtime": 1793377917.6359837
+    },
+    "backend/src/test/java/com/wargame/OfficerSkillCycleTest.java": {
+      "sha256": "e87ddde1f4bbb03c2482c51ad5db73eb59966411b79f0c66250b01daf9239484",
+      "mtime": 1791995041.724039
+    },
+    "backend/src/test/java/com/wargame/OfficerSkillDescriptionTest.java": {
+      "sha256": "ca1ba6b0887dbe7b02f19ee53b6cd07bc2ecf63fedc8349a422d963baf52efb5",
+      "mtime": 1791440947.5366924
+    },
+    "backend/src/test/java/com/wargame/OfficerSkillPersistenceTest.java": {
+      "sha256": "061b2aa94fdd4e524448f70dfeb0013762b4684a45f2f5ab9be868951d1d2d90",
+      "mtime": 1792278912.353787
+    },
+    "backend/src/test/java/com/wargame/OnboardingConcurrencyTest.java": {
+      "sha256": "169ce693bc5bbf9747c0c7cc7cf883c6cf1982a4148cfd637a52727608ef7bfa",
+      "mtime": 1793284511.976919
+    },
+    "backend/src/test/java/com/wargame/OnboardingServiceUnitTest.java": {
+      "sha256": "b4d5e77d27f4759f09604e17124f4f03d73aadc3343b3c4a3e0c97fa9a5673f2",
+      "mtime": 1793349913.6961727
+    },
+    "backend/src/test/java/com/wargame/OnboardingTest.java": {
+      "sha256": "009479b7e586fe790bcba2fcfb4c0ac17a41640c06dea1f28df4b6c837651e18",
+      "mtime": 1793379495.6395469
+    },
+    "backend/src/test/java/com/wargame/PlayerCityConquestTest.java": {
+      "sha256": "7d2138e7743222369819637a244204c741a7a00b9b9bc55d90d266acfce9f813",
+      "mtime": 1793349258.8769455
+    },
+    "backend/src/test/java/com/wargame/PoliticalWordFilterTest.java": {
+      "sha256": "8f94a44f70ba6941a3799e56adeeaa8809020a4735e7c7ee33616c66248f36ce",
+      "mtime": 1790408485.0080156
+    },
+    "backend/src/test/java/com/wargame/PrerequisiteIntegrationTest.java": {
+      "sha256": "ff4db565905cc5a7982a4762ef93c1976c300e7084488658bce7930aef33c08e",
+      "mtime": 1792852985.845908
+    },
+    "backend/src/test/java/com/wargame/PrisonerMigrationTest.java": {
+      "sha256": "dcacd85e738cd90a57b970c6a613f38517db114fdc6dcf6fe9bb643ad0c0cb37",
+      "mtime": 1791476743.5057707
+    },
+    "backend/src/test/java/com/wargame/PrisonerServiceTest.java": {
+      "sha256": "007663a9b80a1b918c6dce1cda114b1cada621bf046bb0e97852ba84d13a80fd",
+      "mtime": 1791476126.8184965
+    },
+    "backend/src/test/java/com/wargame/PrivateChatControllerTest.java": {
+      "sha256": "e8c090ac57dbce75b8d73d33bed137c426dcf78563d49f2de5f9a5512d89f646",
+      "mtime": 1791267847.946322
+    },
+    "backend/src/test/java/com/wargame/PrivateChatRepositoryTest.java": {
+      "sha256": "4b4a20a2c313318121207e2145286dd53654e5ac98ef01b2988362dfaa7b13e0",
+      "mtime": 1792572100.5361748
+    },
+    "backend/src/test/java/com/wargame/PrivateChatServiceTest.java": {
+      "sha256": "604c408dc5b93f2593a34675de27c83e7ad7f2a6751f4169b9ec725ce6a4d1bb",
+      "mtime": 1792585391.3355014
+    },
+    "backend/src/test/java/com/wargame/ProductionAccelerationTest.java": {
+      "sha256": "a7bb5a57b2aa775a1932b8039ed2413d8cf290750bc0a9df5e259f0767a3343f",
+      "mtime": 1792774501.235466
+    },
+    "backend/src/test/java/com/wargame/ProductionRewardSalaryMigrationTest.java": {
+      "sha256": "37827ae5a2d25ead662f3bda396dc464bc07d94460ce05e0a58bd9c510d2fc6a",
+      "mtime": 1793353526.6859615
+    },
+    "backend/src/test/java/com/wargame/PvpCalibrationTest.java": {
+      "sha256": "272eee55e8ccfffa1660d42f3d7de159b011e3e410ea9342279741981dc80345",
+      "mtime": 1793345852.0858455
+    },
+    "backend/src/test/java/com/wargame/PvpControllerTest.java": {
+      "sha256": "795bd6768b3799f732ccd0b7d8fbfb20c3248aec849b5f44702e0abd67926666",
+      "mtime": 1793173760.931983
+    },
+    "backend/src/test/java/com/wargame/PvpEventsTest.java": {
+      "sha256": "604c7927a54a5ce78c7583573a54d94398e727c04aad8213b9206c74238d662d",
+      "mtime": 1791598864.7933807
+    },
+    "backend/src/test/java/com/wargame/PvpLocalHarness.java": {
+      "sha256": "e9e5d4de6a64fa8e0fef65e6279b1b9b300195524bb01624d83f5bd59eff08a7",
+      "mtime": 1793173760.951774
+    },
+    "backend/src/test/java/com/wargame/PvpMatcherTest.java": {
+      "sha256": "7dfe10c6fb10a06b66b6ee59a8e94cf9548c2b0221eb9e7eb718fc43847c46c8",
+      "mtime": 1791599158.8493345
+    },
+    "backend/src/test/java/com/wargame/PvpMigrationTest.java": {
+      "sha256": "e39acd464ed903cb1ad81dd6c8be7c77413519898ce84f8d570ed360363f26fc",
+      "mtime": 1791634706.3381984
+    },
+    "backend/src/test/java/com/wargame/PvpPerformanceTest.java": {
+      "sha256": "77595ceb8a80d347f07b31b4d7bc7148ef4a4c0bd0dc53c8eb3c020f568b54c6",
+      "mtime": 1792748983.2515886
+    },
+    "backend/src/test/java/com/wargame/PvpPracticeTest.java": {
+      "sha256": "3fca2eaf0d36e6ad08cfcf02e29106119ef0f5cf6c82f09faec37bd73046a349",
+      "mtime": 1793349701.6763697
+    },
+    "backend/src/test/java/com/wargame/PvpRulesTest.java": {
+      "sha256": "51def47d764689b721f1a7c1ceb83c291febfbb5637d4893a24ed203d368d834",
+      "mtime": 1791809459.6978726
+    },
+    "backend/src/test/java/com/wargame/QuestDailyCheckinTest.java": {
+      "sha256": "fa8c35d92b558c442ae1822a4c6af6904e4064ff83a1211a66a2d05369c77caf",
+      "mtime": 1793287888.5381694
+    },
+    "backend/src/test/java/com/wargame/QuestStageSystemTest.java": {
+      "sha256": "705d1adfd2d746343cb4fc98ad0e9eaa19d894b0c877819a8804214c29267aba",
+      "mtime": 1793374522.696959
+    },
+    "backend/src/test/java/com/wargame/RadarEventsTest.java": {
+      "sha256": "92370b7772c92fdfec9dc78e83f8b051748b0c55eb704eff1b50860446a7cfed",
+      "mtime": 1792853027.0667691
+    },
+    "backend/src/test/java/com/wargame/RadarGeometryTest.java": {
+      "sha256": "70ef960fc6230eba765aae005ae2956e48f4f6876ac69546a640e3481a657f05",
+      "mtime": 1792828649.427639
+    },
+    "backend/src/test/java/com/wargame/RadarMigrationTest.java": {
+      "sha256": "29101292fd46bb5ac8c883d640d67593dbd483442a7a4b3a62ae27aa8104762b",
+      "mtime": 1792828649.448593
+    },
+    "backend/src/test/java/com/wargame/RadarServiceTest.java": {
+      "sha256": "b5802815689fc62ba8bf81b14e65d548eb122d2de9eee0afa2e6d7533840fbc8",
+      "mtime": 1792862686.788462
+    },
+    "backend/src/test/java/com/wargame/RadarSplitMigrationTest.java": {
+      "sha256": "99d90b64f571bd4781d8c6a15ed0de3240af2585f2dadaf20630fa49a8e497d9",
+      "mtime": 1792852880.042787
+    },
+    "backend/src/test/java/com/wargame/RankCertificatePurchaseConcurrencyTest.java": {
+      "sha256": "8fd6ef28d0fee07cbeb63c9bf5a80c7163d3c8af2178e026be415ee4f9637ba2",
+      "mtime": 1793196573.800341
+    },
+    "backend/src/test/java/com/wargame/RankDiamondGiftConcurrencyTest.java": {
+      "sha256": "d5ccf897d459ed7dcaa1e1a60bd1db8823a86b64eaef504b5c2dce00396271ce",
+      "mtime": 1793202380.139458
+    },
+    "backend/src/test/java/com/wargame/RankDiamondGiftMigrationTest.java": {
+      "sha256": "9c74364e93bff917b81b9c060ab3785c03eb8e8c70d55bdfe1d2aafa6b123015",
+      "mtime": 1793201028.3693578
+    },
+    "backend/src/test/java/com/wargame/RankDiamondGiftTest.java": {
+      "sha256": "8d5bec89856dd3c931e35243e9a5474771e6d31869cfd05c30ec55d93ba82f86",
+      "mtime": 1793202631.8057604
+    },
+    "backend/src/test/java/com/wargame/RankPromotionTest.java": {
+      "sha256": "34f3a5f84faa8f86fd5e0e72159ca01368f840e24eea92103bde09fe036c36f9",
+      "mtime": 1793196004.2735786
+    },
+    "backend/src/test/java/com/wargame/RechargeDisabledControllerTest.java": {
+      "sha256": "7d7116759f0e2d586bc606022e7a602436bab375f0297c7d2cc0ae39b22ae7d9",
+      "mtime": 1793290799.5041056
+    },
+    "backend/src/test/java/com/wargame/ReconArmoredCarTest.java": {
+      "sha256": "d3cffc426268ee9487535420fb4ca2f9235ec549ad512d17c98eaffa6c1260ac",
+      "mtime": 1793349652.88752
+    },
+    "backend/src/test/java/com/wargame/ReconCommanderRulesTest.java": {
+      "sha256": "78da8aee6b5cb7c94adf178b83786c36dabbab65bfe11ae0497ee41a93dafb34",
+      "mtime": 1793350090.5296206
+    },
+    "backend/src/test/java/com/wargame/ReconInitiativeRulesTest.java": {
+      "sha256": "2f49a007b44ef27de8bbdc61fa55e796df279ec9aaac430a2306e0dc26ef3e8e",
+      "mtime": 1793350090.555452
+    },
+    "backend/src/test/java/com/wargame/ReportCommanderNamesMigrationTest.java": {
+      "sha256": "87fa87dca25cc90c24a96b6a4dabd96017da999ee218e8268218d49a1d568009",
+      "mtime": 1792774219.3682048
+    },
+    "backend/src/test/java/com/wargame/ReportShareServiceTest.java": {
+      "sha256": "e30cb29e15a41124bef64316c651b2488d0cb5ac0f4f127b9b63ea56539cf89e",
+      "mtime": 1792572100.5692437
+    },
+    "backend/src/test/java/com/wargame/ResourceOverflowServiceTest.java": {
+      "sha256": "bde20d4bdf90ae55cffd32295bd49b415f4b00426d14c90e3d148f23238adbc5",
+      "mtime": 1792638806.313954
+    },
+    "backend/src/test/java/com/wargame/RetentionMetricsServiceTest.java": {
+      "sha256": "11e2b973d0da7eaa4cb286b9b57a0aa44ab2c095b4644002daefbf4ca5fd36ee",
+      "mtime": 1792585024.522926
+    },
+    "backend/src/test/java/com/wargame/ScoutCardIntelligenceMigrationTest.java": {
+      "sha256": "77277a82737ad59475bb4c285c3ba7a2bb6b83bcfd83c80050d69cf0367031e5",
+      "mtime": 1792743744.0765512
+    },
+    "backend/src/test/java/com/wargame/ScoutIntelligenceTest.java": {
+      "sha256": "1056e1bba503ba56f7d8bc813e82255a38ae5d2086593ac5fc10ac97d05c0873",
+      "mtime": 1792745056.516744
+    },
+    "backend/src/test/java/com/wargame/ScoutProductionMigrationTest.java": {
+      "sha256": "25454562321b47e0145f2085944c42af2398aab3ae2547268b68cc3d5fdbb1cf",
+      "mtime": 1791784136.5569336
+    },
+    "backend/src/test/java/com/wargame/SeaNpcGarrisonTest.java": {
+      "sha256": "bfe177247e49698c1fd8c08c18616970a96fe22026da8222179be29fded69e90",
+      "mtime": 1792166614.8166955
+    },
+    "backend/src/test/java/com/wargame/ServerRegionTest.java": {
+      "sha256": "d32153dbf4a5b1404c3cd4dfe81bec4d3cc7c50e2deb26bc055637e02239aaeb",
+      "mtime": 1793253815.8676236
+    },
+    "backend/src/test/java/com/wargame/ShieldDurationTest.java": {
+      "sha256": "a01e6e12b60206490fe6e0dc140896768c322a5c2f548c29130581c24c713877",
+      "mtime": 1792945810.3391736
+    },
+    "backend/src/test/java/com/wargame/ShieldReturnMigrationTest.java": {
+      "sha256": "74c0aa630516fc40d82d64958be9369a94b41771bc27a2d2b272f71a695c6082",
+      "mtime": 1792497651.71994
+    },
+    "backend/src/test/java/com/wargame/ShipyardPvpCompatibilityTest.java": {
+      "sha256": "4e978d8b849418cb7cebe7cdc08a0cc4fe71c7a029193cc93985e6d88bba4398",
+      "mtime": 1792587700.4942145
+    },
+    "backend/src/test/java/com/wargame/ShipyardServiceTest.java": {
+      "sha256": "d0ae5e88b315c77a6463e09cbd936fc855bdd671eb997239f3a3912123a83c7d",
+      "mtime": 1793255434.3892806
+    },
+    "backend/src/test/java/com/wargame/ShopControllerTest.java": {
+      "sha256": "4dfe1c53e360e6020752d756a9e92ddf6e1c6e68e067b0afcc3379fb3989bca4",
+      "mtime": 1793347396.6731088
+    },
+    "backend/src/test/java/com/wargame/SortieBattleTest.java": {
+      "sha256": "ffbe6f5151ecbfd6b0b8d94082613f8bd187317bd95a5545b7529e1d6c39f586",
+      "mtime": 1793331711.5252025
+    },
+    "backend/src/test/java/com/wargame/SortieMigrationTest.java": {
+      "sha256": "ecc4f1e6430de41aa5e8389e786e922e48802fe960407840980e2f74afb030fc",
+      "mtime": 1790465135.6190877
+    },
+    "backend/src/test/java/com/wargame/StationedGatherModeTest.java": {
+      "sha256": "a5930f8986c96b8fd61205343d2114c2ff3b0ce12d931856569be98ab4f4a757",
+      "mtime": 1792724573.1471534
+    },
+    "backend/src/test/java/com/wargame/StratagemRulesTest.java": {
+      "sha256": "63a37f9d375fd29ba6f31fb20beb16fe22330e206971abc6a5b41f51409b357e",
+      "mtime": 1793076674.096474
+    },
+    "backend/src/test/java/com/wargame/TacticalBattleLimitIntegrationTest.java": {
+      "sha256": "05f9a07329d8fc9dad291b8d730b0c6fd52fb4951c9586263fe921797b3c300f",
+      "mtime": 1792221574.979026
+    },
+    "backend/src/test/java/com/wargame/TacticalBattleOutcomeTest.java": {
+      "sha256": "312eb3a41866e73d581fa6ad25cc1e2261482ad62135a1c9fcab43d6f81df218",
+      "mtime": 1792774136.954218
+    },
+    "backend/src/test/java/com/wargame/TacticalBattleRoundTest.java": {
+      "sha256": "6afdeb8fe7b4761f28f2040daa8c71553df2c2d6dc6d1c9c9be6636b46c0374f",
+      "mtime": 1792801212.0839138
+    },
+    "backend/src/test/java/com/wargame/TacticalBattleSchedulerTest.java": {
+      "sha256": "2337e788408f11628903e6840522dbf96ab60a966fb6c0b59d0dde58773ad7d4",
+      "mtime": 1790234981.409727
+    },
+    "backend/src/test/java/com/wargame/TacticalOfficerSkillsTest.java": {
+      "sha256": "a0f8ee332ae9a32e0450ca7aebb78362bb601892a3fc78b3a534a4c0e1664442",
+      "mtime": 1793346148.3312223
+    },
+    "backend/src/test/java/com/wargame/TacticalOrdersMigrationTest.java": {
+      "sha256": "56ed2889750744e42f21784470d41d1ac1c6ba4470adfe661abf0ffb04acb3a3",
+      "mtime": 1791707065.3593125
+    },
+    "backend/src/test/java/com/wargame/TacticalPersistentOrdersTest.java": {
+      "sha256": "471bbf89bdbfc510224c0a8b2323a45959dc4a4db2aec9eafbd3de706458bf69",
+      "mtime": 1792587725.2475662
+    },
+    "backend/src/test/java/com/wargame/TechServiceTest.java": {
+      "sha256": "77822acc480722ce745f36d0077870d0f91164304aeee751284082b9c646087f",
+      "mtime": 1793350090.3964891
+    },
+    "backend/src/test/java/com/wargame/TechnologyGoldCostsIntegrationTest.java": {
+      "sha256": "239be5ffe8432947d5b93b8d802927a76b0994f4572cd72298c678e2e8f9428a",
+      "mtime": 1793195137.2752452
+    },
+    "backend/src/test/java/com/wargame/TechnologyGoldCostsTest.java": {
+      "sha256": "c9bf2d610981fae2492914a3fed800aa1fea473d7c7cdd0eb05915298710941e",
+      "mtime": 1793349816.2670548
+    },
+    "backend/src/test/java/com/wargame/TechnologyReworkIntegrationTest.java": {
+      "sha256": "d91018e1852d088f6c2f027fe90accd0f85224f66b837833adcf3eba59eed172",
+      "mtime": 1793349701.6780708
+    },
+    "backend/src/test/java/com/wargame/TechnologyReworkMigrationTest.java": {
+      "sha256": "b55bef135a782981f4818b9cfa49758e5343fb157d8f4e8c84fc5361545af338",
+      "mtime": 1792420133.9621654
+    },
+    "backend/src/test/java/com/wargame/TechnologyReworkRulesTest.java": {
+      "sha256": "9ceb4846a2b10f665cd3e9f5f35d9eea443683619fa8b146692680329ecbcde4",
+      "mtime": 1792494093.015818
+    },
+    "backend/src/test/java/com/wargame/TickSchedulerTest.java": {
+      "sha256": "e29a5878dc83996eaf6606d63d7e8b156b50f70d5e246427b8f8e19241714001",
+      "mtime": 1789527314.3528748
+    },
+    "backend/src/test/java/com/wargame/TickServiceTest.java": {
+      "sha256": "671b9ff8bfc91e115ca5f649767e5ffb3961674605635e3f3ecd2a2015872cd7",
+      "mtime": 1793374492.3508143
+    },
+    "backend/src/test/java/com/wargame/TransferredOfficerPreparationMigrationTest.java": {
+      "sha256": "eb78ef2ad15f4c4b605af5a36eb007ec1bb2d63208ec5351d247c994eb5af472",
+      "mtime": 1792804307.0434372
+    },
+    "backend/src/test/java/com/wargame/UnitEquipmentMigrationTest.java": {
+      "sha256": "775e651ecb0e1b6ca3fa57edbef36da18d736ff82e36df20c4d7a79a030201be",
+      "mtime": 1791590593.952529
+    },
+    "backend/src/test/java/com/wargame/UnitEquipmentRetirementMigrationTest.java": {
+      "sha256": "f9d18e04b3eb5c9e39c0ba3de3367ef7a5058dcbd0300bb1bb793e7db3eb6be0",
+      "mtime": 1793349913.6953292
+    },
+    "backend/src/test/java/com/wargame/UnitMobilityRulesTest.java": {
+      "sha256": "26821225e56e9d5758ee21aa93578fe12a35208cbaff3d18d6da11e699ea695f",
+      "mtime": 1792132551.2301786
+    },
+    "backend/src/test/java/com/wargame/UnitPopulationCostsIntegrationTest.java": {
+      "sha256": "ea899b0d053646e1e4379d8fb5f13977d289f9d8a1ae81921d32213e6f40496a",
+      "mtime": 1793206921.8465478
+    },
+    "backend/src/test/java/com/wargame/UnitPopulationCostsMigrationTest.java": {
+      "sha256": "83a8a1a4a12c969ca6c264864ef5ec943d2a42c16a735e7e1c709db65c0c16ed",
+      "mtime": 1793206507.3044128
+    },
+    "backend/src/test/java/com/wargame/UnitUnlockIntegrationTest.java": {
+      "sha256": "17ad09af4e8b0c5168669931cd53e31ab1dd75169e6d1fab6a45546c823c000f",
+      "mtime": 1793349701.6747687
+    },
+    "backend/src/test/java/com/wargame/UnitUnlockMigrationTest.java": {
+      "sha256": "e0967b1018fdb40e089db639f9640e12aa99983b8b8228e102856080d86cae01",
+      "mtime": 1792491664.3045597
+    },
+    "backend/src/test/java/com/wargame/UniversalSkillBookConcurrencyTest.java": {
+      "sha256": "d1e4e3947bf5f2e719eb6514b1b3a74a1cc4516f3da988fc321ce6e7250b519b",
+      "mtime": 1793353269.8569314
+    },
+    "backend/src/test/java/com/wargame/UniversalSkillBookTest.java": {
+      "sha256": "34ade7ba147c3d2c4d55a856d376c09604420a684faf76ccb22d5d236edee724",
+      "mtime": 1793353161.5330086
+    },
+    "backend/src/test/java/com/wargame/VipAvatarControllerTest.java": {
+      "sha256": "bc89a1a384b38591ec0e281a3d9f87835fbdf8cc3e2232c5516a9257f1999e84",
+      "mtime": 1793103885.94756
+    },
+    "backend/src/test/java/com/wargame/VipClaimControllerTest.java": {
+      "sha256": "a7aff7a01ef82af0a5954650edbb9384acb2623cbe677d2fd1ebe96f77f824cb",
+      "mtime": 1793091281.6092863
+    },
+    "backend/src/test/java/com/wargame/VipPromotionBroadcastTest.java": {
+      "sha256": "f3d414b6c3f3677377c8ce39e7e48d6e91c56de87e421be35120640b4a71d21d",
+      "mtime": 1793030894.8831065
+    },
+    "backend/src/test/java/com/wargame/VipServiceTest.java": {
+      "sha256": "4d09496220c0af6d17b18a65653d67a4b932aad02c195752b83e430278d1fb03",
+      "mtime": 1793288842.4610603
+    },
+    "backend/src/test/java/com/wargame/WarPowerProtectionMigrationTest.java": {
+      "sha256": "9d5f48fe55091792a781a22b71fe61609360f1b988a21add69e26425e5bd859f",
+      "mtime": 1793079927.130424
+    },
+    "backend/src/test/java/com/wargame/WarPowerProtectionTest.java": {
+      "sha256": "f43982c76b1dd591bef21e452e3b799e7908e60bca30540e0473cf8fa6c8cb9a",
+      "mtime": 1793081511.908559
+    },
+    "backend/src/test/java/com/wargame/WarSpeedOrderConcurrencyTest.java": {
+      "sha256": "9521c17cde1800bcdea02ac05a9fa978555045fc5787a352bc9b1c09270d232b",
+      "mtime": 1793077284.5547512
+    },
+    "backend/src/test/java/com/wargame/WarSpeedOrderTest.java": {
+      "sha256": "9817b1836f8c35166c24016ab6fef7cfc686436ed1a5d4a7bdf3ec3a49f6c6ec",
+      "mtime": 1793078268.5500631
+    },
+    "backend/src/test/java/com/wargame/WildAbandonTest.java": {
+      "sha256": "8bfabb4ad80d86223c809742f5db0d486cff1118dea6333e9bb9d4c60fa1e002",
+      "mtime": 1793379109.9381816
+    },
+    "backend/src/test/java/com/wargame/WildOccupationConcurrencyTest.java": {
+      "sha256": "5e0117b577c49f883e04d1218767a7175e04ffa2c341d32f70ee067536d81a09",
+      "mtime": 1791792347.6179614
+    },
+    "backend/src/test/java/com/wargame/WildOccupationMigrationTest.java": {
+      "sha256": "679d721ca58d9aca93840bc3c2af1eed2573b875387eabb37ca121480873893e",
+      "mtime": 1791790763.0609639
+    },
+    "backend/src/test/java/com/wargame/WildOccupationTest.java": {
+      "sha256": "e656c4ecaf0ceb729bbc8eba2c7c05436950237cd99b62d0bf77ed33a1c82501",
+      "mtime": 1792638327.5882354
+    },
+    "backend/src/test/java/com/wargame/WildScoutTest.java": {
+      "sha256": "479fd65be2bb1ebe7888dfb7a8598a8e13163b03d4d450cc6a62ffdaa88cbc3b",
+      "mtime": 1791507415.1785593
+    },
+    "backend/src/test/java/com/wargame/WildTileRefreshTest.java": {
+      "sha256": "2a187d04ace60f3665dd96030088e6b715d5a7bf63f645133899ce3eae844822",
+      "mtime": 1793030684.512932
+    },
+    "backend/src/test/java/com/wargame/WorldConfigTest.java": {
+      "sha256": "c987ecee244953bf420a0d0ae9d9c1b6c801c5d9fc8a5545aa87a82568d35820",
+      "mtime": 1792166993.5386155
+    },
+    "backend/src/test/java/com/wargame/WorldContentServiceTest.java": {
+      "sha256": "b8253292504291d01709e8251516e8d4d2b4d69d4d9350a05b6641e2aa1f4b26",
+      "mtime": 1792166486.481665
+    },
+    "backend/src/test/java/com/wargame/WorldMapServiceTest.java": {
+      "sha256": "f69e0f3e55397c28f63556482d847298607d60a0b0c94722a08ef8a984b45f0a",
+      "mtime": 1792213797.2059045
+    },
+    "backend/src/test/java/com/wargame/WorldViewServiceTest.java": {
+      "sha256": "46c0eea5456a8e75e90515597119ff834c2bedcc09f12ddeb22c237883bda557",
+      "mtime": 1793115398.8642771
+    },
+    "backend/src/test/java/com/wargame/WoundedControllerTest.java": {
+      "sha256": "2c1a59f33194f1da41e016d7c635e9e3811aa426dd621cfd2dad5dd0e1be6ea5",
+      "mtime": 1793119590.279266
+    },
+    "backend/src/test/java/com/wargame/WoundedMigrationTest.java": {
+      "sha256": "9e158c39dff01b1c9b237e273222ee252b125329dba8380828c5f555ffd8d679",
+      "mtime": 1789527314.353621
+    },
+    "backend/src/test/java/com/wargame/WoundedServiceTest.java": {
+      "sha256": "5678ab47b80d8316f1b17e0c10471db5dc2f8945cbe819438dc4c3a37367336a",
+      "mtime": 1793374492.3691704
+    },
+    "backend/src/test/java/com/wargame/config/AdminAccountBootstrapTest.java": {
+      "sha256": "72eeec5a103991fb727a462e349e2c031bc6ec5cc27c68d986056d0951d65150",
+      "mtime": 1793342923.5881033
+    },
+    "backend/src/test/java/com/wargame/config/ComplianceBoundaryTest.java": {
+      "sha256": "372de934d2a4f2102ff5aa5b8ca14edd6e4634291817f34c75abeaca29b877a3",
+      "mtime": 1792587737.480788
+    },
+    "backend/src/test/java/com/wargame/config/GameWebSocketPresenceTest.java": {
+      "sha256": "f03f5c0c779db15614fe6e1c58a4d2be7bb390c48fca26b83c2e9cb3128c4a26",
+      "mtime": 1792587864.4190092
+    },
+    "backend/src/test/java/com/wargame/config/SecurityOriginsTest.java": {
+      "sha256": "4bd6ad793d85ed0cba9c24f2f7fb506b48f38c62a159473ca2ba51d2767c8680",
+      "mtime": 1791337006.318557
+    },
+    "backend/src/test/java/com/wargame/config/ServerDatabaseGuardTest.java": {
+      "sha256": "376bee67344ca02a6c8ca10a806d392a9608c68237a29b1e909f1885473f98d0",
+      "mtime": 1790653649.3140597
+    },
+    "backend/src/test/java/com/wargame/security/ClientIpResolverTest.java": {
+      "sha256": "93f3e7e54062ed4462967ea352a98d5093da5a2924a1f6e5ee4d14114d639a2b",
+      "mtime": 1793342575.8144877
+    },
+    "backend/src/test/java/com/wargame/security/RateLimiterRetentionTest.java": {
+      "sha256": "5a634b27d35ea8646fae13831ccd6a17ed674091186e3b6b3f343b2ed7901f78",
+      "mtime": 1792573191.393507
+    },
+    "backend/src/test/java/com/wargame/security/RequestRateLimitsTest.java": {
+      "sha256": "3751d5af48f32687c1e793de69f5e552cab28d7bfd73bc65f080886d36421ac4",
+      "mtime": 1793342575.8340068
+    },
+    "backend/src/test/java/com/wargame/service/AcademyRecruitmentTest.java": {
+      "sha256": "6fff972c76ee64b4695e1a671017abd75fb77c0f29bbbd4380ceae63baad67f6",
+      "mtime": 1792638327.8994975
+    },
+    "backend/src/test/java/com/wargame/service/AcademyRefreshConcurrencyTest.java": {
+      "sha256": "ffa7005add6f93c70efe186cd8fde8480adefc14d1f2d7b464077daa51d001da",
+      "mtime": 1790435331.8596697
+    },
+    "backend/src/test/java/com/wargame/service/AcademyRefreshMigrationTest.java": {
+      "sha256": "5fbe7546ad1ec077505372f24d554580f89d6c70e6374f737dfe78ad3c7749bd",
+      "mtime": 1790435426.790801
+    },
+    "backend/src/test/java/com/wargame/service/AcademyRefreshPolicyTest.java": {
+      "sha256": "f0fc9bbe6431432a110743a33b88a305edc7492827c44c9b522e3dd3c557b908",
+      "mtime": 1790435182.450022
+    },
+    "backend/src/test/java/com/wargame/service/AvatarMigrationTest.java": {
+      "sha256": "6ad10347be7ca17b9b7283a297e8dd2761a566c09dd48fc8786eb26f93bcb227",
+      "mtime": 1790442365.55003
+    },
+    "backend/src/test/java/com/wargame/service/ChatKeywordFilterTest.java": {
+      "sha256": "dc944c51b743a66a1bb21309a99be5d3d0d550650b40e058ce915ae3b4ec0c53",
+      "mtime": 1792495014.2708187
+    },
+    "backend/src/test/java/com/wargame/service/DepotPopulationOrderTest.java": {
+      "sha256": "d585fe0fca2630d202557d683a2a006caafd26dfa6a45f945a4df221d416ad09",
+      "mtime": 1792323925.8173654
+    },
+    "backend/src/test/java/com/wargame/service/DepotStarUpTest.java": {
+      "sha256": "d83e687fa1d35cd1e3c20f4dcbfd798a237aa98e0d6a56c444f7b8ca869e1091",
+      "mtime": 1790471199.6384425
+    },
+    "backend/src/test/java/com/wargame/service/GameClockRuntimeTest.java": {
+      "sha256": "bbbd7c21a3c703f2dac33dea38a687c5ba60d4bdb33ff4ec5c0b1620495fb9c5",
+      "mtime": 1792497487.4416835
+    },
+    "backend/src/test/java/com/wargame/service/MapFavoriteServiceTest.java": {
+      "sha256": "8ddccac09b9d48e7d660b3a5477e6006ea4dfb8907b6bf73b426537831e4e140",
+      "mtime": 1792510438.631908
+    },
+    "backend/src/test/java/com/wargame/service/MayorSkillServiceTest.java": {
+      "sha256": "49aebbaab8c1ed5e060c1f72ff6d1d4c292c4a46fd6bcb85c590ae6b8807cf81",
+      "mtime": 1793345279.5987773
+    },
+    "backend/src/test/java/com/wargame/service/MilitaryTheoryTest.java": {
+      "sha256": "2d228e5684461c1cfca23abf7ed2fe18670b4cbc0d9684fc2ce2ee90161d886b",
+      "mtime": 1793255411.206272
+    },
+    "backend/src/test/java/com/wargame/service/NameChangePolicyTest.java": {
+      "sha256": "30e73f401ee3490277053fae934759343f332a34bcb6454d4048426ec1ce1a27",
+      "mtime": 1791014967.7774692
+    },
+    "backend/src/test/java/com/wargame/service/bot/BotPlannerTest.java": {
+      "sha256": "f3a691d170e4820b0377089ae7606eeaff4e4bf9fe04900dbfc702c6be58b3c9",
+      "mtime": 1792991516.8367524
+    },
+    "backend/src/test/java/com/wargame/service/bot/BotPolicyTest.java": {
+      "sha256": "e2eed427cab868d3c0d83ffae46ccbedc4a3c239b54d819055cd41f03b947693",
+      "mtime": 1792991070.0941517
+    },
+    "backend/src/test/java/com/wargame/service/bot/BotStoreTest.java": {
+      "sha256": "11bdc057045cd57e60de264d32e481a3575c9ee9173c74dd323f6dcc6cd0dd17",
+      "mtime": 1792991070.0942662
+    },
+    "frontend/js/account-email.js": {
+      "sha256": "8a5960dd6d69ce1b2ca54fa006838e810e1d474f51aa550d5efaf8e3fabb9def",
+      "mtime": 1793164932.575748
+    },
+    "frontend/js/account.js": {
+      "sha256": "c1adb1528db37f0569dc5971dfc7f30c070a0c2da1220b652d34370a11497d01",
+      "mtime": 1793120210.7756462
+    },
+    "frontend/js/api-client.js": {
+      "sha256": "0abc03744b827a4ba29c67bd65c6ad04550b62bb0e3c979dfcfc2f15a215e389",
+      "mtime": 1793118972.6016855
+    },
+    "frontend/js/api.js": {
+      "sha256": "1a9d267cf232ada6ad4305c5952c9d0a262ca48cdb7a2abcf36a0fb860eba373",
+      "mtime": 1793349549.9470074
+    },
+    "frontend/js/army.js": {
+      "sha256": "a9d986e7af8e54e616255fc4de440d5198b4fa6dea9283f8e4bd038e0472f0b5",
+      "mtime": 1793352526.856915
+    },
+    "frontend/js/battle-defaults.js": {
+      "sha256": "4574f02694e6a24c7fc38f968cddde7322b3e77ac5ba455e28a67f6d34a01326",
+      "mtime": 1793331645.910008
+    },
+    "frontend/js/battle.js": {
+      "sha256": "e72ad003fc026000ead92d3bb2097efc2775ae6bc736bf111700c4368b64f1b5",
+      "mtime": 1793351105.9146569
+    },
+    "frontend/js/build.js": {
+      "sha256": "1bdafc007af3994b8322db61af9a2ff5f893e8612aeefd89e6b2487a60a837eb",
+      "mtime": 1793119186.3653672
+    },
+    "frontend/js/chat.js": {
+      "sha256": "4d0bffd212779a01f5867c3cf0a6f12e8fac7300efa78f6f43b152af26b6441a",
+      "mtime": 1793251257.0579977
+    },
+    "frontend/js/cities.js": {
+      "sha256": "5785bd7e1f82ea5335c6ab08a67adf68f22588e768f8c77cf2dd3a471d3a4898",
+      "mtime": 1793350398.0159965
+    },
+    "frontend/js/city-teleport.js": {
+      "sha256": "3db69060c633619a9282f1c58348095457a94d8354ecc2f2be0eafbb3bff7122",
+      "mtime": 1793350829.9818916
+    },
+    "frontend/js/constants.js": {
+      "sha256": "6b74f8767e3d28fbbcc2dffd65175d66ed36cc94615478ed137069e4aab22bc4",
+      "mtime": 1793380298.4444447
+    },
+    "frontend/js/core.js": {
+      "sha256": "1bc14773b61fe3a296c728d03ff2955104992f15866e1fd38b330e5709188000",
+      "mtime": 1793353110.57144
+    },
+    "frontend/js/data.js": {
+      "sha256": "92ae47b89c30b068e227ec2624a33fee895b707befec6523fd7509385398ebd5",
+      "mtime": 1793353110.569135
+    },
+    "frontend/js/depot.js": {
+      "sha256": "50d14f6b070f92b829f276b383a23f42b4a3191f0a3e25b3ed31f223ea6c2385",
+      "mtime": 1793350774.2992163
+    },
+    "frontend/js/dispatch-route.js": {
+      "sha256": "dad27d96199893a9ee14bce0b27bc915281d8ece0d185823ce8761479fc60938",
+      "mtime": 1792650663.8042424
+    },
+    "frontend/js/fort.js": {
+      "sha256": "02e8b235497659ea0bb58edf733ae1a837f5013d0f772e2855ff2fce9316e4fb",
+      "mtime": 1792551931.521682
+    },
+    "frontend/js/friends.js": {
+      "sha256": "49aaa327de70c7f8061969c2fef962b2a6d666473a60168195e521e2bd44b147",
+      "mtime": 1793200202.7465363
+    },
+    "frontend/js/guild.js": {
+      "sha256": "648560b257c29fdd71196b7d95ece9ab97b303123f750f57d81ece9007b64aea",
+      "mtime": 1792650579.2793157
+    },
+    "frontend/js/icons.js": {
+      "sha256": "222da5f1cd0f72e31da786414cf1d0261a720190492ebe5732298495b95a75fc",
+      "mtime": 1793099772.1028738
+    },
+    "frontend/js/item-buffs.js": {
+      "sha256": "8058d0f474acdf47403ba280e0749aa287e5b519cc9c358e003df640cf95822a",
+      "mtime": 1793345812.433436
+    },
+    "frontend/js/mail.js": {
+      "sha256": "7c5b6332dff4ee87ca309c4addf843c50a722c767a9ad01841f5a68f40e5617b",
+      "mtime": 1793118019.3382015
+    },
+    "frontend/js/main-quest.js": {
+      "sha256": "69446ec55b77ac28d3e985cb5b5bc91769ec0963ec9f5bf1fdbee0c2ca4f26f9",
+      "mtime": 1793380678.1970482
+    },
+    "frontend/js/main-view.js": {
+      "sha256": "b272a19ff941746bd26509b6472ded1db191b3c1604e720e15e07cdba71c04e9",
+      "mtime": 1793350964.6308746
+    },
+    "frontend/js/main.js": {
+      "sha256": "22b257060a307c08a34b9fdb2fb1f1632d91f0b59be28bb239e120a7515208e9",
+      "mtime": 1793120068.971401
+    },
+    "frontend/js/map-camera.js": {
+      "sha256": "3f14af58e169391d5eafe4459f133d5e9adea73b0423880622cab21afaf98d27",
+      "mtime": 1793374706.643227
+    },
+    "frontend/js/map-chunks.js": {
+      "sha256": "894c47a480044f83d108a586fcf0a654e4f9a7e6b5f57c79c4e67efff19c19e1",
+      "mtime": 1789527314.3962057
+    },
+    "frontend/js/map-layout.js": {
+      "sha256": "d3dffaf105e018e2acab6a722a248b50abc08fb7d1ab7605db48f30840f589ea",
+      "mtime": 1792307021.7208607
+    },
+    "frontend/js/map-ocean.js": {
+      "sha256": "32f06e89e6176b4123f4d310252568bc5d09a2de25532d212a15c7fbc41929b0",
+      "mtime": 1793081498.1472504
+    },
+    "frontend/js/map-terrain.js": {
+      "sha256": "f55927c1a7a8c1da7f253d6edae8612c6462a71a78f36b0ce304eb762b3ee199",
+      "mtime": 1793379318.3975785
+    },
+    "frontend/js/map-water.js": {
+      "sha256": "954c23553e62da8d4b565f0905c7c7ae5df9028cd559967823991c47c8ba0599",
+      "mtime": 1793081596.8272498
+    },
+    "frontend/js/map.js": {
+      "sha256": "f2c01e112d8034d74a8f00444aacf22cb7bf46791a7b7efe84d310662fd97204",
+      "mtime": 1791790592.0696769
+    },
+    "frontend/js/market.js": {
+      "sha256": "5109499cc26562818eb0aa59948a4ee17e6e4c9a512a1cbbe45b7d74f920b9a8",
+      "mtime": 1792862634.9550662
+    },
+    "frontend/js/mobilization.js": {
+      "sha256": "ba54aca0ee0d7dd731d08a5efe63e9cf83288d095fcd38882436427c25d27969",
+      "mtime": 1793331587.8194227
+    },
+    "frontend/js/officer.js": {
+      "sha256": "1759c25044db6bdb5c8b0e521a415fa89160678cb01e1af4d03ae19da879d3a8",
+      "mtime": 1793353526.8034596
+    },
+    "frontend/js/onboarding.js": {
+      "sha256": "eebb6ba9766b7549a9dc291d058428fa738d1996b6522e3245a985490c04a7c3",
+      "mtime": 1793378952.1017983
+    },
+    "frontend/js/play-guide.js": {
+      "sha256": "3c6e05cae7419906095e15797ac04fb75900ccd5fee6d451ce11a868313edef4",
+      "mtime": 1793353110.5724397
+    },
+    "frontend/js/player-profile.js": {
+      "sha256": "d4029983a5a617339e472b4c45ca01e072b07e5647eb21cc58fd72d6bf884f0e",
+      "mtime": 1793353444.155286
+    },
+    "frontend/js/prerequisites.js": {
+      "sha256": "813a0d0dab7929db5a0d2ad7a0363b1466ff2590f3b79afd6f4fdc0f2cf0c8bd",
+      "mtime": 1793349652.7694542
+    },
+    "frontend/js/prisoners.js": {
+      "sha256": "6af9fb542c0f73f8d92246df5b3df8976ba0ae8a7a09e51d6e1aee1a8d9e6c7d",
+      "mtime": 1792490310.779934
+    },
+    "frontend/js/private-chat.js": {
+      "sha256": "2fae99f7ff75968b3e7d29fd1b8a32222436344869fe82446ca05f58e4d0632d",
+      "mtime": 1793251278.4858253
+    },
+    "frontend/js/protection.js": {
+      "sha256": "9dd2b7702238636a61402bf7f3d11613f6ea02672d5b7e5168c58f6cc4dc4537",
+      "mtime": 1793120272.7473795
+    },
+    "frontend/js/pvp.js": {
+      "sha256": "b92c1e9d5ac0b39d54df593673747a9312f7f4872cd90fcc6db138088728e036",
+      "mtime": 1793345200.4698992
+    },
+    "frontend/js/radar.js": {
+      "sha256": "314d131067c66463d15444d5424634f4cf778a0ec7ac4eb432d54d11aee5d3d5",
+      "mtime": 1793351105.8936007
+    },
+    "frontend/js/rankings.js": {
+      "sha256": "3695e3deacbb0f9b543603c1528453e3a13d99634a4a0f13dd2789e91cc3d2c7",
+      "mtime": 1793241612.6749141
+    },
+    "frontend/js/recharge.js": {
+      "sha256": "80d617dc0fda0bfb3a71b46a4db65697e8aaab6d03d2886d58971f5f939749d7",
+      "mtime": 1793290739.6860836
+    },
+    "frontend/js/save.js": {
+      "sha256": "b949a82ef7f277ba346ca4e818e711266898a662438c3e61409d018d8ff6f8e6",
+      "mtime": 1793071010.5500023
+    },
+    "frontend/js/servers.js": {
+      "sha256": "1e0fc561e726a9bd5c3412e10b269145cc6a8069e358438734a52a46a697c2f5",
+      "mtime": 1793253766.863836
+    },
+    "frontend/js/shop.js": {
+      "sha256": "8418d7782eb961b193f4288920d09d8d6b4a86d639c66f567e787c4fb0aed346",
+      "mtime": 1793347396.5944033
+    },
+    "frontend/js/sound.js": {
+      "sha256": "635510f268bd8afc597ee40162ff97c3922811d819d985c90b0cb33388270047",
+      "mtime": 1792650643.0310776
+    },
+    "frontend/js/task-quests.js": {
+      "sha256": "793db0b2a0e96e477f8c20dfb75dfd447dfd3a280cef7e78d7afc486b75ec7ab",
+      "mtime": 1789527314.3972082
+    },
+    "frontend/js/task.js": {
+      "sha256": "b8133dc64cda835a685e5461207a895d81337ba587b8df36a6b1570fb1848342",
+      "mtime": 1792650540.5127199
+    },
+    "frontend/js/tech.js": {
+      "sha256": "5cdf50e143802c7fab2249684f4ceddd02c8d545352e23b5c6ddfda8f25c6317",
+      "mtime": 1793350398.0109267
+    },
+    "frontend/js/theme.js": {
+      "sha256": "d98282be3826a7a434a7954a5a7496380e76354002f7fd05bf8473b62446cfc9",
+      "mtime": 1790237130.1664293
+    },
+    "frontend/js/vip.js": {
+      "sha256": "f08656c66113796587f2dab9c8b5d843c02d2865ad43fd8c9cb410672393f691",
+      "mtime": 1793350398.0123045
+    },
+    "frontend/js/world-map.js": {
+      "sha256": "ff3643898d1ff75731693966b433d8750ed54916a3fa9ac3f7ce4c4b7a71f8db",
+      "mtime": 1793380298.4468944
+    },
+    "frontend/js/world-view.js": {
+      "sha256": "9935e83fc3ea391c7893f163d1b052e1d7cc33c2f94e59fbd3484a0c5b7c1bec",
+      "mtime": 1789527314.3977003
+    },
+    "frontend/js/world.js": {
+      "sha256": "0e653050857302618e47e77e0e625b6adabf69a9bd5a0702974333f2c9cff9b8",
+      "mtime": 1793380500.5930421
+    },
+    "frontend/js/wounded.js": {
+      "sha256": "1b22744161e3c368f098ea5731bf2c7b6ac6b40df0089f97adef22ed702a8bf1",
+      "mtime": 1793013539.2871304
+    },
+    "frontend/js/ws-client.js": {
+      "sha256": "6c0d1107087764b67749307e7aec89d6357b18a48c797629755a913be950a578",
+      "mtime": 1793120147.2259223
+    },
+    "frontend/js/ws-handlers.js": {
+      "sha256": "2685bcf4945696cf8a033f3ee71e1bd972b33102aad8f2597f72ccdf2085761d",
+      "mtime": 1793349549.9481213
+    },
+    "frontend/tests/academy.test.cjs": {
+      "sha256": "9466f017f7dcde4d64fe38b83fbcbc757be0cc28b31c30914740e1bd2f2d03f1",
+      "mtime": 1793353444.1527646
+    },
+    "frontend/tests/account-email.test.cjs": {
+      "sha256": "9667d6a22c10b817864a3fec29f1f2300f18d74687babf0937f109c4a5e023eb",
+      "mtime": 1793120272.5569715
+    },
+    "frontend/tests/account.test.cjs": {
+      "sha256": "21888abdaa024ca8211a7cad5ee53608457621650994cf9a3b8af2aa70110aa3",
+      "mtime": 1790237512.1817653
+    },
+    "frontend/tests/alerts-march-arrival-flash.test.cjs": {
+      "sha256": "de78d67710d7b9a1f223b3af4af198e9f8ed7e3a4069afae2e2b776e3c9a0b82",
+      "mtime": 1792648622.8788588
+    },
+    "frontend/tests/alerts-march-locate.test.cjs": {
+      "sha256": "282fe7cfd4090a07f37559fb59ceb84f4992f1b93885569d233ef53a7b0d75cb",
+      "mtime": 1792513265.3043177
+    },
+    "frontend/tests/alerts-terminal-slg.test.cjs": {
+      "sha256": "1189a1d166ee51f7905c977566d7e1ed8c374f684c9227d25a774e5094eb3a1d",
+      "mtime": 1793254883.8428524
+    },
+    "frontend/tests/apron-air-speed.test.cjs": {
+      "sha256": "77fea3c8da8fe216aff275d9fc44d9d79f55a325eed2bb082b47b9f26398b632",
+      "mtime": 1792863367.3034892
+    },
+    "frontend/tests/army-collapse.test.cjs": {
+      "sha256": "6865f4cc7b364ccc13e534b701ff4e0c112c435debe4dd89b16a87d5ca2179a0",
+      "mtime": 1792492681.389823
+    },
+    "frontend/tests/army-overview-rules.test.cjs": {
+      "sha256": "581a917446e355df21f815ddcd522004a9e0113bfe284bac1fe2048fde755fbc",
+      "mtime": 1792509245.2167163
+    },
+    "frontend/tests/avatar-upload.test.cjs": {
+      "sha256": "e62e5da4a713fc128aa6e75c7d3342e2d625b3bada19ac5dc8afa0c83ea4eafc",
+      "mtime": 1793102918.6992857
+    },
+    "frontend/tests/battle-defaults.test.cjs": {
+      "sha256": "2b58464036d898f0debac68f18be75cbc400e2405694a330e62d79249012f104",
+      "mtime": 1793331751.9325502
+    },
+    "frontend/tests/build.test.cjs": {
+      "sha256": "5ad093ef42ca0a237c6489b66f8639fe112b2fa2d30aa3631e5845ba6aad29ef",
+      "mtime": 1793350090.3976126
+    },
+    "frontend/tests/c47-transport-model.test.cjs": {
+      "sha256": "bb248b346cba6b5541beeb2fce9a4b0552847349fed0c327c8f86860bed8e37b",
+      "mtime": 1791596951.6295307
+    },
+    "frontend/tests/campaign-dispatch.test.cjs": {
+      "sha256": "c857b41113e58f2cd51c80e9acd91626b58f553a1bfd3740abdfc78e3f74e8f1",
+      "mtime": 1793380541.5629284
+    },
+    "frontend/tests/chat-page.test.cjs": {
+      "sha256": "0fb423157f0ca89795e11e78227adaa5dacfc4583513a470e9d986a6b4c70947",
+      "mtime": 1792638940.5285754
+    },
+    "frontend/tests/chat-prestige.test.cjs": {
+      "sha256": "a92b608f7613f9dde71d1ccdd2ba759de08502b9dd434fbeaf3ba7b1702251c4",
+      "mtime": 1792638940.5277414
+    },
+    "frontend/tests/cities.test.cjs": {
+      "sha256": "dd83f0c2443ee892f8e37a34b8645fe8c244f2a92c674bc7d18030c348e76730",
+      "mtime": 1793142066.7089837
+    },
+    "frontend/tests/city-surrender-dialog.test.cjs": {
+      "sha256": "5a6b27c3d442d5d3696e5fc1971c03e1c175bc256476696c49df25fd570bb55c",
+      "mtime": 1792652516.770919
+    },
+    "frontend/tests/city-teleport.test.cjs": {
+      "sha256": "a9227f795aa947b26fb0c267f3b452e7559e605fa43ff059893bee7f3f1e6df6",
+      "mtime": 1793351409.3240037
+    },
+    "frontend/tests/client.test.cjs": {
+      "sha256": "2de07e94a45f730acbbdb9d07a016e004a9b19019bbf8ad859080d8b457f00eb",
+      "mtime": 1793326205.5145214
+    },
+    "frontend/tests/combat-data.test.cjs": {
+      "sha256": "4a0e10a9265bb13db51b7e579f64c72f9d2fd7fac4537c157812cd54fc17e859",
+      "mtime": 1793206507.3433359
+    },
+    "frontend/tests/conquest-wall.test.cjs": {
+      "sha256": "86b8a278962d35324bd6878d97587dae1d1e61448122d29ba1524a59239930ed",
+      "mtime": 1793155600.391911
+    },
+    "frontend/tests/constants.test.cjs": {
+      "sha256": "48546d53ee965c58cc771dec77b55c744a48c9512de564bd47cb8851c70ee6fb",
+      "mtime": 1791784856.919102
+    },
+    "frontend/tests/depleted-wild-convoy-icon.test.cjs": {
+      "sha256": "b9ab43ab232bc5f6eceaa48983a5e53277a6cde1446a62f32313a46c752c07c4",
+      "mtime": 1792732598.8524423
+    },
+    "frontend/tests/depot.test.cjs": {
+      "sha256": "5b40e5bdafc37a1883f9acbc98fc174292d1688b4ef37e025c07563f88527c38",
+      "mtime": 1793349913.6956189
+    },
+    "frontend/tests/dispatch-route.test.cjs": {
+      "sha256": "8ec13e10b40eff30f125a025d3b3dfd77f55ebdfef7db004320b5507d0664b1a",
+      "mtime": 1792650776.7720947
+    },
+    "frontend/tests/dispatch-time.test.cjs": {
+      "sha256": "755aebd082d329aeaac6b00ce99b257d9e6bf2f90b48421d6201d8a12d702052",
+      "mtime": 1793240546.7451627
+    },
+    "frontend/tests/duration-format.test.cjs": {
+      "sha256": "bbeba5e802adfbc0cc127beebb9272fd5edb9062761e98bda6cc704de3657843",
+      "mtime": 1792650329.0205948
+    },
+    "frontend/tests/experience-books.test.cjs": {
+      "sha256": "492df37d9aa8089f68b3eec02b1c58701465285e45b3e83f6e315b944d2f0c1c",
+      "mtime": 1793243202.6335723
+    },
+    "frontend/tests/footer-clock.test.cjs": {
+      "sha256": "7695af07033df18327ac8b4f1f5a93b86523871203c046e23ba19f74fbba0eca",
+      "mtime": 1790657369.2723901
+    },
+    "frontend/tests/fort-capacity.test.cjs": {
+      "sha256": "72ab8e186ea4d2484ea7d558ee2697649edaea593313853acf1167233f57a2f3",
+      "mtime": 1792142119.5571618
+    },
+    "frontend/tests/fort-overview-rules.test.cjs": {
+      "sha256": "75f0e60d5f50c4af892a848a511d1fa158fb1664c6b0c3e1d8b8f3f7a2ed4108",
+      "mtime": 1792552051.710525
+    },
+    "frontend/tests/four-quadrants-map.test.cjs": {
+      "sha256": "f92fe387cc81834163c93e9ff2f8e8ce861fea79d9a5a72d82ce563c936c2660",
+      "mtime": 1791859008.3289177
+    },
+    "frontend/tests/friends.test.cjs": {
+      "sha256": "a9e9aa06991e51022a7e02452fcb0ea19a8deba15226c88f8d98446a24486d0e",
+      "mtime": 1793200456.3696578
+    },
+    "frontend/tests/game-clock.test.cjs": {
+      "sha256": "18f541966aa2c13688816272d460eab19a6cc935f3ed04061dc4be371edb96b2",
+      "mtime": 1792538846.925674
+    },
+    "frontend/tests/game-sound.test.cjs": {
+      "sha256": "84b24a5b895ed35eb85c94a713da7604eda0c486486c17dee3ccbb0b169ca2bc",
+      "mtime": 1792650668.1614008
+    },
+    "frontend/tests/gather-modes.test.cjs": {
+      "sha256": "001f240493c88ced4700f463c447ce0929e07159ee451716a9e5e1eaf5bc83d2",
+      "mtime": 1793379020.3114
+    },
+    "frontend/tests/guild-chat.test.cjs": {
+      "sha256": "95d33048b6333aafe5286a77c200440d513b28af3035042ee2286f309411f7b5",
+      "mtime": 1793251661.2194097
+    },
+    "frontend/tests/guild-icons.test.cjs": {
+      "sha256": "8be212dad9ac42b9798dcd02555999dff28be3006f331467c8b8b37af2717de3",
+      "mtime": 1790408270.0028098
+    },
+    "frontend/tests/guild-radar-model.test.cjs": {
+      "sha256": "72d6ecda34b9a493769b745af512ed32e9982b027e79f15c0d14fb3f69c527b0",
+      "mtime": 1793025424.1186292
+    },
+    "frontend/tests/guild-support.test.cjs": {
+      "sha256": "43a2bc657057482955ecacc0b14f2bb8b0edc142249c5b34237de05f7a2ebd1b",
+      "mtime": 1792821851.7993324
+    },
+    "frontend/tests/guild-tabs-and-features.test.cjs": {
+      "sha256": "5a1f8ff5d665ffc80e5dfeb5db27d0e6d3095aef049622195f5c0cbb102687f9",
+      "mtime": 1792477974.2588344
+    },
+    "frontend/tests/headquarters.test.cjs": {
+      "sha256": "5370c54aed018042160d8cf63b1e0bd424b48bcb8e2c25e744d33bb7036b7a75",
+      "mtime": 1793353444.1539872
+    },
+    "frontend/tests/home-fort-summary.test.cjs": {
+      "sha256": "a50f637ae710dd18579eb3b43dfdfb14fb4d42b5e3805997af52626766e35c8f",
+      "mtime": 1792645568.3580704
+    },
+    "frontend/tests/home-module-order.test.cjs": {
+      "sha256": "45f5d3d71c929b3bdf7a41d5aee0213d24431c3c5968cc145969da29e5eccd65",
+      "mtime": 1792863367.3631768
+    },
+    "frontend/tests/home-officer-recruit.test.cjs": {
+      "sha256": "43e0e51d78517cca87b6229806baac04939a218657afbba6fc8823f39127f9a1",
+      "mtime": 1793076751.5416129
+    },
+    "frontend/tests/home-unit-models.test.cjs": {
+      "sha256": "6e5b99e1f156be8d982008d9c0e7cb4e581d6d298f8cfe98767766c56fa6a61a",
+      "mtime": 1793115477.765224
+    },
+    "frontend/tests/hospital-model.test.cjs": {
+      "sha256": "aec453b948a9f3e35f0b7138fc10e49262384bc964fb16c6afce9555a3b3d590",
+      "mtime": 1792894941.1500108
+    },
+    "frontend/tests/hospital.test.cjs": {
+      "sha256": "3fbc16ff69b39ed95737c08366a6cb03e2abea54a9070de544f2b26b4408c1f9",
+      "mtime": 1792774136.8975987
+    },
+    "frontend/tests/incoming-intelligence.test.cjs": {
+      "sha256": "e999d0aec91c2509ef8d2357febd6668fc55e46e1e12f350cde2f9e8c17367a6",
+      "mtime": 1793350090.3984895
+    },
+    "frontend/tests/incoming-map-actions.test.cjs": {
+      "sha256": "5df5f347b74778bd639aa591e5f61c88433ad893053e302462eb9b4ccb8283f4",
+      "mtime": 1793244398.5508335
+    },
+    "frontend/tests/incoming-report-share.test.cjs": {
+      "sha256": "d7da78047a1c683d1e54c098ca3766d6d5ecbdbbac4f978d5453ceac7b8194f5",
+      "mtime": 1792513265.357874
+    },
+    "frontend/tests/interception-clash-icon.test.cjs": {
+      "sha256": "c0b5f3aa2eb4ed9531908163d996bf6400472e5043481fed486638adaf46fe1d",
+      "mtime": 1792650776.9013898
+    },
+    "frontend/tests/item-buffs.test.cjs": {
+      "sha256": "28804e4e208cde138a6ed10bc008e40c8f9a8c45da32d39b58f1a8e38adb9b63",
+      "mtime": 1793345812.4516876
+    },
+    "frontend/tests/japanese-units.test.cjs": {
+      "sha256": "b03b8ec512a1162cb2d22366646c62a5a741ca7f64640b0e6a4a98694944b616",
+      "mtime": 1791590793.5409691
+    },
+    "frontend/tests/landscape-navigation.test.cjs": {
+      "sha256": "86015ac654a5e7d4ef6ab3632b9d6579fe0d4da33cb9d403df70c84cca68deee",
+      "mtime": 1791014967.8926444
+    },
+    "frontend/tests/list-gather-progress.test.cjs": {
+      "sha256": "ed1266ca9e4aa3b8485ff49738b06ee9670c252eff36e0f6d94949c26800a969",
+      "mtime": 1792732196.6666868
+    },
+    "frontend/tests/list-map-icons.test.cjs": {
+      "sha256": "07657bbeb90b709f10c007565457af94d379256e45295bc899f12db3f9e4c270",
+      "mtime": 1793099885.054602
+    },
+    "frontend/tests/list-map-portrait-width.test.cjs": {
+      "sha256": "778008919b944f00729772cf08f49aa6d139ec984b8deb7d1c825cd7e8fad5bf",
+      "mtime": 1792649363.8129756
+    },
+    "frontend/tests/login-page.test.cjs": {
+      "sha256": "b19e5ac02412f1731f59c71422b48d371fad157404b87005ebe9236e572f6f6a",
+      "mtime": 1793253774.5279746
+    },
+    "frontend/tests/m8-greyhound-model.test.cjs": {
+      "sha256": "ed5a0ac85088d7b0d03d2de992fc391ad96509efbed951f9f3cf0449d2a80746",
+      "mtime": 1791509900.9082508
+    },
+    "frontend/tests/mail-attachment.test.cjs": {
+      "sha256": "43bf89994b9ba5694f9315870d63d65e4fc5f7f151a3866c38f83f7af9504fee",
+      "mtime": 1792584900.7878416
+    },
+    "frontend/tests/main-quest-checkin.test.cjs": {
+      "sha256": "0c7c4cd86709cc43e11052402cb8c15114c73af1e69efc74114972aa5efcbc6a",
+      "mtime": 1793287888.5391731
+    },
+    "frontend/tests/map-favorites.test.cjs": {
+      "sha256": "5d6f6669f83a1ee48754a16a5567cb5df36c5afa69fa52de95a5f2938988eaa2",
+      "mtime": 1792666834.643039
+    },
+    "frontend/tests/map-fullscreen.test.cjs": {
+      "sha256": "508cd0c6e64e2017c552729d96573b92750aa3f9015c3c1cdcd7501f5d503116",
+      "mtime": 1792993370.165159
+    },
+    "frontend/tests/map-ground-perf.test.cjs": {
+      "sha256": "2b6e8d9f7449e6da02ff0d7528ea3a251de6e0c89842c4b3d243eb82f26f9c8b",
+      "mtime": 1793379415.0911314
+    },
+    "frontend/tests/map-layout.test.cjs": {
+      "sha256": "6ede477c6382e8517e459d8fb6c5d19f029bb46f6a2865c7085bebeb50bf1abe",
+      "mtime": 1792307021.7969089
+    },
+    "frontend/tests/map-march-status.test.cjs": {
+      "sha256": "0f829cd85c65d62778c1f6c06db192b84217b9d1e4773b47264785688190d0db",
+      "mtime": 1792666858.123263
+    },
+    "frontend/tests/map-oilfield-art.test.cjs": {
+      "sha256": "f3cd105670e2af4f66ade1c9c7c607ccfe70007253b2efa70247fbafea7eb67b",
+      "mtime": 1791301763.055878
+    },
+    "frontend/tests/map-picking.test.cjs": {
+      "sha256": "a4547f57c67a5b5dbdee284cf8e605a6c2d3e41ec04941387bd9e80f1a026573",
+      "mtime": 1793380608.9707658
+    },
+    "frontend/tests/map-site.test.cjs": {
+      "sha256": "401afa186f664127dfcc608831a715d08c9156ec522489b3ad03a44075f0f968",
+      "mtime": 1793375485.0700092
+    },
+    "frontend/tests/map-toolbar.test.cjs": {
+      "sha256": "275f0ac1406169468c2c77e5b324d164f55b8638808d0aa6f1d7f87faf155231",
+      "mtime": 1792893267.8600533
+    },
+    "frontend/tests/map-water.test.cjs": {
+      "sha256": "85ee637e0fbe89ed73bf0a581c1daa2a7559c098910fbd7a98f22f1ba03d57a7",
+      "mtime": 1793081628.2310312
+    },
+    "frontend/tests/map.test.cjs": {
+      "sha256": "00333acadb18fde7a2fc2c5f8ab65d16644bf65ff531abfdeb546870bedff8f1",
+      "mtime": 1793380476.9940271
+    },
+    "frontend/tests/march-acceleration.test.cjs": {
+      "sha256": "3d9e083e20a7a77c8bf208172dd6dcabceb2a5b3083c3a54a9dbcfd953c55a80",
+      "mtime": 1793240338.7417784
+    },
+    "frontend/tests/market.test.cjs": {
+      "sha256": "82e8eb2c9912f0f3c712151202c63292913cb61fa105b7ce5799939c8ecbaeaf",
+      "mtime": 1791788817.8006554
+    },
+    "frontend/tests/meadow-layout.test.cjs": {
+      "sha256": "636ce2395255f235893c7bc11b47785a01262e5240f24704a1a847ad80695aff",
+      "mtime": 1792500474.7625895
+    },
+    "frontend/tests/mobilization-orders.test.cjs": {
+      "sha256": "c7b4db762d4762b63e0f5302517a6437602a0ed9361e426a308fac76a5a260b6",
+      "mtime": 1793331832.698655
+    },
+    "frontend/tests/newbie-protection-notice.test.cjs": {
+      "sha256": "5728901012643e817ff7392b41df5d1034ebd0600ce0876f90df4ac398b97558",
+      "mtime": 1792650995.0360503
+    },
+    "frontend/tests/npc-phalanx-model.test.cjs": {
+      "sha256": "bda3543fbdb19a4b6445c68ae01ca8084f7149fcf6aa4fca0283a90f1a5cefa7",
+      "mtime": 1793097511.2546475
+    },
+    "frontend/tests/ocean.test.cjs": {
+      "sha256": "9ea0630acec9dcab929daadfc33b2188f42e1cf114db687da4534de19dc34395",
+      "mtime": 1791858850.3757925
+    },
+    "frontend/tests/officer-card-view.test.cjs": {
+      "sha256": "e33fb97badac01b7dc3a10bc67b8a9d682cbef7888249616e614d79e4cfc78b1",
+      "mtime": 1793253531.859793
+    },
+    "frontend/tests/officer-dismiss.test.cjs": {
+      "sha256": "a9295cb21cfec9ec4723b5714505363af34c288fbddac44daaa6810cc0f7e8bf",
+      "mtime": 1792861246.205918
+    },
+    "frontend/tests/officer-equipment-expansion.test.cjs": {
+      "sha256": "9f49de597f1b7109394d4fe6e6872162025e6b3ca41ca7db9fffdc953a57d71f",
+      "mtime": 1793349258.8771129
+    },
+    "frontend/tests/officer-experience.test.cjs": {
+      "sha256": "eec9dc5b97aaaaa64e61126df372e0ed10716f24b141be92d3839eb69bd46db4",
+      "mtime": 1793071010.6561227
+    },
+    "frontend/tests/officer-rename.test.cjs": {
+      "sha256": "f926813f51b32fdb0a70cf6da4be89bc6013299fcb4d3fa5a664638f7efd1593",
+      "mtime": 1792642967.6763241
+    },
+    "frontend/tests/officer-skill-icons-and-vip-dropdown.test.cjs": {
+      "sha256": "1a5791e9a6ea6fa23dc76a567a960559dd3becf1431f1feb42e8d3c17c5152e8",
+      "mtime": 1793345279.6001687
+    },
+    "frontend/tests/officer-skills.test.cjs": {
+      "sha256": "ff26d31b9f427d82ae374f925ba6ffb7bc04dcd933bfc2d6f16669d258c4872a",
+      "mtime": 1793353269.8551779
+    },
+    "frontend/tests/onboarding-connection.test.cjs": {
+      "sha256": "540d292f0b7235141ea25a7e00057cf7860598d7c88845d896be990cae2602eb",
+      "mtime": 1791871075.8593898
+    },
+    "frontend/tests/onboarding-polling.test.cjs": {
+      "sha256": "c27c8362d3228e1f48d3d7e0ab8c7fdd9d401feca388e1e71e44ae558bb19488",
+      "mtime": 1791871075.8605552
+    },
+    "frontend/tests/onboarding.test.cjs": {
+      "sha256": "48477ee45038f1035ba38edf4fcd6cbaeb90a7a3b1ae167be0a49127778f0dd5",
+      "mtime": 1793379020.3121932
+    },
+    "frontend/tests/play-guide.test.cjs": {
+      "sha256": "b6d2399f6e6e1685ff407f43af57cf0966f9d618b66ecd98f3bd695408c66dd2",
+      "mtime": 1793351580.0398881
+    },
+    "frontend/tests/player-power-info.test.cjs": {
+      "sha256": "3b75191a6a649eaae0e77581588307021d2cfeab7b1db86cb5c6f86dcbbc742a",
+      "mtime": 1793203281.1605773
+    },
+    "frontend/tests/player-profile.test.cjs": {
+      "sha256": "65093e62abc2035278860dc702f56c35ed3e97a361687caf94845413f32d365d",
+      "mtime": 1793353444.1560962
+    },
+    "frontend/tests/population-recruitment.test.cjs": {
+      "sha256": "d60706795ebba531a624dc0826fdb3defc55f56e77c6c47660726e507a9efa8f",
+      "mtime": 1792798160.7419765
+    },
+    "frontend/tests/prerequisites.test.cjs": {
+      "sha256": "5d189245679d691331bd74e017fc5180f8eb0cd74913d2132139f49e7a512c4e",
+      "mtime": 1793350145.8601642
+    },
+    "frontend/tests/presence.test.cjs": {
+      "sha256": "f1a3faa8c402c7c7b29269e373c84a4d659d8f1cbf875c40fbbfb3d4de6ceac4",
+      "mtime": 1790237512.1228395
+    },
+    "frontend/tests/prisoner-camp-model.test.cjs": {
+      "sha256": "a19fcba3529e3ab44f507786c2f86998d4b4dcb7d6817d61111bbc39632ba8c3",
+      "mtime": 1792894941.1230526
+    },
+    "frontend/tests/prisoners.test.cjs": {
+      "sha256": "a4c8e4ba4cb5302c87bac3ae8d3bc872871f17dd20f48fbafd4eaa8cca1e2f88",
+      "mtime": 1791785913.3201058
+    },
+    "frontend/tests/private-chat.test.cjs": {
+      "sha256": "df3a12bd2783fc098e7e0ff20cc23af1594a038c7485cf2af76583a6d3526e52",
+      "mtime": 1792652631.8906672
+    },
+    "frontend/tests/protection.test.cjs": {
+      "sha256": "d780f74a11b2883f2f6cb6c77cd2965a20db7b3c2a7ee59edb371afd95e7feb2",
+      "mtime": 1790237512.238914
+    },
+    "frontend/tests/pvp.test.cjs": {
+      "sha256": "3c7c47cc07641f2cbcffc88946f133e3e83aa6d491760a1b18cea778d6a7ad6a",
+      "mtime": 1793173643.6442945
+    },
+    "frontend/tests/quest-navigation.test.cjs": {
+      "sha256": "e3c37d8862a979c48a196cb71c4fb76ff5138088f59f61039c7be27ceb8a0d26",
+      "mtime": 1792463543.480227
+    },
+    "frontend/tests/radar.test.cjs": {
+      "sha256": "804351f5e66de874f43d1fe4af468291b3e98bcc82f824d555ea6afb069e4b10",
+      "mtime": 1793351160.042912
+    },
+    "frontend/tests/rank-diamond-gifts.test.cjs": {
+      "sha256": "ffe26eefa7f5ce1c31b057d93634755f2414c45b948bcf2b6ef76dafb88a2e68",
+      "mtime": 1793202631.7851205
+    },
+    "frontend/tests/rank-exam.test.cjs": {
+      "sha256": "e362e928a0434e338a9941b47346e1adebb763109080ece38e5bd885fabe3c54",
+      "mtime": 1793195861.1908603
+    },
+    "frontend/tests/rank-prestige.test.cjs": {
+      "sha256": "5a245a647cc838d7418e6a27d82c2bd91018ef83790917dd594e045cf2f2a1f5",
+      "mtime": 1793194915.1877327
+    },
+    "frontend/tests/rankings.test.cjs": {
+      "sha256": "6081083b25b8d3f8f825195500a8fd07f9ba8b0fc9a9cb411ddf2aeecd9f2a45",
+      "mtime": 1793241876.0774164
+    },
+    "frontend/tests/recharge-tactical-sandtable.test.cjs": {
+      "sha256": "0a62f6c6bcd14ca2128480ff2661923305c00cd3476c613bf8b5b0d84d3f7045",
+      "mtime": 1793290799.4385464
+    },
+    "frontend/tests/recharge-vip.test.cjs": {
+      "sha256": "e8858006f274e761e5b011a39eb5f7bb224a5441c4778f6b0dfe88673485f3d7",
+      "mtime": 1793351409.2861712
+    },
+    "frontend/tests/recon-car.test.cjs": {
+      "sha256": "367ae454157d612b12834c29224fee0f3643f09b5bada6179d33ce672bf77850",
+      "mtime": 1792423037.3264427
+    },
+    "frontend/tests/reports.test.cjs": {
+      "sha256": "deb3c9999ae82f8e5700105b54d705bf31ea6854f26e2eae060d8f0f075bbe72",
+      "mtime": 1793153533.81265
+    },
+    "frontend/tests/resource-cap.test.cjs": {
+      "sha256": "a017c8135e595e297360097d19718de88b1e978183cd4f1025e6699136b89f20",
+      "mtime": 1792863571.3146343
+    },
+    "frontend/tests/resource-detail-modal.test.cjs": {
+      "sha256": "1e27d242c67040406f14eac231830f6fcbc44f2b2dc9200ae210ce5ee705f2c7",
+      "mtime": 1792798133.662463
+    },
+    "frontend/tests/resource-icons.test.cjs": {
+      "sha256": "2133ee37ed84cb3741d89c2f232a49e777da0bc0fd5a74f2287e58f2ebe05cec",
+      "mtime": 1790430224.985152
+    },
+    "frontend/tests/server-maintenance.test.cjs": {
+      "sha256": "8902e2785fcc098eb0171d81b77d96f476ca3701d7a172076023cf227d347b72",
+      "mtime": 1793253777.8718107
+    },
+    "frontend/tests/server-menu.test.cjs": {
+      "sha256": "adb7ffbacc482d45dcdf0b1b6807f042ae3f5fe9e2e1e6c0556744e3b3b09f95",
+      "mtime": 1793253783.7705889
+    },
+    "frontend/tests/server-regions.test.cjs": {
+      "sha256": "e3b83c4a2cd99e22fafa3820513b4023b93d4b44af09ad1026f9065fbe7d6a72",
+      "mtime": 1793253789.7097487
+    },
+    "frontend/tests/shipyard-model.test.cjs": {
+      "sha256": "9036f72af5aeed20a3c8dd6d775c0059f5fb972ae6d2f0ea9be8061fc470aa2b",
+      "mtime": 1792894941.1733987
+    },
+    "frontend/tests/shipyard.test.cjs": {
+      "sha256": "b8a44367e735f66a82d0268077b511d386b9404e3059703c3eb93f8e168a1f7b",
+      "mtime": 1792863367.3234763
+    },
+    "frontend/tests/shop-catalog.test.cjs": {
+      "sha256": "c73e06c0de605d0ca5c4f4f259e39eeca44353e746ef2ff6a5c0ba8207938860",
+      "mtime": 1793353269.8557358
+    },
+    "frontend/tests/shop-item-icons.test.cjs": {
+      "sha256": "f03de4405b12484a4d4ca9ecb0eedcc493379ec6c736085c94161984f7ed1a54",
+      "mtime": 1793081370.448431
+    },
+    "frontend/tests/sound.test.cjs": {
+      "sha256": "6c3cf0ab5d0aa73a427dca74e19c11ce1677c97cf5362dd04386ff867529d762",
+      "mtime": 1792513428.9175231
+    },
+    "frontend/tests/tactical-command.test.cjs": {
+      "sha256": "811cc12efb3a327a640d97b46f8d4ee8152cf6adf29d5c26ea0eab6f315aa6e1",
+      "mtime": 1793155458.8957896
+    },
+    "frontend/tests/tactical-facing.test.cjs": {
+      "sha256": "cc22ceda14bacc29a64c2b5865424a6fd31ca28260d5b9659d59b008cf41aa13",
+      "mtime": 1792801212.0863595
+    },
+    "frontend/tests/tactical-outcome-display.test.cjs": {
+      "sha256": "0b6506bae9714b17866adeac52fef9658fa8296ca878e6afaf13b36c1f758099",
+      "mtime": 1792683407.4288049
+    },
+    "frontend/tests/tech.test.cjs": {
+      "sha256": "7c0396df3ae74dabe9902ff5bdb8fd1daa7df3253e465593bfe45ae988627668",
+      "mtime": 1793349816.2663426
+    },
+    "frontend/tests/terrain-variants.test.cjs": {
+      "sha256": "a079d208555e8f5e7123f5ebbfbf57803509170d3482d799252e83e6d74e07b4",
+      "mtime": 1793097511.217893
+    },
+    "frontend/tests/topbar-forum.test.cjs": {
+      "sha256": "c745ee0631145214730fdca9d08f00852d9d19117bb87465497ce2a88d5f9649",
+      "mtime": 1791014967.901433
+    },
+    "frontend/tests/vip-claims.test.cjs": {
+      "sha256": "2864442e8f24d96554ec42ded276d5da95fb3329afafeae56b5c8d2c0f9f6d77",
+      "mtime": 1793098428.7823868
+    },
+    "frontend/tests/vip.test.cjs": {
+      "sha256": "ff58a31376ce8abe981a87e6eaa7ee4904a135d5ea31bd62ea02062ee49ad23e",
+      "mtime": 1793288842.4617906
+    },
+    "frontend/tests/war-actions.test.cjs": {
+      "sha256": "e005c828570d475cb2104f0445815c84195a2e761e7be800194178a2dc0ecb0a",
+      "mtime": 1793115613.6690986
+    },
+    "frontend/tests/war-power-protection.test.cjs": {
+      "sha256": "a26de86248d161ed79ea70ec7b30e7fe8f91e01fa5adcb61854a4fa26cd39433",
+      "mtime": 1793380678.2326584
+    },
+    "frontend/tests/welcome-intro.test.cjs": {
+      "sha256": "779fce5ec8f12a785402645bf0aa5b185c58425256ca058a19ac73b318a2a29f",
+      "mtime": 1793119690.6218505
+    },
+    "frontend/tests/wild-occupation.test.cjs": {
+      "sha256": "5650748bb177f9aaf7018be1448339a2de313eb1ad9a2691667455abbff96d0c",
+      "mtime": 1791790836.3525403
+    },
+    "frontend/tests/world-list-collapse.test.cjs": {
+      "sha256": "f491f2f5d2df582ed788d0a4916b94fe8b8969302c8a2556ab2dcdf6ebe47b93",
+      "mtime": 1792654694.5550425
+    },
+    "frontend/tests/wounded-overview-rules.test.cjs": {
+      "sha256": "a63e24de3c2daab3e95ba36e7b287248eddc3e7f4d1ea21d71d9d9b77e00d02e",
+      "mtime": 1792650776.7179325
+    },
+    "frontend/tests/wounded.test.cjs": {
+      "sha256": "dcd82385900ddf0560b9f3f381b2ba44cc4a59bbee6e2ce5eb2860313875a425",
+      "mtime": 1792774040.147659
+    }
+  }
+}

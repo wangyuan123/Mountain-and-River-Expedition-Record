@@ -10,6 +10,7 @@ import com.wargame.model.constants.TechDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
+import com.wargame.util.PlayerNames;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.context.event.EventListener;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -21,12 +22,15 @@ import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class GameStateService {
+    @org.springframework.beans.factory.annotation.Autowired private SpeedUpSupport speedUpSupport;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
+    @org.springframework.beans.factory.annotation.Autowired private CityBattleLockService cityBattleLock;
     @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     @org.springframework.beans.factory.annotation.Autowired private PlayerPowerService playerPower;
     @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GameplayViewService gameplayView;
     @org.springframework.beans.factory.annotation.Autowired private MailGiftActivityService giftActivities;
 
-    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
@@ -152,6 +156,7 @@ public class GameStateService {
     @Transactional
     public void setCityName(Long playerId, String rawCityName) {
         String cityName = com.wargame.model.constants.DisplayNamePolicy.validate(rawCityName, 12, "城市名称");
+        this.economy.beforeResourceChange(playerId, cityScope.slot(playerId));
         CityEconomy economy = cityScope.economy(playerId);
         entityManager.flush();
         entityManager.refresh(economy, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
@@ -250,6 +255,7 @@ public class GameStateService {
         Map<String, Object> state = new LinkedHashMap<>();
         long stateNow = GameClock.now();
         state.put("serverTime", stateNow);
+        state.put("cityBattleLocked", cityBattleLock.locked(playerId));
 
         // --- player ---
         Map<String, Object> playerInfo = new LinkedHashMap<>();
@@ -257,8 +263,8 @@ public class GameStateService {
         playerInfo.put("username", player.getUsername());
         playerInfo.put("commanderRenameCount", player.getCommanderRenameCount());
         playerInfo.put("commanderNameRenameAvailableAt", com.wargame.model.constants.CommanderRenamePolicy.nextAllowedAt(player.getCommanderRenamedAt()));
-        playerInfo.put("name", player.getDisplayName() == null || player.getDisplayName().isBlank()
-                ? player.getUsername() : player.getDisplayName());
+        // 页头与公告共用统帅名及空值回退，避免同一账号显示两种身份。
+        playerInfo.put("name", PlayerNames.commanderName(player));
         playerInfo.put("faction", player.getFaction());
         CityEconomy currentCity = cityScope.economy(playerId);
         playerInfo.put("cityName", currentCity.getCityName() == null || currentCity.getCityName().isBlank()
@@ -323,6 +329,7 @@ public class GameStateService {
             resMap.put("diamond", 0);
         }
         state.put("resources", resMap);
+        state.put("resourceRates", economy.resourceRates(playerId));
 
         // --- buildings ---
         List<Building> buildings = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId));
@@ -374,7 +381,8 @@ public class GameStateService {
         List<PlayerItem> items = playerItemRepository.findByPlayerId(playerId);
         Map<String, Object> itemMap = new LinkedHashMap<>();
         for (PlayerItem it : items) {
-            itemMap.put(it.getItemKey(), it.getCount());
+            // 已取消的材料保留历史库存，不再作为可用道具发送给客户端。
+            if (!"officerPreparationParts".equals(it.getItemKey())) itemMap.put(it.getItemKey(), it.getCount());
         }
         state.put("items", itemMap);
 
@@ -390,7 +398,6 @@ public class GameStateService {
         }
         state.put("technologyRulesVersion", com.wargame.model.constants.TechnologyRules.VERSION);
         state.put("tech", techMap);
-        state.put("unitEquipment", unitEquipment.state(playerId));
         state.put("research", techService != null ? techService.getActiveResearch(playerId) : null);
         state.put("researches", techService != null ? techService.getActiveResearches(playerId) : Collections.emptyList());
         state.put("vip", vipService != null ? vipService.getVipStatus(playerId) : Collections.emptyMap());
@@ -409,6 +416,8 @@ public class GameStateService {
             offMap.put("level", o.getLevel() != null ? o.getLevel() : 1);
             offMap.put("bio", o.getBio() != null ? o.getBio() : "");
             offMap.put("exp", o.getExp() != null ? o.getExp() : 0L);
+            offMap.put("resettableAttrPoints", o.assignedPoints());
+            offMap.put("legacyAttrAllocation", o.isLegacyAttrAllocation());
             offMap.put("attrPoints", o.getAttrPoints() != null ? o.getAttrPoints() : 0);
             EquipmentService.Attributes attrs = equipmentService.attributes(o);
             offMap.put("baseLogistics", o.getLogistics() != null ? o.getLogistics() : 0);
@@ -426,9 +435,7 @@ public class GameStateService {
             offMap.put("role", o.getRole() != null ? o.getRole() : "idle");
             offMap.put("recruitAt", o.getRecruitAt() != null ? o.getRecruitAt() : 0);
             offMap.put("rewardAt", o.getRewardAt() != null ? o.getRewardAt() : 0);
-            var prep = equipmentProgress.preparation(playerId, o.getId());
-            offMap.put("preparation", prep);
-            offMap.put("equipment", attrs.equipment().stream().map(e -> equipmentService.equipmentView(e, prep)).toList());
+            offMap.put("equipment", attrs.equipment().stream().map(e -> equipmentService.equipmentView(e)).toList());
             officerList.add(offMap);
         }
         state.put("officers", officerList);
@@ -453,6 +460,8 @@ public class GameStateService {
             cMap.put("targetLevel", targetLv);
             cMap.put("startedAt", c.getStartAt() != null ? c.getStartAt() : 0);
             cMap.put("finishesAt", c.getFinishAt() != null ? c.getFinishAt() : 0);
+            cMap.put("freeSpeedUpAt", c.getFinishAt() == null ? null : c.getFinishAt() - BuildService.FREE_SPEED_UP_SECONDS * 1000L);
+            cMap.put("speedUpCounts", speedUpSupport.suggestedCounts(playerId, Objects.requireNonNullElse(c.getFinishAt(), 0L)));
 
             int curLv = 0;
             List<Building> typeBuildings = buildingsByType.get(c.getBuildingType());
@@ -528,12 +537,16 @@ public class GameStateService {
         state.put("resentment", cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0);
         state.put("lastAppeaseAt", cityScope.economy(playerId).getLastAppeaseAt() != null ? cityScope.economy(playerId).getLastAppeaseAt() : 0L);
         state.put("prestige", player.getPrestige() != null ? player.getPrestige() : 0);
+        state.put("worldChatUnlocked", player.isWorldChatUnlocked()
+                || (player.getPrestige() != null
+                && player.getPrestige() >= com.wargame.model.constants.GameConstants.WORLD_CHAT_PRESTIGE_THRESHOLD));
         PlayerPowerService.Scores power = playerPower.calculate(playerId).get(playerId);
         if (power != null) {
             playerInfo.put("formationPower", power.formationPower());
             playerInfo.put("overallPower", power.overallPower());
         }
         state.put("lastTick", cityScope.economy(playerId).getLastTick() != null ? cityScope.economy(playerId).getLastTick() : 0);
+        state.put("gameplay", gameplayView.snapshot(playerId, state));
         state.put("stats", new LinkedHashMap<>());
         state.put("progress", new LinkedHashMap<>());
 
@@ -552,15 +565,16 @@ public class GameStateService {
         if (tax < 0 || tax > 100) {
             throw new IllegalArgumentException("税率必须在 0-100 之间");
         }
+        // 旧区间先按旧税率结账，避免本次调整追溯改变历史税收和民心。
+        economy.settleEconomyBeforeChange(playerId);
         Player player = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
 
         int oldTax = cityScope.economy(playerId).getTax() != null ? cityScope.economy(playerId).getTax() : 30;
         int taxDelta = tax - oldTax;
-        int curMorale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
-        int newMorale = Math.max(0, Math.min(100, curMorale - taxDelta));
         cityScope.economy(playerId).setTax(tax);
-        cityScope.economy(playerId).setMorale(newMorale);
+        cityScope.economy(playerId).adjustSentiment(-taxDelta, 0);
+        int newMorale = cityScope.economy(playerId).getMorale();
         playerRepository.save(player);
         cityScope.saveEconomy(playerId);
 
@@ -573,12 +587,17 @@ public class GameStateService {
         return result;
     }
 
+    public static int appeaseGoldCost(int civilians) { return (int) Math.max(1000, Math.min(10000, civilians * 2L)); }
+
     // ================================================================
     // appease - 安抚民心
     // ================================================================
 
     @Transactional
     public Map<String, Object> appease(Long playerId, String type) {
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        cityScope.assertWritable(playerId);
+        economy.settleEconomyBeforeChange(playerId);
         if (playerId == null) {
             throw new IllegalArgumentException("Invalid player ID: null");
         }
@@ -593,7 +612,7 @@ public class GameStateService {
 
         if ("gold".equalsIgnoreCase(type)) {
             int civilians = Math.max(0, cityScope.economy(playerId).getCivilianPopulation() != null ? cityScope.economy(playerId).getCivilianPopulation() : 0);
-            int goldCost = Math.max(1000, Math.min(10000, civilians * 2));
+            int goldCost = appeaseGoldCost(civilians);
             long currentGold = resources.getGold() != null ? resources.getGold() : 0L;
             if (currentGold < goldCost) {
                 throw new IllegalArgumentException("黄金不足，开仓赈灾需要 " + goldCost + " 黄金（当前: " + currentGold + "）");
@@ -618,11 +637,7 @@ public class GameStateService {
             throw new IllegalArgumentException("未知的安抚类型: " + type);
         }
 
-        int curMorale = cityScope.economy(playerId).getMorale() != null ? cityScope.economy(playerId).getMorale() : 70;
-        int curResentment = cityScope.economy(playerId).getResentment() != null ? cityScope.economy(playerId).getResentment() : 0;
-
-        cityScope.economy(playerId).setMorale(Math.min(100, Math.max(0, curMorale + moraleGain)));
-        cityScope.economy(playerId).setResentment(Math.max(0, curResentment - resentmentLoss));
+        cityScope.economy(playerId).adjustSentiment(moraleGain, -resentmentLoss);
         cityScope.economy(playerId).setLastAppeaseAt(GameClock.now());
 
         resourcesRepository.save(resources);
@@ -818,7 +833,6 @@ public class GameStateService {
         saveBuilding(playerId, "refinery", 1);
 
         armyQueues.deleteByPlayerId(playerId);
-        if (unitEquipment != null) unitEquipment.clearOrders(playerId);
 
         // Default army
         armyUnitRepository.deleteByPlayerId(playerId);

@@ -15,6 +15,14 @@ public record CommandBonus(Long officerId, String name, int military, int defens
     public double hpMul() { return 1 + Math.max(0, logistics) * RATE; }
     public double speedMul() { return 1 + Math.max(0, knowledge) * RATE; }
 
+    /** 序列化展示值可往返读取，战斗仍仅使用冻结的四项属性计算。 */
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.READ_ONLY)
+    public Map<String, Double> percents() {
+        return Map.of("military", Math.max(0, military) * RATE * 100,
+                "defense", Math.max(0, defense) * RATE * 100, "logistics", Math.max(0, logistics) * RATE * 100,
+                "knowledge", Math.max(0, knowledge) * RATE * 100);
+    }
+
     /** 战场、战报和持久化共享同一份数据；名称和属性在换任、换装后仍可复盘。 */
     public Map<String, Object> toMap() {
         Map<String, Object> data = new LinkedHashMap<>();
@@ -25,6 +33,7 @@ public record CommandBonus(Long officerId, String name, int military, int defens
         data.put("logistics", logistics);
         data.put("knowledge", knowledge);
         data.put("rate", RATE);
+        data.put("percents", percents());
         return data;
     }
 

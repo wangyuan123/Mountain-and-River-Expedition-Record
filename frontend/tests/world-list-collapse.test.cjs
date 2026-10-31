@@ -37,8 +37,8 @@ test('list map collapses wild, NPC, and owned cards until opened', () => {
   game.World.renderView(view);
   assert.match(view.innerHTML, /class="tcard tcard-wild tcard-collapsible" data-target-key="wild:11"><button[^>]*aria-expanded="false"/);
   assert.match(view.innerHTML, /class="tcard tcard-npc tcard-collapsible" data-target-key="bandit:21"><button[^>]*aria-expanded="false"/);
-  assert.match(view.innerHTML, /data-target-key="wild:11"[^]*?<div class="tcard-expand">[^]*?Game\.World\.attackWild\(0,'campaign'\)/);
-  assert.match(view.innerHTML, /data-target-key="bandit:21"[^]*?<div class="tcard-expand">[^]*?Game\.World\.attack\('bandit',0,'campaign'\)/);
+  assert.match(view.innerHTML, /data-target-key="wild:11"[^]*?<div class="tcard-expand">[^]*?Game\.World\.attackWild\(0,'conquer'\)/);
+  assert.match(view.innerHTML, /data-target-key="bandit:21"[^]*?<div class="tcard-expand">[^]*?Game\.World\.attack\('bandit',0,'conquer'\)/);
   assert.match(view.innerHTML, /data-target-key="bandit:21"[^]*?寇/);
   assert.doesNotMatch(view.innerHTML, /据点 Lv\.3/);
   for (const vessel of ['battleship', 'carrier', 'sub', 'destroyer']) {

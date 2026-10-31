@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setupTestEnvironment() {
   const documentMock = {
@@ -96,6 +96,7 @@ function setupTestEnvironment() {
   const fortJs = fs.readFileSync(path.join(__dirname, '..', 'js', 'fort.js'), 'utf8');
   vm.runInContext(fortJs, context, { filename: 'fort.js' });
 
+  Object.assign(state.gameplay, {fortCap:30000, wall:{maxHp:2500000, defense:200}});
   return { G: context.window.Game, documentMock, state };
 }
 

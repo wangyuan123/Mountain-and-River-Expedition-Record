@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "snapshots": [
+    {
+      "name": "desktop",
+      "width": 1280,
+      "overflow": false
+    },
+    {
+      "name": "mobile",
+      "width": 390,
+      "overflow": false
+    }
+  ],
+  "errors": []
+}

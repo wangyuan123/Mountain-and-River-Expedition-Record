@@ -17,9 +17,9 @@ public class March extends CityOwnedEntity {
     @Column(name = "route_data", columnDefinition = "longtext")
     private String routeData;
 
-    /** 出发时冻结行动装备数值；缺字段的旧行军按无装备处理。 */
-    @Column(name = "unit_equipment_snapshot", columnDefinition = "longtext")
-    private String unitEquipmentSnapshot;
+    /** 出发时冻结负重科技；旧行军在迁移后沿用相同等级，缺键按零级处理。 */
+    @Column(name = "action_snapshot", columnDefinition = "longtext")
+    private String actionSnapshot;
 
     @Column(name = "route_mode", length = 30)
     private String routeMode;

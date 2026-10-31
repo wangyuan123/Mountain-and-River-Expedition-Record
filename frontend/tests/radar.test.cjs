@@ -44,6 +44,16 @@ test('radar switch shows the saved state without trailing level or radius inform
   assert.doesNotMatch(radar.buttonHtml(), /联防雷达Lv\./);
 });
 
+test('radar guidance explains all four upgrades and distinguishes absence of monitoring from absence of threats', () => {
+  const { radar, initial } = setup();
+  assert.match(radar.helpHtml(), /城防雷达.*联防雷达.*雷达预警科技.*联络中心/);
+  assert.match(radar.helpHtml(), /暂无已建成且开启/);
+  initial.cities[0].enabled = true; initial.joinedGuild = false;
+  assert.match(radar.helpHtml(), /半径 1 格.*尚未加入军团/);
+  initial.joinedGuild = true;
+  assert.match(radar.helpHtml(), /暂无符合条件.*未发现预警不代表安全/);
+});
+
 test('city defense radar and recon technology cannot provide a missing regional sensor', async () => {
   const { radar, state, initial, settings } = setup();
   state.buildings.guild_radar = 0;

@@ -26,13 +26,13 @@
 
 ## 本地启动
 
-安装 JDK 17、Maven、MySQL 和 Python 3。默认数据库地址为 `localhost:3306/wargame`，用户 `root`，密码为空；可通过 `.env.example` 列出的环境变量覆盖。手动启动前需将变量导出到进程环境，Spring 不会自动读取根目录 `.env`。
+安装 JDK 17、Maven、MySQL 和 Python 3。默认数据库地址为 `localhost:3306/wargame`，用户 `root`，密码为空；本机配置可从 `.env.local.example` 复制为 `.env.local`。`.env` 与 `.env.example` 专供上线部署，本地启动不读取 `.env`。手动启动前需将本机变量导出到进程环境，Spring 不会自动读取 `.env.local`。
 
 ```sh
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS wargame DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-# 已配置根目录 .env 时，在可信终端加载配置（不要开启 set -x）。
+# 已配置根目录 .env.local 时，在可信终端加载本机配置（不要开启 set -x）。
 set -a
-[ ! -f .env ] || . ./.env
+[ ! -f .env.local ] || . ./.env.local
 set +a
 mvn -f backend/pom.xml spring-boot:run -Dspring-boot.run.profiles=local
 ```
@@ -47,7 +47,17 @@ python3 -m http.server 8081 --directory frontend
 
 `local` 仅监听回环地址，并提供虚构身份 `DEMO-ADULT`、`DEMO-PARENT`、`DEMO-TEEN`、`DEMO-CHILD`。当前默认关闭防沉迷，无需提交测试凭据。需要验收原有控制时，设置 `WARGAME_COMPLIANCE_ENABLED=true`，注册后在实名页提交测试凭据。仅使用独立开发库；不要向公网代理该配置。未指定 `local` 时不会接受测试身份。配置、接口与正式接入边界见 [防沉迷实施说明](docs/ANTI_ADDICTION_IMPLEMENTATION.md)。
 
-`SPRING_PROFILES_ACTIVE=local ./start-local.sh` 可自动准备本机依赖并启动本机测试服务；该脚本会读取并导出根目录受信任的 `.env` 配置（文件值覆盖同名环境变量），安装缺失依赖，并结束占用 8080/8081 的旧进程，适合专用开发环境。SMTP 授权码及邮箱密钥的配置见 [QQ 邮箱实施说明](docs/QQ_EMAIL_ACCOUNT_RECOVERY_IMPLEMENTATION.md)。
+`SPRING_PROFILES_ACTIVE=local ./start-local.sh` 可自动准备本机依赖并启动本机测试服务；该脚本只读取并导出根目录受信任的 `.env.local` 配置（文件值覆盖同名环境变量），安装缺失依赖，并结束占用 8080/8081 的旧进程，适合专用开发环境。数据库检查和创建使用与后端相同的地址、用户和密码；认证失败会在启动后端前报错。在不入库的 `.env.local` 中设置本机连接，例如：
+
+```sh
+WARGAME_DB_URL='jdbc:mysql://localhost:3306/wargame?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true'
+WARGAME_DB_USER=root
+WARGAME_DB_PASSWORD=
+```
+
+模板默认关闭邮件投递，已有账号仍可登录；需要本机验收邮件注册、绑定或找回时，在 `.env.local` 单独配置 SMTP 与邮箱密钥。
+
+启动检查要求前后端返回 HTTP 200；按 Ctrl+C 或收到 TERM 时，脚本会清理包含 Java 子进程的服务进程组，5 秒后强制结束仍未退出的进程。任一服务运行中退出也会停止另一服务。SMTP 授权码及邮箱密钥的配置见 [QQ 邮箱实施说明](docs/QQ_EMAIL_ACCOUNT_RECOVERY_IMPLEMENTATION.md)。
 
 ## 服务器与 Docker 一键部署
 
@@ -195,6 +205,8 @@ git lfs pull
 生产环境默认只允许同源 API 和 WebSocket。跨域客户端需设置 `WARGAME_ALLOWED_ORIGINS`，如 `https://game.example.com,https://forum.example.com`，必须包含协议和非默认端口，不含路径、末尾斜杠或通配符。HTTP 与 WebSocket 共用白名单，修改后重启后端。本地默认允许 localhost / 127.0.0.1 的 8081、5174 端口；局域网调试需显式加入前端来源。独立论坛若需要跨域访问现有 API，应把其来源加入白名单，论坛实现本次不修改。
 
 API 使用显式 Authorization Bearer Token，不接受 Cookie 登录凭据，因此保持无状态并关闭 CSRF token 校验；将来引入 Cookie 登录时必须重新设计 CSRF 防护。CORS 不允许跨域 Cookie 凭据。
+
+后台会话默认 2 小时，每次请求复查账号及持久化凭据版本，改密、退出和停用后旧会话失效；历史固定管理员口令停用，须显式初始化。API 已叠加 IP、账号和写请求限流，统一返回 429 与 `Retry-After`。代理来源统一由 `WARGAME_TRUSTED_PROXIES` 白名单校验，默认不信任转发头。配置、初始化和限额见 [后台凭据与统一请求防护](docs/AUTH_REQUEST_SECURITY.md)。
 
 游戏首页的 CSP meta 与 Nginx 响应头限制脚本来源、插件、基址和表单提交；Nginx 另外限制连接来源与页面嵌入。现有大量内联事件仍需 `unsafe-inline`，Pixi 7 WebGL 着色器生成仍需 `unsafe-eval`，因此这是基础加固，不能替代所有用户文本的输出转义。严格禁止内联脚本和动态执行需要先迁移内联事件并更换兼容严格 CSP 的渲染器；本次不修改论坛页面或其 Token 传递方式。部署后重载 Nginx 并刷新页面。
 

@@ -22,6 +22,11 @@ public class AdminUser {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    /** 所有管理员资料更新均推进版本，使改密、禁用、改权限前的 JWT 永久失效，并防止并发覆盖。 */
+    @Version
+    @Column(name = "auth_version", nullable = false)
+    private Long authVersion = 1L;
+
     @Column(name = "role", nullable = false, length = 20)
     private String role = "ADMIN";
 
@@ -35,6 +40,6 @@ public class AdminUser {
     private Long updatedAt;
 
     public boolean isActive() {
-        return disabled == null || disabled == 0;
+        return Integer.valueOf(0).equals(disabled);
     }
 }

@@ -4,21 +4,12 @@ window.Game = window.Game || {};
 (function (G) {
   'use strict';
 
-  var ATTR_MAX = G.Constants.saveAttrMax;
-  var OFFICER_MAX_LEVEL = G.Constants.officerMaxLevel;
 
+  /** 升级曲线由服务端目录提供，前端仅按等级查已计算的需求。 */
   function expNeeded(level) {
-    if (level >= OFFICER_MAX_LEVEL) return 0;
-    var currentLevel = Math.max(1, level);
-    var after20 = Math.max(0, currentLevel - 20);
-    var after50 = Math.max(0, currentLevel - 50);
-    var after80 = Math.max(0, currentLevel - 80);
-    return 200 * currentLevel + 75 * after20 * after20
-      + 150 * after50 * after50 + 300 * after80 * after80;
-  }
-
-  function growAttr(attr) {
-    return Math.min(ATTR_MAX, attr + 1 + Math.floor(Math.random() * 3));
+    var state = G.Core && G.Core.state || G.state || {};
+    var catalog = state.gameplay && state.gameplay.catalog;
+    return catalog && catalog.experience[level] != null ? catalog.experience[level] : null;
   }
 
   // ===== 存档逻辑：状态由后端管理，前端不再做本地存档/云端同步 =====
@@ -57,8 +48,5 @@ window.Game = window.Game || {};
   };
 
   G.Save = Save;
-  G.ATTR_MAX = ATTR_MAX;
-  G.OFFICER_MAX_LEVEL = OFFICER_MAX_LEVEL;
   G.expNeeded = expNeeded;
-  G.growAttr = growAttr;
 })(window.Game);

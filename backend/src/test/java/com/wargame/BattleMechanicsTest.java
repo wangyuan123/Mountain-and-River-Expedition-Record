@@ -127,7 +127,7 @@ class BattleMechanicsTest {
         Object borrowedArmor = context(Map.of(), Map.of("borrow_armor", 5));
         Object strongerEnemy = context(Map.of("defense_tech", 20), Map.of("borrow_armor", 5));
         Object bulwark = context(Map.of(), Map.of("bulwark", 5));
-        Object conflictingSkills = context(Map.of(), Map.of("bulwark", 5, "borrow_armor", 5));
+        Object combinedSkills = context(Map.of(), Map.of("bulwark", 5, "borrow_armor", 5));
 
         long base = damage(false, empty, empty, true);
         long borrowed = damage(false, empty, borrowedArmor, true);
@@ -138,8 +138,12 @@ class BattleMechanicsTest {
         String bonusLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
                 "我方", borrowedArmor, 2, true);
         assertTrue(bonusLog.contains("上限敌方同名兵种防御30%"), "战斗详情应说明封顶以敌方防御为准");
-        assertEquals(damage(false, empty, bulwark, true), damage(false, empty, conflictingSkills, true),
-                "旧存档同时拥有两个互斥技能时，应仅保留坚守阵地生效");
+        assertTrue(damage(false, empty, combinedSkills, true) < damage(false, empty, bulwark, true),
+                "同时拥有两个技能时，借甲御敌应在坚守阵地之外追加防御");
+        assertEquals(base, damage(false, empty, combinedSkills, false), "间隔回合两项防御技能均不生效");
+        String combinedLog = ReflectionTestUtils.invokeMethod(new BattleService(4096), "buildCommanderBonusLog",
+                "我方", combinedSkills, 2, true);
+        assertTrue(combinedLog.contains("坚守阵地") && combinedLog.contains("借甲御敌"));
         assertEquals(damage("armored", "infantry", false, empty, empty, true),
                 damage("armored", "infantry", false, empty, borrowedArmor, true),
                 "没有同名存活敌军时不应获得借甲防御");

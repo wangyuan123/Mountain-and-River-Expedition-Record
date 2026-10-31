@@ -39,6 +39,12 @@ public class AdminAuthController {
         String oldPassword = body.get("oldPassword");
         String newPassword = body.get("newPassword");
         adminAuthService.changePassword(authentication.getName(), oldPassword, newPassword, request);
-        return Map.of("success", true, "message", "密码修改成功");
+        return Map.of("success", true, "message", "密码修改成功，全部后台登录状态已失效，请重新登录", "requiresLogin", true);
+    }
+
+    @PostMapping("/logout")
+    public Map<String, Object> logout(Authentication authentication, HttpServletRequest request) {
+        adminAuthService.logout(authentication.getName(), request);
+        return Map.of("success", true, "message", "已退出，全部后台登录状态已失效");
     }
 }

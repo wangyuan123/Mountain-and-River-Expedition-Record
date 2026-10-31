@@ -208,10 +208,6 @@
         {
           "key": "prisoner_education",
           "name": "战俘收编"
-        },
-        {
-          "key": "unit_refit",
-          "name": "武器装备"
         }
       ],
       "levels": [
@@ -622,7 +618,7 @@
       "level10Gold": 80000000
     }
   ],
-  "allCurrentTechnologiesTotal": 2019962000,
+  "allCurrentTechnologiesTotal": 1942766000,
   "currentGoldTaxProductionCapPerCity": 20000000,
   "goldReplacesExistingGoldCost": true,
   "otherResourceFormulaChanged": false,

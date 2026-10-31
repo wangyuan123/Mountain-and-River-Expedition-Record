@@ -1,0 +1,2304 @@
+[
+  {
+    "suite": "com.wargame.AccountDeletionMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AccountDeletionSchedulerTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AccountDeletionTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AccountEmailIntegrationTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AccountEmailMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AdminCredentialMigrationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AdminSecurityIntegrationTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AdminSystemTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AntiAddictionTest",
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ApronAirMarchSpeedTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ArmyRecruitmentFoodTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.AttackDesignTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "skippedCases": [
+      {
+        "case": "everyAttackMatchesBudgetOrExplicitRatio",
+        "reason": "20260918 历史齐射设计快照，已被 20260919 属性重构与 v7 精简倍率取代"
+      }
+    ]
+  },
+  {
+    "suite": "com.wargame.AvatarStorageServiceTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BanditImportTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BanditRefreshTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleActionPreferencesTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleBalanceTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleCompositionTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleContactMovementTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleDamageTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleDefaultsControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleDefaultsLockIntegrationTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleFireDensityTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleMechanicsTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleOpeningDistanceTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattlePrestigeTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleRoundLimitTest",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BattleServiceTest",
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BlockSpawnPlannerTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BlockSpawnRefreshTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BotIntegrationTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BuildDismantleSettlementTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.BuildServiceTest",
+    "tests": 45,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ChatServiceTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CityBattleDispatchLockTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CityCapacityConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CityShieldServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CityTeleportTest",
+    "tests": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CommandBonusBattleTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CommanderRenameMigrationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CommanderRenameTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ComplianceMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ConquestWallBreachTest",
+    "tests": 28,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ConquestWallMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ConquestWallSessionTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ConstructionCostSnapshotMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ContinuousPopulationMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.CounterReconRemovalTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.DataRetentionMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.DataRetentionTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.DeclareWarMailTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.DepotItemBroadcastTest",
+    "tests": 49,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.DisplayNameTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.DurationTextTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.EconomyAccrualTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FieldHospitalServiceTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FortCapacityTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ForumConcurrencyTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ForumPostingTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ForumServiceTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FreeArmySpeedUpTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FreeBuildSpeedUpTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FriendControllerTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FriendMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.FriendServiceIntegrationTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameClockStartupTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameControllerAvatarTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameControllerHomeModuleOrderTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameFlowTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameRuleAdjustmentsTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameTimeActivitiesTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameplayAuditFixesTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameplayAuditRound3FixesTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameplayAuditRound4FixesTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameplayAuditRound5And6FixesTest",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameplayAuthorityTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GameplayConsistencyMigrationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GatherAutoAbandonConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GatherAutoAbandonMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GatherAutoAbandonTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GatherModeTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GuildChatServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GuildIconTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GuildPresenceTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GuildRelationBroadcastTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GuildRelationServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.GuildSupportTest",
+    "tests": 32,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.HeadquartersMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.HeadquartersServiceTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.HomeModuleOrderTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.IncomingIntelligenceTest",
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.IncomingReportShareIntegrationTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.IncomingReportShareServiceTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.InterceptionAmbushConcurrencyTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.InterceptionAmbushEngineTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.InterceptionAmbushMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.InterceptionBattleTest",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.InterceptionPlannerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.IslandContentServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ItemBuffTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.JewelryRemovalMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.JointDefenseBattleTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.JointDefenseConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.JointDefenseMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LandBanditPopulationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LandBanditQuestTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LandNpcGarrisonTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LeaderboardControllerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LeaderboardServiceTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LegacyColumnRemovalMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LegacyCommanderNamesMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.LegacySaveImportTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MailServiceTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ManualGatherMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MapFavoriteMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MapFavoritePersistenceTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchAccelerationConcurrencyTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchAccelerationMigrationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchAccelerationTest",
+    "tests": 29,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchCommanderBattleTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchLootCapacityTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchOrderDurationTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchServiceTest",
+    "tests": 97,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarchStratagemTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MarketServiceTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MobilizationMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MobilizationOrderConcurrencyTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MobilizationOrderTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MultiCityControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MultiCityTest",
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.MySqlMigrationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "skippedCases": [
+      {
+        "case": "removesMotorUnitsAcrossCitiesAndPreservesOtherUnits",
+        "reason": "Environment variable [WARGAME_TEST_MYSQL_URL] does not exist"
+      },
+      {
+        "case": "upgradesExistingDataAndValidatesTheRealMysqlSchema",
+        "reason": "Environment variable [WARGAME_TEST_MYSQL_URL] does not exist"
+      }
+    ]
+  },
+  {
+    "suite": "com.wargame.NewPlayerBriefingMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NewbiePackConcurrencyTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NewbieProtectionControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NewbieProtectionIntegrationTest",
+    "tests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NewbieProtectionMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NewbieProtectionRulesTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NorthernSnowWildTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NotificationCommanderNamesMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NpcCitySpawnServiceTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NpcJapaneseCommanderTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NpcJapaneseUnitTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.NpcRetirementMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OceanMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OceanPlacementConcurrencyTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OceanTerrainTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerEquipmentConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerEquipmentExpansionTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerEquipmentMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerExperienceRulesTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerLevelUpTest",
+    "tests": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerNameGeneratorTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerRenameTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerSalaryArrearsTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerSkillCycleTest",
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerSkillDescriptionTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OfficerSkillPersistenceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OnboardingConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OnboardingServiceUnitTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.OnboardingTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PlayerCityConquestTest",
+    "tests": 63,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PoliticalWordFilterTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PopulationEconomyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PrerequisiteIntegrationTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PrisonerMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PrisonerServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PrivateChatControllerTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PrivateChatRepositoryTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PrivateChatServiceTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ProductionAccelerationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ProductionRewardSalaryMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpCalibrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpEventsTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpMatcherTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpPerformanceTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpPracticeTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.PvpRulesTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.QuestDailyCheckinTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.QuestStageSystemTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RadarEventsTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RadarGeometryTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RadarMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RadarServiceTest",
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RadarSplitMigrationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RankCertificatePurchaseConcurrencyTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RankDiamondGiftConcurrencyTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RankDiamondGiftMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RankDiamondGiftTest",
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RankPromotionTest",
+    "tests": 45,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RechargeDisabledControllerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ReconArmoredCarTest",
+    "tests": 41,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ReconCommanderRulesTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ReconInitiativeRulesTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ReportCommanderNamesMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ReportShareServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ResourceOverflowServiceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.RetentionMetricsServiceTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ScoutCardIntelligenceMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ScoutIntelligenceTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ScoutProductionMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.SeaNpcGarrisonTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ServerRegionTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ShieldDurationTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ShieldReturnMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ShipyardPvpCompatibilityTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ShipyardServiceTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ShopControllerTest",
+    "tests": 85,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.ShopInventoryAtomicityTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.SortieBattleTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.SortieMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.StationedGatherModeTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.StratagemRulesTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalBattleLimitIntegrationTest",
+    "tests": 27,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalBattleOutcomeTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalBattleRoundTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalBattleSchedulerTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalOfficerSkillsTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalOrdersMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TacticalPersistentOrdersTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TechServiceTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TechnologyGoldCostsIntegrationTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TechnologyGoldCostsTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TechnologyReworkIntegrationTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TechnologyReworkMigrationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TechnologyReworkRulesTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TickSchedulerTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TickServiceTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.TransferredOfficerPreparationMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitEquipmentMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitEquipmentRetirementMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitMobilityRulesTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitPopulationCostsIntegrationTest",
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitPopulationCostsMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitUnlockIntegrationTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UnitUnlockMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UniversalSkillBookConcurrencyTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.UniversalSkillBookTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.VipAvatarControllerTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.VipClaimControllerTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.VipPromotionBroadcastTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.VipServiceTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WarPowerProtectionMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WarPowerProtectionTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WarSpeedOrderConcurrencyTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WarSpeedOrderTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WildAbandonTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WildOccupationConcurrencyTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WildOccupationMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WildOccupationTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WildScoutTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WildTileRefreshTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WorldChatPermanentUnlockMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WorldConfigTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WorldContentServiceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WorldMapServiceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WorldViewServiceTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WoundedControllerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WoundedMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.WoundedServiceTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.config.AdminAccountBootstrapTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.config.ComplianceBoundaryTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.config.GameWebSocketPresenceTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.config.SecurityOriginsTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.config.ServerDatabaseGuardTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.security.ClientIpResolverTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.security.RateLimiterRetentionTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.security.RequestRateLimitsTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.AcademyRecruitmentTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.AcademyRefreshConcurrencyTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.AcademyRefreshMigrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.AcademyRefreshPolicyTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.AvatarMigrationTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.ChatKeywordFilterTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.DepotPopulationOrderTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.DepotStarUpTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.GameClockRuntimeTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.MapFavoriteServiceTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.MayorSkillServiceTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.MilitaryTheoryTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.NameChangePolicyTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.bot.BotPlannerTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.bot.BotPolicyTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  },
+  {
+    "suite": "com.wargame.service.bot.BotStoreTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skippedCases": []
+  }
+]

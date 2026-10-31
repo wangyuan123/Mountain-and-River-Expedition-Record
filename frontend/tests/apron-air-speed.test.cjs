@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 const root = path.resolve(__dirname, '../..');
 
@@ -41,62 +41,28 @@ test('战备机场定义校验: airSpdBonus 为 3，移除 airCap', () => {
   assert.match(apron.desc, /不提高战场移动速度/);
 });
 
-test('Core.spdMul 计算: 战备机场为空军提供每级 +3% 航速加成，与其他军种隔离', () => {
-  const ctx = loadFrontendContext();
-  const Core = ctx.window.Game.Core;
-
-  Core.state = {
-    tech: { air_engine: 0, arm_engine: 2 },
-    buildings: { apron: 0 }
-  };
-
-  // 0 级起飞场，0 级科技 -> 1.0
-  assert.equal(Core.spdMul('air'), 1.0);
-
-  // 5 级起飞场 -> 1.0 + 5 * 0.03 = 1.15
-  Core.state.buildings.apron = 5;
-  assert.equal(Math.round(Core.spdMul('air') * 100) / 100, 1.15);
-
-  // 10 级起飞场 -> 1.0 + 10 * 0.03 = 1.30
-  Core.state.buildings.apron = 10;
-  assert.equal(Math.round(Core.spdMul('air') * 100) / 100, 1.30);
-
-  // 10 级起飞场 + 4 级喷气推进科技 -> 1.0 + 0.20 + 0.30 = 1.50
-  Core.state.tech.air_engine = 4;
-  assert.equal(Math.round(Core.spdMul('air') * 100) / 100, 1.50);
-
-  // 步兵与装甲车不受起飞场影响
-  assert.equal(Core.spdMul('inf'), 1.1);
-  // arm_engine 2 级 -> 1 + 2 * 0.05 = 1.10
-  assert.equal(Math.round(Core.spdMul('arm') * 100) / 100, 1.10);
+test('城市不再提供前端行军倍率公式，机场加速只由路线接口决定', () => {
+  const G = loadFrontendContext().window.Game;
+  assert.equal(G.Core.spdMul, undefined);
+  assert.equal(G.Core.atkMul, undefined);
+  G.Core.state = { buildings: { apron: 10 }, tech: { air_engine: 10 } };
+  assert.equal(G.Core.spdMul, undefined);
 });
 
-test('陆军共用燃烧引擎，步兵与特种兵获得相同科技倍率', () => {
-  const ctx = loadFrontendContext();
-  const G = ctx.window.Game;
-  G.Core.state = { tech: { arm_engine: 10 }, buildings: {} };
-  vm.runInContext(fs.readFileSync(path.join(root, 'frontend/js/battle.js'), 'utf8'), ctx);
-  for (const [id, base, effective] of [['truck', 4, 6], ['infantry', 2, 3], ['special', 6, 9]]) {
-    assert.equal(G.DATA.units[id].spd, base);
-    assert.equal(base * G.Core.spdMul(G.DATA.units[id].cat, id), effective);
-    assert.equal(G.Battle.getEffectiveSpeed(id, { arm_engine: 10 }, {}), effective);
-    assert.equal(G.DATA.units[id].cat, 'inf');
-  }
+test('世界行军基础说明由服务端兵种目录提供', () => {
+  const G = loadFrontendContext().window.Game;
+  const motion = require('./server-gameplay.cjs').fixture.gameplay.catalog.unitMotion;
+  assert.ok(motion.infantry.marchSecondsPerGrid > 0);
+  assert.ok(motion.special.marchSecondsPerGrid > 0);
+  assert.equal(G.Core.spdMul, undefined);
 });
 
-test('战术移速按下一回合交战周期展示闪电突击，每级6%，刷新保留起点', () => {
-  const ctx = loadFrontendContext();
-  const G = ctx.window.Game;
+test('战术移速读取下一回合服务端快照，不从当前科技或技能推导', () => {
+  const ctx = loadFrontendContext(), G = ctx.window.Game;
   vm.runInContext(fs.readFileSync(path.join(root, 'frontend/js/battle.js'), 'utf8'), ctx);
-  for (let completedRound = 0; completedRound < 13; completedRound++) {
-    G.Battle._activeTactical = { round: completedRound, firstCombatRound: completedRound < 4 ? 0 : 4 };
-    const active = [7, 10, 13].includes(completedRound + 1);
-    assert.equal(G.Battle.getEffectiveSpeed('truck', { arm_engine: 10 }, { blitz: 5 }), active ? 7.8 : 6);
-  }
-  G.Battle._activeTactical = { round: 6, firstCombatRound: 4 };
-  for (let level = 1; level <= 5; level++) {
-    assert.equal(G.Battle.getEffectiveSpeed('truck', { arm_engine: 10 }, { blitz: level }),
-      Math.round(6 * (1 + 0.06 * level) * 10) / 10);
-  }
-  assert.equal(G.Battle.getEffectiveSpeed('truck', { arm_engine: 10 }, { blitz: 10 }), 7.8);
+  G.Battle._activeTactical = { attackerStats: { infantry: { speed: 6.7 } }, attackerTech: {} };
+  assert.equal(G.Battle.getEffectiveSpeed('infantry'), 6.7);
+  G.Core.state = { tech: { arm_engine: 10 }, officers: [] };
+  assert.equal(G.Battle.getEffectiveSpeed('infantry'), 6.7);
+  assert.equal(G.Battle.getEffectiveSpeed('scout'), 0);
 });

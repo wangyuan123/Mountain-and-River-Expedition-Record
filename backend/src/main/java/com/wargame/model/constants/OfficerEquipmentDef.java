@@ -35,7 +35,7 @@ public record OfficerEquipmentDef(String key, String name, String description, S
                     int sub = t.path(core ? "core_each_secondary" : "new_slot_each_secondary").asInt();
                     String name = core ? t.path("core_names").path(bk).get(SLOTS.indexOf(slot)).asText()
                             : t.path("name").asText() + CONFIG.path("new_slot_branch_names").path(bk).path(slot).asText();
-                    String desc = setName + "·" + s.path("name").asText() + "：Lv." + t.path("required_level").asInt()
+                    String desc = setName + "·" + s.path("name").asText() + "：军官Lv." + t.path("required_level").asInt()
                             + "可穿戴，" + b.path("name").asText() + "+" + main + "，其余属性各+" + sub + "；同套3/6/9/12件累计激活共鸣";
                     int[] attrs = new int[4]; Arrays.fill(attrs, sub); attrs[BRANCHES.indexOf(bk)] = main;
                     items.put(key, new OfficerEquipmentDef(key, name, desc, set, setName, bk, slot,
@@ -47,7 +47,6 @@ public record OfficerEquipmentDef(String key, String name, String description, S
     }
 
     public JsonNode tierConfig() { return TIERS.get(setKey.substring(0, setKey.indexOf('_'))); }
-    public int preparationCap() { return tierConfig().path("effective_preparation_cap").asInt(); }
     public static List<OfficerEquipmentDef> setItems(String setKey) {
         return ITEMS.values().stream().filter(d -> d.setKey.equals(setKey)).toList();
     }

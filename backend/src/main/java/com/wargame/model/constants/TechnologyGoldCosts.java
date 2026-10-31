@@ -25,7 +25,7 @@ public final class TechnologyGoldCosts {
             Map.entry("log_train", NORMAL), Map.entry("log_build", NORMAL),
             Map.entry("log_medical", NORMAL), Map.entry("recon_level", NORMAL),
             Map.entry("recon_radar", NORMAL), Map.entry("prisoner_education", NORMAL),
-            Map.entry("unit_refit", NORMAL), Map.entry("arm_engine", LAND),
+            Map.entry("arm_engine", LAND),
             Map.entry("air_engine", AIR), Map.entry("nav_engine", NAVAL));
 
     private TechnologyGoldCosts() {}

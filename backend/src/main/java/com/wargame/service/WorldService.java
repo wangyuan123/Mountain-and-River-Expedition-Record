@@ -37,6 +37,8 @@ import java.util.*;
  */
 @Service
 public class WorldService {
+    @org.springframework.beans.factory.annotation.Autowired private PersonalWarService personalWars;
+    @org.springframework.beans.factory.annotation.Autowired private CityBattleLockService cityBattleLock;
     @org.springframework.beans.factory.annotation.Autowired private WarPowerProtectionService warPowerProtection;
     @org.springframework.beans.factory.annotation.Autowired private TacticalOrderService tacticalOrders;
     @org.springframework.beans.factory.annotation.Autowired private PlayerItemRepository items;
@@ -69,6 +71,12 @@ public class WorldService {
     private static final long WAR_PREPARE_MS = 2 * 3600 * 1000L;
     /** 交战持续时间 (48小时) - 对应 JS var warSec = 48 * 3600 */
     private static final long WAR_DURATION_MS = 48 * 3600 * 1000L;
+
+    /** 宣战预览与正式创建共享时间规则，使用停服顺延的游戏时钟。 */
+    public static Map<String, Long> warTiming(long now) {
+        return Map.of("warAt", now + WAR_PREPARE_MS, "warEndAt", now + WAR_PREPARE_MS + WAR_DURATION_MS,
+                "prepareSeconds", WAR_PREPARE_MS / 1000, "warSeconds", WAR_DURATION_MS / 1000);
+    }
 
     public WorldService(PlayerRepository playerRepository,
                         WorldMapRepository worldMapRepository,
@@ -213,14 +221,14 @@ public class WorldService {
                 result.put("level", realPlayer.getLevel());
                 result.put("prestige", realPlayer.getPrestige());
                 boolean selfCity = realPlayer.getId().equals(playerId);
-                boolean relatedWar = !selfCity && playerId.equals(realPlayer.getWarAgainstId());
+                var viewWar = selfCity ? null : personalWars.between(playerId, realPlayer.getId());
                 result.put("ownerId", realPlayer.getId());
                 result.put("guildmate", guildRelations.areGuildmates(playerId, realPlayer.getId()));
                 result.put("guildRelation", guildRelations.relationshipBetweenPlayers(playerId, realPlayer.getId()));
                 result.put("selfCity", selfCity);
                 if (!selfCity) result.put("powerProtection", warPowerProtection.evaluate(playerId, realPlayer.getId()).toMap());
-                result.put("warAt", relatedWar && realPlayer.getWarAt() != null ? realPlayer.getWarAt() : 0L);
-                result.put("warEndAt", relatedWar && realPlayer.getWarEndAt() != null ? realPlayer.getWarEndAt() : 0L);
+                result.put("warAt", viewWar != null ? viewWar.getWarAt() : 0L);
+                result.put("warEndAt", viewWar != null ? viewWar.getWarEndAt() : 0L);
                 result.put("realPlayer", true);
                 result.put("x", x);
                 result.put("y", y);
@@ -342,7 +350,7 @@ public class WorldService {
                     continue;
                 }
                 boolean selfCity = ownerId.equals(playerId);
-                boolean relatedWar = !selfCity && playerId.equals(owner.getWarAgainstId());
+                var viewWar = selfCity ? null : personalWars.between(playerId, ownerId);
                 m.put("ownerId", ownerId);
                 m.put("playerName", owner != null ? PlayerNames.commanderName(owner) : "");
                 m.put("prestige", owner != null && owner.getPrestige() != null ? owner.getPrestige() : 0);
@@ -354,8 +362,8 @@ public class WorldService {
                 buildingRepository.findByPlayerIdAndCitySlotAndType(ownerId, slot, "wall").stream()
                         .map(Building::getLevel).filter(Objects::nonNull).findFirst()
                         .ifPresent(lvl -> m.put("wallLevel", lvl));
-                m.put("warAt", relatedWar && owner.getWarAt() != null ? owner.getWarAt() : 0L);
-                m.put("warEndAt", relatedWar && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L);
+                m.put("warAt", viewWar != null ? viewWar.getWarAt() : 0L);
+                m.put("warEndAt", viewWar != null ? viewWar.getWarEndAt() : 0L);
                 m.put("distance", manhattanDist(px, py, pc.getX(), pc.getY()));
                 playerCities.add(m);
             }
@@ -509,39 +517,23 @@ public class WorldService {
 
         long now = GameClock.now();
 
-        // 双向重宣检查：备战期(now<warAt) 与 交战期(warAt<=now<warEndAt) 都拒绝
-        long attackerWarEnd = attacker.getWarEndAt() != null ? attacker.getWarEndAt() : 0L;
-        long attackerWarAt   = attacker.getWarAt()    != null ? attacker.getWarAt()    : 0L;
-        long defenderWarEnd  = defender.getWarEndAt() != null ? defender.getWarEndAt() : 0L;
-        long defenderWarAt   = defender.getWarAt()    != null ? defender.getWarAt()    : 0L;
-
-        if (attackerWarEnd > now && defenderId.equals(attacker.getWarAgainstId())) {
-            String phase = now < attackerWarAt ? "备战" : "交战";
+        // 每对账号单独判定，其他对手的战争不覆盖本次关系，也不阻止正常多方交战。
+        var existingWar = personalWars.between(playerId, defenderId);
+        if (existingWar != null && existingWar.getWarEndAt() > now) {
             result.put("success", false);
-            result.put("message", "你已对该玩家处于" + phase + "状态,无法重复宣战");
-            return result;
-        }
-        if (defenderWarEnd > now && playerId.equals(defender.getWarAgainstId())) {
-            String phase = now < defenderWarAt ? "备战" : "交战";
-            result.put("success", false);
-            result.put("message", "对方正处于" + phase + "状态(已被你宣战),无法再次宣战");
-            return result;
-        }
-        // 兼容旧数据：PlayerCity 上仍可能记录着战时状态
-        long legacyWarEnd = target.getWarEndAt() != null ? target.getWarEndAt() : 0L;
-        if (legacyWarEnd > now) {
-            result.put("success", false);
-            result.put("message", "目标正处于战时状态,无法重复宣战");
+            result.put("message", "双方已处于备战或交战状态，无法重复宣战");
             return result;
         }
 
-        long warAt = now + WAR_PREPARE_MS;
-        long warEndTime = warAt + WAR_DURATION_MS;
+        var timing = warTiming(now);
+        long warAt = timing.get("warAt"), warEndTime = timing.get("warEndAt");
 
         NewbieProtection.requireConfirmation(attacker, abandonNewbieProtection, now);
         if (NewbieProtection.until(attacker, now) > now) attacker.setNewbieProtectionEnded(true);
 
-        // 写双方玩家
+        personalWars.declare(playerId, defenderId, cityScope.slot(playerId), targetCityId, now, warAt, warEndTime);
+
+        // 兼容旧客户端的最近战争展示字段；实际关系由独立战争表保存。
         attacker.setWarAt(warAt);
         attacker.setWarEndAt(warEndTime);
         attacker.setWarAgainstId(defenderId);
@@ -646,37 +638,21 @@ public class WorldService {
         Player defender = city.getOwnerId() == null ? null : playerRepository.findById(city.getOwnerId()).orElse(null);
         if (defender != null) entityManager.refresh(defender);
         long now = GameClock.now();
-        if (!playerId.equals(attacker.getWarInitiatorId()) || attacker.getWarDeclaredAt() == null
-                || !Objects.equals(attacker.getWarCitySlot(), cityScope.slot(playerId))
-                || !Objects.equals(attacker.getWarTargetCityId(), targetCityId)
-                || attacker.isWarAccelerated() || defender == null || defender.isWarAccelerated()
-                || !Objects.equals(attacker.getWarAgainstId(), defender.getId())
-                || !playerId.equals(defender.getWarAgainstId())
-                || !Objects.equals(attacker.getWarAt(), defender.getWarAt())
-                || !Objects.equals(attacker.getWarEndAt(), defender.getWarEndAt())
-                || !Objects.equals(attacker.getWarDeclaredAt(), defender.getWarDeclaredAt())
-                || !Objects.equals(attacker.getWarInitiatorId(), defender.getWarInitiatorId())
-                || !Objects.equals(attacker.getWarCitySlot(), defender.getWarCitySlot())
-                || !Objects.equals(attacker.getWarTargetCityId(), defender.getWarTargetCityId())
-                || !Objects.equals(attacker.getWarAt(), city.getWarAt())
-                || !Objects.equals(attacker.getWarEndAt(), city.getWarEndAt())
+        var war = defender == null ? null : personalWars.between(playerId, defender.getId());
+        if (war == null || !playerId.equals(war.getInitiatorId()) || war.getCitySlot() != cityScope.slot(playerId)
+                || !Objects.equals(war.getTargetCityId(), targetCityId) || war.isAccelerated()
                 || attacker.deletionDue(System.currentTimeMillis()) || defender.deletionDue(System.currentTimeMillis())
-                || attacker.getWarAt() == null || attacker.getWarAt() <= now
-                || attacker.getWarEndAt() == null || attacker.getWarEndAt() <= attacker.getWarAt()
+                || war.getDeclaredAt() <= 0 || war.getWarAt() <= now || war.getWarEndAt() <= war.getWarAt()
                 || !GuildRelationService.NEUTRAL.equals(guildRelations.relationshipBetweenPlayers(playerId, defender.getId())))
             throw new IllegalArgumentException("只能在发起城市对本次仍有效且未加速的宣战使用道具");
         Map<String, Object> effect = tacticalOrders.effect(playerId, "warSpeedOrder");
         String token = tacticalOrders.token(effect, playerId, cityScope.slot(playerId), targetCityId,
-                attacker.getWarDeclaredAt(), attacker.getWarAt(), attacker.getWarEndAt(), defender.getId());
-        long after = StratagemRules.warStart(now, attacker.getWarAt(), attacker.getWarDeclaredAt(),
-                ((Number) effect.get("knowledge")).intValue());
-        if (after >= attacker.getWarAt()) throw new IllegalArgumentException("已达到最低备战时长，无法继续加速");
-        effect.put("confirmationToken", token);
-        effect.put("targetCityId", targetCityId);
-        effect.put("remainingMs", attacker.getWarAt() - now);
-        effect.put("afterMs", after - now);
-        effect.put("warAt", after);
-        effect.put("warEndAt", after + WAR_DURATION_MS);
+                war.getDeclaredAt(), war.getWarAt(), war.getWarEndAt(), defender.getId());
+        long after = StratagemRules.warStart(now, war.getWarAt(), war.getDeclaredAt(), ((Number) effect.get("knowledge")).intValue());
+        if (after >= war.getWarAt()) throw new IllegalArgumentException("已达到最低备战时长，无法继续加速");
+        effect.put("confirmationToken", token); effect.put("targetCityId", targetCityId);
+        effect.put("remainingMs", war.getWarAt() - now); effect.put("afterMs", after - now);
+        effect.put("warAt", after); effect.put("warEndAt", after + WAR_DURATION_MS);
         effect.put("stock", items.findByPlayerIdAndItemKey(playerId, "warSpeedOrder").map(PlayerItem::getCount).orElse(0));
         return effect;
     }
@@ -693,26 +669,23 @@ public class WorldService {
         if (!defenderId.equals(target.getOwnerId())) throw new IllegalArgumentException("目标城市归属已变化");
         Map<String, Object> effect = previewWarOrder(playerId, targetCityId);
         tacticalOrders.requireToken((String) effect.get("confirmationToken"), confirmationToken);
-        Player attacker = playerRepository.findById(playerId).orElseThrow();
+        var war = personalWars.between(playerId, defenderId);
         long now = GameClock.now();
-        long start = StratagemRules.warStart(now, attacker.getWarAt(), attacker.getWarDeclaredAt(),
-                ((Number) effect.get("knowledge")).intValue());
-        long before = attacker.getWarAt() - now;
-        if (start <= now || start >= attacker.getWarAt()) throw new IllegalArgumentException("备战状态已变化，请刷新预览");
-        effect.remove("confirmationToken");
-        effect.put("usedAt", now);
-        effect.put("remainingMs", before);
-        effect.put("afterMs", start - now);
-        effect.put("savedMs", before - (start - now));
-        effect.put("warAt", start);
-        effect.put("warEndAt", start + WAR_DURATION_MS);
+        long start = StratagemRules.warStart(now, war.getWarAt(), war.getDeclaredAt(), ((Number) effect.get("knowledge")).intValue());
+        long before = war.getWarAt() - now;
+        if (start <= now || start >= war.getWarAt()) throw new IllegalArgumentException("备战状态已变化，请刷新预览");
+        effect.remove("confirmationToken"); effect.put("usedAt", now); effect.put("remainingMs", before);
+        effect.put("afterMs", start - now); effect.put("savedMs", before - (start - now));
+        effect.put("warAt", start); effect.put("warEndAt", start + WAR_DURATION_MS);
         if (items.tryConsume(playerId, "warSpeedOrder", 1, now) == 0) throw new IllegalArgumentException("宣战加速令数量不足");
+        war.setWarAt(start); war.setWarEndAt(start + WAR_DURATION_MS); war.setAccelerated(true); war.setOrderEffect(JsonUtil.toJson(effect));
+        personalWars.save(war);
         for (Long participant : List.of(playerId, defenderId)) {
             Player player = playerRepository.findById(participant).orElseThrow();
-            player.setWarAt(start);
-            player.setWarEndAt(start + WAR_DURATION_MS);
-            player.setWarAccelerated(true);
-            player.setWarOrderEffect(JsonUtil.toJson(effect));
+            Long opponent = participant.equals(playerId) ? defenderId : playerId;
+            if (!opponent.equals(player.getWarAgainstId())) continue;
+            player.setWarAt(start); player.setWarEndAt(start + WAR_DURATION_MS);
+            player.setWarAccelerated(true); player.setWarOrderEffect(JsonUtil.toJson(effect));
             playerRepository.saveAndFlush(player);
         }
         target.setWarAt(start);
@@ -756,19 +729,9 @@ public class WorldService {
             result.put("guildRelation", GuildRelationService.HOSTILE);
             return result;
         }
-        if (defenderId != null) {
-            Player defender = playerRepository.findById(defenderId).orElse(null);
-            if (defender != null) {
-                warAt = defender.getWarAt() != null ? defender.getWarAt() : 0L;
-                warEndAt = defender.getWarEndAt() != null ? defender.getWarEndAt() : 0L;
-            } else {
-                warAt = target.getWarAt() != null ? target.getWarAt() : 0L;
-                warEndAt = target.getWarEndAt() != null ? target.getWarEndAt() : 0L;
-            }
-        } else {
-            warAt = target.getWarAt() != null ? target.getWarAt() : 0L;
-            warEndAt = target.getWarEndAt() != null ? target.getWarEndAt() : 0L;
-        }
+        var war = defenderId == null ? null : personalWars.between(playerId, defenderId);
+        warAt = war == null ? 0 : war.getWarAt();
+        warEndAt = war == null ? 0 : war.getWarEndAt();
 
         String phase;
         if (warAt == 0 || warEndAt == 0) {
@@ -801,6 +764,9 @@ public class WorldService {
 
     @Transactional
     public Map<String, Object> scout(Long playerId, int targetIdx, String targetKind) {
+        // 旧快捷侦查同样可能扣除城内部队，必须与守城开战共用城主账号锁。
+        playerRepository.lockById(playerId).orElseThrow();
+        cityBattleLock.requireDispatchAllowed(playerId);
         Map<String, Object> result = new LinkedHashMap<>();
 
         Player player = playerRepository.findById(playerId).orElse(null);

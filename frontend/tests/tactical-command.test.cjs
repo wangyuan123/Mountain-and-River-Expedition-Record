@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -56,7 +56,7 @@ function setup() {
     marchId: 42, round: 2, side: 'attacker', action: 'conquer', initialDistance: 3000,
     attackerArmy: { 'rocket~a': 10, 'rocket~b': 20, truck: 5 }, defenderArmy: { htank: 8, truck: 0 },
     attackerPositions: { 'rocket~a': 0, 'rocket~b': 0 }, defenderPositions: { htank: 1500 },
-    defaultActions: { rocket: 'HOLD', truck: 'ADVANCE' }, orders: {}, roundDeadlineAt: 16000, log: ''
+    attackerStats:{'rocket~a':{range:1600,speed:5},'rocket~b':{range:1600,speed:5}}, defaultActions: { rocket: 'HOLD', truck: 'ADVANCE' }, orders: {}, roundDeadlineAt: 16000, log: ''
   };
   Game.Battle.resetTacticalOrders();
   Game.Core.render();
@@ -667,7 +667,7 @@ test('战斗详情日志中攻击事件后显示敌军兵种战损标签【敌�
   // 1. 单攻击者攻击敌军轻型坦克
   const events1 = [
     { type: 'LOSSES', round: 5, batch: 1, formationId: 'f-def', formation: '【守军】', unit: 'ltank', countBefore: 20000, losses: 10000, survivors: 10000 },
-    { type: 'FIRE', round: 5, batch: 1, formationId: 'f-atk', formation: '【我军】', unit: 'rocket', countBefore: 200, target: '【守军】', targetFormationId: 'f-def', targetUnit: 'ltank', damage: 89360, skillWindow: false }
+    { type: 'FIRE', round: 5, batch: 1, formationId: 'f-atk', formation: '【我军】', unit: 'rocket', countBefore: 200, target: '【守军】', targetFormationId: 'f-def', targetUnit: 'ltank', damage: 89360, targetLosses:10000, skillWindow: false }
   ];
   Game.Battle._formationLogSource = '';
   Game.Battle._formationLogUnit = '';
@@ -677,7 +677,7 @@ test('战斗详情日志中攻击事件后显示敌军兵种战损标签【敌�
   // 2. 周期标记为真时仍只展示伤害和战损，避免暗示额外技能触发。
   const events2 = [
     { type: 'LOSSES', round: 5, batch: 1, formationId: 'f-city', formation: '【本城·守将郑海】', unit: 'infantry', countBefore: 1000000, losses: 8000, survivors: 992000 },
-    { type: 'FIRE', round: 5, batch: 1, formationId: 'f-atk', formation: '【攻方·将领今朝有酒_219极品军官】', unit: 'rocket', countBefore: 200000, target: '【本城·守将郑海】', targetFormationId: 'f-city', targetUnit: 'infantry', damage: 89360378, skillWindow: true }
+    { type: 'FIRE', round: 5, batch: 1, formationId: 'f-atk', formation: '【攻方·将领今朝有酒_219极品军官】', unit: 'rocket', countBefore: 200000, target: '【本城·守将郑海】', targetFormationId: 'f-city', targetUnit: 'infantry', damage: 89360378, targetLosses:8000, skillWindow: true }
   ];
   const html2 = Game.Battle.renderFormationEvents(events2);
   assert.match(html2, /造成 89360378 有效伤害 【敌军 步兵 -8000】/);
@@ -701,8 +701,8 @@ test('战斗详情日志中攻击事件后显示敌军兵种战损标签【敌�
   // 4. 多攻击者协同攻击同一目标，战损按伤害比例守恒分配
   const eventsMulti = [
     { type: 'LOSSES', round: 3, batch: 1, formationId: 'f-target', formation: '【守方】', unit: 'ltank', countBefore: 1000, losses: 100, survivors: 900 },
-    { type: 'FIRE', round: 3, batch: 1, formationId: 'f-a', formation: '【攻方甲】', unit: 'htank', countBefore: 100, target: '【守方】', targetFormationId: 'f-target', targetUnit: 'ltank', damage: 300 },
-    { type: 'FIRE', round: 3, batch: 1, formationId: 'f-b', formation: '【攻方乙】', unit: 'htank', countBefore: 100, target: '【守方】', targetFormationId: 'f-target', targetUnit: 'ltank', damage: 700 }
+    { type: 'FIRE', round: 3, batch: 1, formationId: 'f-a', formation: '【攻方甲】', unit: 'htank', countBefore: 100, target: '【守方】', targetFormationId: 'f-target', targetUnit: 'ltank', damage: 300, targetLosses:30 },
+    { type: 'FIRE', round: 3, batch: 1, formationId: 'f-b', formation: '【攻方乙】', unit: 'htank', countBefore: 100, target: '【守方】', targetFormationId: 'f-target', targetUnit: 'ltank', damage: 700, targetLosses:70 }
   ];
   const htmlMulti = Game.Battle.renderFormationEvents(eventsMulti);
   assert.match(htmlMulti, /攻方甲[\s\S]*?造成 300 有效伤害 【敌军 轻型坦克 -30】/);

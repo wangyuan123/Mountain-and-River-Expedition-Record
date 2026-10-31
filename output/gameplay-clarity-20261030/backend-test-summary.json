@@ -1,0 +1,14 @@
+{
+  "CityTeleportTest": {
+    "tests": 57,
+    "errors": 0,
+    "skipped": 0,
+    "failures": 0
+  },
+  "RadarServiceTest": {
+    "tests": 37,
+    "errors": 0,
+    "skipped": 0,
+    "failures": 0
+  }
+}

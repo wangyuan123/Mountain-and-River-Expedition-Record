@@ -18,7 +18,6 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +26,8 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class ResourceOverflowService {
+    @org.springframework.beans.factory.annotation.Autowired private jakarta.persistence.EntityManager em;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
     public static final long STOCK_LIMIT = 1_000_000_000L;
     private static final Map<String, String> RESOURCE_NAMES = Map.of(
             "food", "粮食", "steel", "钢铁", "oil", "石油", "rare", "稀矿", "gold", "黄金");
@@ -63,23 +64,22 @@ public class ResourceOverflowService {
      */
     private void inspectCities(long period) {
         long gameNow = GameClock.now();
-        // 只锁定超限库存或仍有复查阶段的行，避免巡检时长时间阻塞普通资源操作。
+        // 先筛候选，逐城按账号、城市、库存的顺序取得当前读，避免使用冻结前的快照。
         List<Resources> balances = resources.findAllForOverflowTreatment(STOCK_LIMIT);
         if (balances.isEmpty()) return;
-        Map<Long, Player> playerById = new HashMap<>();
-        for (Player player : players.findAll()) playerById.put(player.getId(), player);
-        Map<CityKey, PlayerCity> cityBySlot = new HashMap<>();
-        for (PlayerCity city : cities.findAll()) {
-            if (city.getOwnerId() != null && city.getCitySlot() != null)
-                cityBySlot.put(new CityKey(city.getOwnerId(), city.getCitySlot()), city);
-        }
 
         for (Resources balance : balances) {
-            Player player = playerById.get(balance.getPlayerId());
+            Player player = players.lockById(balance.getPlayerId()).orElse(null);
             if (player == null) continue;
             int slot = Objects.requireNonNullElse(balance.getCitySlot(), 0);
-            PlayerCity city = cityBySlot.get(new CityKey(player.getId(), slot));
+            PlayerCity city = cities.findByOwnerIdAndCitySlot(player.getId(), slot).orElse(null);
+            if (city != null) em.refresh(city, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            // 冻结期间不扣库存，也不推进该资源的复查阶段。
+            if (city != null && city.isSurrenderFrozen(gameNow)) continue;
             if (slot > 0 && (city == null || Objects.requireNonNullElse(city.getReadyAt(), 0L) > gameNow)) continue;
+            em.refresh(balance, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+            economy.beforeResourceChange(player.getId(), slot);
+            balance = resources.findCityForTreatment(player.getId(), slot).orElseThrow();
 
             String cityName = slot == 0
                     ? firstNonBlank(player.getCityName(), city == null ? null : city.getName(), "主城")
@@ -211,5 +211,4 @@ public class ResourceOverflowService {
         return "城市";
     }
 
-    private record CityKey(Long playerId, Integer citySlot) {}
 }

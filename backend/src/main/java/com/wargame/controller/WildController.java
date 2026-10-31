@@ -76,30 +76,17 @@ public class WildController {
         return ResponseEntity.ok(result);
     }
 
+    /** 仅手动启动已进驻的驻军采集，拒绝旧客户端携带编队直接派兵。 */
     @PostMapping("/gather")
     public ResponseEntity<Map<String, Object>> gather(@RequestBody GameDtos.WildDispatchRequest request) {
         if (request.wildTileId() == null) {
             throw new IllegalArgumentException("野地ID不能为空");
         }
         Long playerId = authService.getCurrentPlayer().getId();
-        Map<String, Object> result;
-        if (request.army() == null || request.army().isEmpty()) {
-            result = marchService.startWildGather(playerId, request.wildTileId(), request.gatherMode());
-        } else {
-            DispatchRequest dispatch = new DispatchRequest(
-                    "wild_gather",
-                    request.wildTileId(),
-                    "gather",
-                    request.army(),
-                    request.commanderId(),
-                    request.carryRes(),
-                    request.gatherMode()
-            );
-            marchService.createDispatch(playerId, dispatch);
-            result = new LinkedHashMap<>();
-            result.put("success", true);
-            result.put("message", "采集部队出发成功");
+        if (request.army() != null && !request.army().isEmpty()) {
+            throw new IllegalArgumentException("派兵采集已取消，请先派遣部队进驻，再手动开启采集");
         }
+        Map<String, Object> result = marchService.startWildGather(playerId, request.wildTileId(), request.gatherMode());
         result.put("state", gameStateService.getGameState(playerId));
         return ResponseEntity.ok(result);
     }

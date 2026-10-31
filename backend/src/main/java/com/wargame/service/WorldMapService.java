@@ -16,6 +16,8 @@ import java.util.*;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class WorldMapService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private MarchService marchViews;
+    @org.springframework.beans.factory.annotation.Autowired private PersonalWarService personalWars;
     @org.springframework.beans.factory.annotation.Autowired private WarPowerProtectionService warPowerProtection;
     public static final int CHUNK_SIZE = 16;
     private final WorldMapRepository worlds;
@@ -160,14 +162,12 @@ public class WorldMapService {
             // 敌对军团可绕过个人宣战；关系值供地图在不伪造战争倒计时的前提下展示操作入口。
             t.put("guildRelation", guildRelations.relationshipBetweenPlayers(viewer, owner.getId()));
             t.put("guildmate", guildRelations.areGuildmates(viewer, owner.getId()));
-            boolean related = !self && viewer.equals(owner.getWarAgainstId());
-            long warAt = related && owner.getWarAt() != null ? owner.getWarAt() : 0L;
-            long warEnd = related && owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
+            var war = self ? null : personalWars.between(viewer, owner.getId());
+            long warAt = war == null ? 0 : war.getWarAt(), warEnd = war == null ? 0 : war.getWarEndAt();
             t.put("warAt", warAt); t.put("warEndAt", warEnd);
-            t.put("canAccelerateWar", warAt > GameClock.now() && viewer.equals(owner.getWarInitiatorId())
-                    && Objects.equals(c.getId(), owner.getWarTargetCityId())
-                    && cityScope != null && Objects.equals(cityScope.slot(viewer), owner.getWarCitySlot())
-                    && !owner.isWarAccelerated());
+            t.put("canAccelerateWar", war != null && warAt > GameClock.now() && viewer.equals(war.getInitiatorId())
+                    && Objects.equals(c.getId(), war.getTargetCityId()) && cityScope != null
+                    && cityScope.slot(viewer) == war.getCitySlot() && !war.isAccelerated());
             t.put("coolAt", warAt == 0 ? warEnd : 0L);
             // 地图合并两类保护的有效截止时间，真实道具护盾仍独立保存在城市状态中。
             long newbieUntil = com.wargame.model.constants.NewbieProtection.until(owner, GameClock.now());
@@ -195,6 +195,7 @@ public class WorldMapService {
             t.put("gatherEndAt", w.getGatherEndAt() == null ? 0L : w.getGatherEndAt());
             t.put("gatherMode", "manual");
             t.put("gatherHarvested", w.getGatherHarvested());
+            t.put("gatherView", marchViews.gatherView(viewer, w));
             t.put("totalRes", w.getTotalRes() == null ? 0 : w.getTotalRes());
             t.put("mined", w.getMined() == null ? 0 : w.getMined());
         }

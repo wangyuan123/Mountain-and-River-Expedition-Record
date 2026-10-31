@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-31",
+  "rulesVersion": "server-gameplay-20261031",
+  "frontend": {
+    "tests": 1273,
+    "pass": 1273,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "backend": {
+    "combinedVerifiedSuiteResults": {
+      "suites": 286,
+      "tests": 2288,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 3
+    },
+    "note": "完成全量回归后，对最新修改涉及的服务及并发路径追加回归；汇总采用每个测试类最后一次结果。",
+    "latestFocusedTests": 215,
+    "skippedSuites": [
+      {
+        "suite": "com.wargame.AttackDesignTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "skippedCases": [
+          {
+            "case": "everyAttackMatchesBudgetOrExplicitRatio",
+            "reason": "20260918 历史齐射设计快照，已被 20260919 属性重构与 v7 精简倍率取代"
+          }
+        ]
+      },
+      {
+        "suite": "com.wargame.MySqlMigrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 2,
+        "skippedCases": [
+          {
+            "case": "removesMotorUnitsAcrossCitiesAndPreservesOtherUnits",
+            "reason": "Environment variable [WARGAME_TEST_MYSQL_URL] does not exist"
+          },
+          {
+            "case": "upgradesExistingDataAndValidatesTheRealMysqlSchema",
+            "reason": "Environment variable [WARGAME_TEST_MYSQL_URL] does not exist"
+          }
+        ]
+      }
+    ]
+  },
+  "syntax": {
+    "scriptsChecked": 62,
+    "failures": 0
+  },
+  "checks": [
+    "server preview and execution use server rules",
+    "preview does not spend or grant assets",
+    "ownership and city scope enforced",
+    "fractional and overflowing integer requests rejected",
+    "forged quote fields ignored",
+    "VIP construction time and refunds agree",
+    "training raw channels agree",
+    "officer dispatch and tactical lock use server eligibility",
+    "march acceleration boundaries and concurrent consumption",
+    "stale quote callbacks rejected after state or identity changes",
+    "targeted git diff --check"
+  ],
+  "commands": [
+    "node --test frontend/tests/*.test.cjs",
+    "env LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 ./mvnw -q -f backend/pom.xml -Dmaven.compiler.useIncrementalCompilation=false test",
+    "env LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 ./mvnw -q -f backend/pom.xml -Dmaven.compiler.useIncrementalCompilation=false -Dtest=GameplayAuthorityTest,MarchAccelerationTest,WildOccupationTest,CityBattleDispatchLockTest,WorldViewServiceTest,MarchServiceTest test",
+    "env LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 ./mvnw -q -f backend/pom.xml -Dmaven.compiler.useIncrementalCompilation=false -Dtest=InterceptionBattleTest,InterceptionAmbushEngineTest,WarSpeedOrderTest,WarSpeedOrderConcurrencyTest,MarchAccelerationConcurrencyTest,MarchOrderDurationTest test"
+  ],
+  "writeFormattingRun": false,
+  "runtimeRestarted": false,
+  "deployed": false
+}

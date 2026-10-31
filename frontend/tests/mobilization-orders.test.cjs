@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 const tiers = [
   ['mobilizationOrder', '战争动员令', 10, 80],
@@ -37,7 +37,7 @@ function setup(action = 'conquer', kind = 'wild') {
   const context = vm.createContext({
     Promise, console, document,
     Game: {
-      Core: { state, views: {}, ordinaryArmyCap: () => 101, armyCap: () => Math.floor(101 * (100 + context.Game.Mobilization.info().percent) / 100), maxMarches: () => 10, render() {} },
+      Core: { state, views: {}, ordinaryArmyCap: () => 101, armyCap: () => state.gameplay.armyCap, maxMarches: () => 10, render() {} },
       gameNow: () => time, fmt: String, escapeHtml: String, toast: message => toasts.push(message), go() {},
       API: {
         worldDispatch: body => { requests.push(body); return Promise.resolve(); },
@@ -50,6 +50,8 @@ function setup(action = 'conquer', kind = 'wild') {
   for (const file of ['constants.js', 'data.js', 'icons.js', 'shop.js', 'mobilization.js', 'depot.js', 'world.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
   }
+  state.gameplay.armyCap=101;
+  context.Game.ServerRules.preview=async intent=>({addedHours:({1:24,2:48})[intent.count],until:time+day,currentPercent:0,armyCap:111});
   context.Game.gameNow = () => time;
   return { game: context.Game, state, nodes, requests, purchases, uses, toasts, context,
     now: () => time, advance: ms => { time += ms; } };
@@ -72,12 +74,14 @@ test('三档道具在仓库二次确认后启用，数量与幂等标识传给�
     assert.match(view.innerHTML, /使用动员令/);
     const before = f.uses.length;
     f.game.Depot.useItem(id);
+    await new Promise(setImmediate);
     assert.equal(f.uses.length, before, '打开弹窗不消耗');
     assert.match(f.nodes.mobilizationUseMask.innerHTML, /本账号所有城市的新出征行军/);
-    assert.match(f.nodes.mobilizationUseMask.innerHTML, /本城防守出战/);
+    assert.match(f.nodes.mobilizationUseMask.innerHTML, /守城全员参战，不受带兵上限限制/);
     assert.match(f.nodes.mobilizationUsePreview.innerHTML, /新增：24小时/);
     f.nodes.mobilizationUseCount.value = '2';
     f.nodes.mobilizationUseCount.oninput();
+    await new Promise(setImmediate);
     assert.match(f.nodes.mobilizationUsePreview.innerHTML, /新增：48小时/);
     f.nodes.mobilizationUseConfirm.onclick();
     f.nodes.mobilizationUseConfirm.onclick();
@@ -90,11 +94,13 @@ test('三档道具在仓库二次确认后启用，数量与幂等标识传给�
   }
 });
 
-test('同档剩余时间累加预览，低档被高档覆盖时明确提示', () => {
+test('同档剩余时间累加预览，低档被高档覆盖时明确提示', async () => {
   const f = setup();
   f.state.items.mobilizationOrder = 5;
-  f.state.player.mobilizationExpiries = { mobilizationOrder: f.now() + 5 * 3600000, rapidMobilizationOrder: f.now() + day };
+  f.state.gameplay.armyCap=151;
+  f.game.ServerRules.preview=async()=>({until:f.now()+104400000,addedHours:24,currentPercent:50,armyCap:151});
   f.game.Depot.useItem('mobilizationOrder');
+  await new Promise(setImmediate);
   assert.match(f.nodes.mobilizationUsePreview.innerHTML, /1天 5小时 0分钟/);
   assert.match(f.nodes.mobilizationUsePreview.innerHTML, /暂被更高档动员覆盖/);
   assert.match(f.nodes.mobilizationUsePreview.innerHTML, /151 → 151/);
@@ -108,6 +114,7 @@ test('网络结果不明时重试同一个请求，确认不重复扣除', async
   f.state.items.mobilizationOrder = 1;
   f.game.API.depotUse = (...args) => { f.uses.push(args); return f.uses.length === 1 ? Promise.reject(new Error('网络异常')) : Promise.resolve({ success: true }); };
   f.game.Depot.useItem('mobilizationOrder');
+  await new Promise(setImmediate);
   f.nodes.mobilizationUseConfirm.onclick();
   await new Promise(setImmediate);
   assert.equal(f.nodes.mobilizationUseCount.disabled, true);
@@ -118,22 +125,19 @@ test('网络结果不明时重试同一个请求，确认不重复扣除', async
   assert.equal(f.uses[0][5], f.uses[1][5]);
 });
 
-test('倒计时按分钟显示，精确到期降档和恢复默认配置，不延迟一分钟', () => {
-  const f = setup();
-  f.state.player.mobilizationExpiries = { mobilizationOrder: f.now() + day * 2, rapidMobilizationOrder: f.now() + day + 60000 };
-  assert.equal(f.game.Mobilization.info().percent, 50);
-  assert.match(f.game.Mobilization.widget(), /1天 0小时 1分钟/);
-  assert.match(f.game.Mobilization.widget(), /当前被更高档效果覆盖/);
-  f.advance(day + 1);
-  assert.equal(f.game.Mobilization.countdown(f.state.player.mobilizationExpiries.rapidMobilizationOrder), '不足1分钟');
-  assert.equal(f.game.Mobilization.info().percent, 50);
-  f.advance(59999);
-  assert.equal(f.game.Mobilization.info().percent, 10);
-  assert.equal(f.game.Mobilization.info().key, 'mobilization:1');
-  f.advance(day - 60000);
-  assert.equal(f.game.Mobilization.info().percent, 0);
-  assert.equal(f.game.Mobilization.info().key, 'default');
-  assert.match(f.game.Mobilization.widget(), /动员未启用/);
+test('动员到期仅更新倒计时，当前档位和容量等待服务端快照', () => {
+  const f=setup();
+  f.state.gameplay.mobilization={percent:50,key:'rapid:1',current:{id:'rapidMobilizationOrder',name:'极速战争动员令',percent:50,until:f.now()+60000},active:[]};
+  f.state.gameplay.armyCap=151;
+  assert.match(f.game.Mobilization.widget(),/0小时 1分钟/);
+  f.advance(60000);
+  assert.match(f.game.Mobilization.widget(),/已结束/);
+  assert.equal(f.game.Mobilization.info().percent,50,'到期不得在浏览器选择新的生效档位');
+  f.state.gameplay.mobilization={percent:10,key:'mobilization:1',current:{id:'mobilizationOrder',name:'战争动员令',percent:10,until:f.now()+86400000},active:[]};
+  f.state.gameplay.armyCap=111;
+  assert.equal(f.game.Mobilization.info().percent,10);
+  f.state.gameplay.mobilization={percent:0,key:'default',current:null,active:[]};
+  assert.match(f.game.Mobilization.widget(),/动员未启用/);
 });
 
 for (const [id, name, percent] of tiers) {
@@ -141,6 +145,7 @@ for (const [id, name, percent] of tiers) {
     const f = setup();
     f.state.player.mobilizationExpiries = { [id]: f.now() + day };
     const cap = Math.floor(101 * (100 + percent) / 100);
+    f.state.gameplay.armyCap=cap;
     f.state.world._dispatchTarget.mobilizationOrderItem = id;
     f.nodes.dqty_infantry = { value: String(cap) };
     f.nodes.estDispatchTroops = { style: {} };
@@ -176,6 +181,7 @@ test('侦查、采集、进驻、运输均读取统一账号上限，不提交�
     ['station', 'wild', 'infantry'], ['transport', 'player', 'truck']]) {
     const f = setup(action, kind);
     f.state.player.mobilizationExpiries = { rapidMobilizationOrder: f.now() + day };
+    f.state.gameplay.armyCap=151;
     f.state.world._dispatchTarget.mobilizationOrderItem = 'rapidMobilizationOrder';
     f.nodes['dqty_' + unit] = { value: '120' };
     const view = {};

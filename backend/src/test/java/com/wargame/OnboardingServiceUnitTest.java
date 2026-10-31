@@ -28,7 +28,6 @@ class OnboardingServiceUnitTest {
     MarchRepository marches;
     WildTileRepository wilds;
     GuildMemberRepository guilds;
-    UnitLoadoutRepository loadouts;
     CityScope scope;
     com.wargame.service.MailService mail;
     OnboardingService onboarding;
@@ -48,11 +47,11 @@ class OnboardingServiceUnitTest {
         armies = mock(ArmyUnitRepository.class); officers = mock(OfficerRepository.class);
         resources = mock(ResourcesRepository.class); reports = mock(ScoutReportRepository.class);
         marches = mock(MarchRepository.class); wilds = mock(WildTileRepository.class);
-        guilds = mock(GuildMemberRepository.class); loadouts = mock(UnitLoadoutRepository.class);
+        guilds = mock(GuildMemberRepository.class);
         scope = mock(CityScope.class);
         mail = mock(com.wargame.service.MailService.class);
         onboarding = new OnboardingService(guides, players, buildings, techs, armies, officers, resources,
-                reports, marches, wilds, guilds, loadouts, mock(WorldTerrainService.class), scope, mail);
+                reports, marches, wilds, guilds, mock(WorldTerrainService.class), scope, mail);
         org.springframework.test.util.ReflectionTestUtils.setField(onboarding, "populationCosts", mock(com.wargame.service.ArmyPopulationService.class));
         progress = new LinkedHashMap<>(); technologies = new ArrayList<>(); facilities = new ArrayList<>();
         troops = new ArrayList<>(); intel = new ArrayList<>(); movements = new ArrayList<>(); tiles = new ArrayList<>();
@@ -77,7 +76,6 @@ class OnboardingServiceUnitTest {
         when(marches.findByPlayerIdAndCitySlot(1L, 0)).thenReturn(movements);
         when(wilds.findByOccupiedBy(1L)).thenReturn(tiles);
         when(guilds.findByPlayerId(1L)).thenReturn(Optional.empty());
-        when(loadouts.findByPlayerId(1L)).thenReturn(List.of());
     }
 
     @Test

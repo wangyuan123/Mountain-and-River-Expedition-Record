@@ -14,7 +14,7 @@ window.Game = window.Game || {};
     var previousFocus = document.activeElement;
     var data = Camp.data || {};
     var medLv = data.medicalLevel != null ? data.medicalLevel : 0;
-    var medPct = medLv * 5;
+    var medPct = data.medicalPercent || 0;
 
     var mask = document.createElement('div');
     mask.id = 'woundedRulesModal';
@@ -31,14 +31,14 @@ window.Game = window.Game || {};
             '<div class="wounded-rules-sec-desc">' +
               '• <strong>救治窗口：</strong>每批伤兵自产生之时起<strong>独立计时</strong>，最长保留 <strong>7 天</strong>。<br/>' +
               '• <strong>超时清空：</strong>超过 7 天未救治的伤兵将伤重阵亡全部消失，无法再恢复。<br/>' +
-              '• <strong>不暂停计时：</strong>资源不足或玩家离线期间，倒计时<strong>不会暂停</strong>，请尽早调拨资金救治。' +
+              '• <strong>计时规则：</strong>资源不足或玩家离线期间继续倒计时；归降冻结期间暂停，解冻或移交后恢复剩余救治时间。' +
             '</div>' +
           '</div>' +
           '<div class="wounded-rules-section">' +
             '<div class="wounded-rules-sec-title">💉 医疗技术与军官急救技能</div>' +
             '<div class="wounded-rules-sec-desc">' +
               '• <strong>当前医疗技术：</strong>当前科技 Lv.' + medLv + '，提供 <strong>' + medPct + '%</strong> 伤兵回收率（每级 +5%，最高 Lv.10 达 50%）。<br/>' +
-              '• <strong>军官急救加成：</strong>若参战将领拥有「急救」技能，每级额外提供 +3% 回收率（最高 Lv.5 额外 +15%）。<br/>' +
+              '• <strong>军官急救加成：</strong>参战将领拥有满级「战地急救」时，额外提供 15% 回收率；技能学习即满级，无需升级，与医疗技术合计最高 65%。<br/>' +
               '• <strong>结算即固化：</strong>伤兵批次的回收比例在战斗结算时瞬时确定并永久固化，无基础保底回收率。' +
             '</div>' +
           '</div>' +
@@ -46,7 +46,7 @@ window.Game = window.Game || {};
             '<div class="wounded-rules-sec-title">💰 治疗费用与货币折算</div>' +
             '<div class="wounded-rules-sec-desc">' +
               '• <strong>黄金治疗：</strong>费用为该兵种制造成本资源总价的 <strong>10%</strong>（每单位向上取整）。<br/>' +
-              '• <strong>钻石治疗：</strong>按每 <strong>1000 黄金折算 1 颗钻石</strong>，不足 1 颗按 1 颗计（向上取整）。<br/>' +
+              '• <strong>钻石治疗：</strong>按每 <strong>1000 未折扣的基础黄金折算 1 颗钻石</strong>，不足 1 颗按 1 颗计（向上取整）；VIP 优惠仅用于黄金治疗。<br/>' +
               '• <strong>即时归队：</strong>使用黄金或钻石治疗效果完全相同，治疗后部队立即归队恢复战力。' +
             '</div>' +
           '</div>' +
@@ -136,17 +136,21 @@ window.Game = window.Game || {};
         return;
       }
       root.innerHTML = this.renderContent(this.data);
+      var self = this;
+      (this.data.batches || []).forEach(function (batch) { var count = self.quantityFor(batch); if (!batch.preview || batch.preview.count !== count) self.requestQuote(batch, count); });
     },
     resources: function () { return this.data && this.data.resources || Core.state.resources || {}; },
     balanceText: function () {
       var balance = this.resources();
       return '本城可用黄金 ' + G.fmt(balance.gold || 0) + ' · 账号钻石 ' + G.fmt(balance.diamond || 0) + '，可拖动滑块、输入数量，或点击对应货币的 MAX。';
     },
-    /** MAX 按各自余额独立计算；每颗钻石抵 1000 黄金，先取整钻石余额再换算预算。 */
+    /** 只显示当前数量的服务端整笔报价；等待期间不沿用旧数量的价格。 */
+    treatmentPrice: function (batch, count, currency) {
+      return batch.preview && batch.preview.count === count ? batch.preview[currency] : null;
+    },
+    /** 最大可支付数量由后端按本城黄金与账号钻石分别计算。 */
     maxAffordable: function (batch, currency) {
-      var balance = Math.max(0, Number(this.resources()[currency]) || 0);
-      var budget = currency === 'diamond' ? Math.floor(balance) * 1000 : balance;
-      return Math.min(batch.count, Math.floor(budget / batch.goldPerUnit));
+      return batch.preview ? batch.preview[currency === 'gold' ? 'maxGold' : 'maxDiamond'] : 0;
     },
     /** 数量限于本批伤兵，允许 MAX 为 0；刷新不能把 0 重新变成整批数量。 */
     quantityFor: function (batch, value) {
@@ -172,12 +176,12 @@ window.Game = window.Game || {};
       var cityPosition = data.cityX != null && data.cityY != null ? ' (' + data.cityX + ',' + data.cityY + ')' : '';
       var h = '<div class="desc">当前救治城市：' + esc(cityName + cityPosition) + ' <button class="btn sm" onclick="Game.Cities.open()">切换城市</button></div>' +
         '<div class="wounded-overview"><div><span>待救治部队</span><strong>' + G.fmt(total) + '</strong></div>' +
-        '<div><span>医疗技术 Lv.' + data.medicalLevel + '</span><strong>' + (data.medicalLevel * 5) + '%</strong></div></div>';
+        '<div><span>医疗技术 Lv.' + data.medicalLevel + '</span><strong>' + (data.medicalPercent || 0) + '%</strong></div></div>';
       h += '<div class="wounded-notice-card">' +
         '<div class="wounded-notice-head">' +
           '<div class="wounded-notice-title-wrap">' +
             '<span class="wounded-notice-badge">救治须知</span>' +
-            '<span class="wounded-notice-digest">伤兵留存 7 天（最高 50% 回收）；黄金或钻石（每 1000 黄金折算 1 颗）均可即时救治。</span>' +
+            '<span class="wounded-notice-digest">伤兵留存 7 天（医疗技术加急救合计最高 65% 回收）；黄金或钻石（每 1000 基础黄金折算 1 颗）均可即时救治。</span>' +
           '</div>' +
           '<button type="button" class="wounded-rules-btn" onclick="Game.Wounded.showWoundedRulesModal()" title="查看伤兵救治与医疗规则说明">' +
             '<span>详细说明</span>' +
@@ -208,7 +212,7 @@ window.Game = window.Game || {};
         var hours = Math.ceil(remaining / 3600000);
         var expiry = G.formatDuration(remaining / 1000);
         h += '<div class="wounded-card"><div class="wounded-card-head"><b>' + esc(unit ? unit.name : batch.unit) + '</b><strong>' + G.fmt(batch.count) + '</strong></div>' +
-          '<div class="wounded-meta">本次回收 ' + batch.recoveryPercent + '% · <span class="' + (hours <= 24 ? 'wounded-urgent' : '') + '">剩余 ' + expiry + '</span></div>' +
+          '<div class="wounded-meta">本次回收 ' + batch.recoveryPercent + '% · <span class="' + (hours <= 24 ? 'wounded-urgent' : '') + '">' + (batch.frozen ? '归降移交中，救治暂停 · 剩余期限 ' : '剩余 ') + expiry + '</span></div>' +
           '<div class="wounded-controls"><div class="wounded-quantity"><label>治疗数量 <input class="qty" type="number" id="wounded-qty-' + batch.id + '" min="0" max="' + batch.count + '" step="1" value="' + qty + '" aria-describedby="wounded-warning-' + batch.id + '" oninput="Game.Wounded.changeQuantity(' + batch.id + ',this.value)"' + (self.pending ? ' disabled' : '') + '> / ' + G.fmt(batch.count) + '</label>' +
           '<div class="recruit-slider-wrap"><input class="recruit-slider" type="range" id="wounded-range-' + batch.id + '" min="0" max="' + batch.count + '" step="1" value="' + qty + '" style="--p:' + (batch.count ? qty / batch.count * 100 : 0) + '%" aria-label="' + esc((unit ? unit.name : batch.unit) + '治疗数量') + '" aria-describedby="wounded-warning-' + batch.id + '" oninput="Game.Wounded.changeQuantity(' + batch.id + ',this.value)"' + (self.pending ? ' disabled' : '') + '></div>' +
           '<div id="wounded-warning-' + batch.id + '" class="wounded-balance-warning" role="status"' + (warning ? '' : ' hidden') + '>' + warning + '</div></div>' +
@@ -218,19 +222,19 @@ window.Game = window.Game || {};
     },
     paymentButtons: function (batch, count) {
       var resources = this.resources();
-      var gold = batch.goldPerUnit * count, diamond = Math.ceil(gold / 1000);
-      var valid = Number.isInteger(count) && count > 0 && count <= batch.count;
+      var gold = this.treatmentPrice(batch, count, 'gold'), diamond = this.treatmentPrice(batch, count, 'diamond');
+      var valid = Number.isInteger(count) && count > 0 && count <= batch.count && batch.preview && batch.preview.count === count;
       return ['gold', 'diamond'].map(function (currency) {
         var price = currency === 'gold' ? gold : diamond;
-        var disabled = !valid || Camp.pending || (resources[currency] || 0) < price;
+        var disabled = !valid || batch.frozen || Camp.pending || (resources[currency] || 0) < price;
         var label = currency === 'gold' ? '黄金' : '钻石';
         var maximum = Camp.maxAffordable(batch, currency);
         var priceHtml = (valid ? G.fmt(price) : '—');
         if (currency === 'gold' && valid && batch.vipDiscountPercent && batch.vipDiscountPercent > 0 && batch.originalGoldPerUnit) {
-          var origGold = batch.originalGoldPerUnit * count;
+          var origGold = batch.preview.originalGold;
           priceHtml = '<del style="color:var(--muted);margin-right:3px;">' + G.fmt(origGold) + '</del><b>' + G.fmt(price) + '</b> <span style="font-size:11px;color:#b8860b;font-weight:700;">(-' + batch.vipDiscountPercent + '%)</span>';
         }
-        return '<div class="wounded-payment-row"><button type="button" class="btn sm"' + (Camp.pending ? ' disabled' : '') + ' aria-label="' + label + ' MAX" title="按' + label + '余额最多治疗 ' + G.fmt(maximum) + ' 名，仅设置数量" onclick="Game.Wounded.selectMax(' + batch.id + ',\'' + currency + '\')">' + label + ' MAX</button>' +
+        return '<div class="wounded-payment-row"><button type="button" class="btn sm"' + (Camp.pending || batch.frozen ? ' disabled' : '') + ' aria-label="' + label + ' MAX" title="按' + label + '余额最多治疗 ' + G.fmt(maximum) + ' 名，仅设置数量" onclick="Game.Wounded.selectMax(' + batch.id + ',\'' + currency + '\')">' + label + ' MAX</button>' +
           '<button type="button" class="btn sm"' + (disabled ? ' disabled' : '') + ' onclick="Game.Wounded.heal(' + batch.id + ',\'' + currency + '\')">' + label + '治疗 · ' + priceHtml + '</button></div>';
       }).join('');
     },
@@ -260,6 +264,21 @@ window.Game = window.Game || {};
       }
       if (pay) pay.innerHTML = this.paymentButtons(batch, count);
       if (warning) { warning.textContent = this.balanceWarning(batch, count); warning.hidden = !warning.textContent; }
+      if (!batch.preview || batch.preview.count !== count) this.requestQuote(batch, count);
+    },
+    /** 输入变化只请求后端报价；序号和页面代次防止旧数量、旧城市覆盖新表单。 */
+    requestQuote: function (batch, count) {
+      var self = this, generation = this.generation, sequence = (batch.quoteSequence || 0) + 1;
+      batch.quoteSequence = sequence;
+      window.clearTimeout(batch.quoteTimer);
+      batch.quoteTimer = window.setTimeout(function () {
+        if (generation !== self.generation || !self.isCurrent(self.token, self.cityId)) return;
+        G.ServerRules.preview({ action: 'heal', objectId: batch.id, count: count }).then(function (quote) {
+          if (generation !== self.generation || sequence !== batch.quoteSequence || !self.isCurrent(self.token, self.cityId)) return;
+          batch.preview = quote;
+          self.updateControls(batch, count);
+        }).catch(function () { /* 保持支付按钮禁用，等待下一次列表同步。 */ });
+      }, 150);
     },
     changeQuantity: function (id, value) {
       if (this.pending) return;

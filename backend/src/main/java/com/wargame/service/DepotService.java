@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -48,6 +49,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 @Service
 public class DepotService {
+    @org.springframework.beans.factory.annotation.Autowired private InventoryService inventory;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
     @org.springframework.beans.factory.annotation.Autowired private CommanderRenameService commanderRename;
     @org.springframework.beans.factory.annotation.Autowired private MobilizationService mobilization;
     @org.springframework.beans.factory.annotation.Autowired private RankGiftService rankGifts;
@@ -57,6 +60,9 @@ public class DepotService {
 
     /** 当前星级 1～4 对应升到下一星的失败率，抽签范围为 0～99。 */
     private static final int[] STAR_UP_FAILURE_PERCENT = {10, 20, 30, 60};
+
+    /** 展示与实际抽签共用失败率，返回副本防止外部修改游戏规则。 */
+    public static int[] starUpFailurePercents() { return STAR_UP_FAILURE_PERCENT.clone(); }
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -196,6 +202,11 @@ public class DepotService {
     }
 
     private Map<String, Object> useResourceItem(Long playerId, String itemId) {
+        int citySlot = cityScope.slot(playerId);
+        if (resourcesRepository.findByPlayerIdAndCitySlot(playerId, citySlot).isEmpty()) return error("玩家资源数据不存在");
+        if (citySlot > 0 && cityScope.selected(playerId).isEmpty()) return error("城市不存在");
+        if (cityScope.frozen(playerId)) return error("归降移交中的城市不能使用资源道具");
+        economy.beforeResourceChange(playerId, cityScope.slot(playerId));
         // 新手礼包与限购检查共用账号锁；开启后保留零库存记录，继续标记该账号已经购买。
         if ("newbiePack".equals(itemId) && playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
         // 1. 校验持有并原子扣减
@@ -306,13 +317,15 @@ public class DepotService {
     private Map<String, Object> useShield(Long playerId, String itemId) {
         // 与敌军出征/抵达使用同一玩家锁，确定开盾与开战的先后并避免并发续盾丢失时长。
         if (playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
+        cityScope.assertWritable(playerId);
+        economy.settleEconomyBeforeChange(playerId);
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) return error("护盾数量不足");
         CityState cs = getOrCreateCityState(playerId);
         long now = GameClock.now();
         long cur = cs.getShieldUntil() != null ? cs.getShieldUntil() : 0L;
         int hours = ItemDef.SHIELD_HOURS.get(itemId);
-        cs.setShieldUntil(Math.max(cur, now) + hours * 3600L * 1000);
+        cs.setShieldUntil(((Number) timedItemEffect(cs, itemId, now).get("end")).longValue());
         cityStateRepository.save(cs);
         return success("🛡️ 本城护盾时间已增加 " + hours + " 小时，免受侦查、攻击和宣战", Map.of("shieldUntil", cs.getShieldUntil()));
     }
@@ -330,18 +343,46 @@ public class DepotService {
         if (consumed == 0) return error("行军令数量不足");
         long until = now + 3600_000L;
         long cur = cs.getMarchBoostUntil() != null ? cs.getMarchBoostUntil() : 0L;
-        cs.setMarchBoostUntil(cs.getMarchBoostPercent() != null && cs.getMarchBoostPercent() == percent
-                ? Math.max(cur, until) : until);
+        cs.setMarchBoostUntil(((Number) timedItemEffect(cs, itemId, now).get("end")).longValue());
         cs.setMarchBoostPercent(percent);
         cityStateRepository.save(cs);
         return success("🚩 " + ItemDef.ITEMS.get(itemId).name() + "启用,行军速度 +" + percent + "% 持续 1 小时",
                 Map.of("marchBoostUntil", cs.getMarchBoostUntil(), "marchBoostPercent", percent));
     }
 
+    public static int populationOrderAdded(int capacity, int current, boolean emergency) {
+        return Math.min(emergency ? (int) (capacity * 30L / 100) : 500, Math.max(0, capacity - current));
+    }
+
+    /** 预览不创建城市状态；与实际使用共享叠加和覆盖规则。 */
+    public Map<String, Object> previewTimedItem(Long playerId, String itemId) {
+        CityState state = cityStateRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(new CityState());
+        return timedItemEffect(state, itemId, GameClock.now());
+    }
+
+    private Map<String, Object> timedItemEffect(CityState state, String itemId, long now) {
+        if (ItemDef.SHIELD_HOURS.containsKey(itemId)) {
+            long current = Math.max(now, Objects.requireNonNullElse(state.getShieldUntil(), 0L));
+            long end = Math.addExact(current, ItemDef.SHIELD_HOURS.get(itemId) * 3600000L);
+            return Map.of("end", end, "added", end - current, "blocked", false,
+                    "key", String.valueOf(Objects.requireNonNullElse(state.getShieldUntil(), 0L)),
+                    "text", "范围：当前城市；新增" + ItemDef.SHIELD_HOURS.get(itemId) + "小时，各档均累加时长。不保护野地；保护期间对玩家的军事操作受限。");
+        }
+        Integer percent = ItemDef.MARCH_BONUS_PERCENT.get(itemId);
+        if (percent == null) throw new IllegalArgumentException("道具类型无效");
+        long until = Objects.requireNonNullElse(state.getMarchBoostUntil(), 0L);
+        int active = until > now ? Objects.requireNonNullElse(state.getMarchBoostPercent(), 0) : 0;
+        long end = active == percent ? Math.max(until, now + 3600000L) : now + 3600000L;
+        return Map.of("end", end, "added", Math.max(0, end - Math.max(now, until)), "blocked", active > percent,
+                "key", until + ":" + Objects.requireNonNullElse(state.getMarchBoostPercent(), 0),
+                "text", "范围：本城新发起的行军，速度+" + percent + "%。同档刷新至至少剩余1小时，高档替换低档；高档生效时不能使用低档。已在途部队不受影响。");
+    }
+
     /** 普通动员固定增加 500 人，紧急动员按使用时当前城市的民居标称容量增加 30%，均不突破容量。 */
     private Map<String, Object> usePopulationOrder(Long playerId, String itemId) {
         // 同一玩家的召集串行处理；满员时先返回，避免扣道具后再补回库存。
         if (playerRepository.lockById(playerId).isEmpty()) return error("玩家不存在");
+        economy.beforeResourceChange(playerId, cityScope.slot(playerId));
         int capacity = buildingRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).stream()
                 .filter(b -> "house".equals(b.getType()))
                 .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0)
@@ -351,13 +392,14 @@ public class DepotService {
         boolean emergency = "emergencyPopulationOrder".equals(itemId);
         // 以总容量而非剩余容量为基数，整数人数向下取整；尾次只填充剩余空位。
         int requested = emergency ? (int) (capacity * 30L / 100) : 500;
-        int added = Math.min(requested, Math.max(0, capacity - current));
+        int added = populationOrderAdded(capacity, current, emergency);
         if (added == 0) return error("当前空闲人口已达到上限");
         int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
         if (consumed == 0) return error(ItemDef.ITEMS.get(itemId).name() + "数量不足");
 
         // 扣库存会清空持久化上下文，重新获取当前城市经济实体再保存人口。
         cityScope.economy(playerId).setCivilianPopulation(current + added);
+        if (current + added >= capacity) cityScope.economy(playerId).setPopulationGrowthRemainder(0.0);
         cityScope.saveEconomy(playerId);
         return success((emergency ? "📣 紧急人口动员完成" : "👥 人口动员完成") + ",空闲人口 +" + added,
                 Map.of("civilianPopulation", current + added));
@@ -368,6 +410,8 @@ public class DepotService {
     // ================================================================
 
     private Map<String, Object> useRecruitOrd(Long playerId) {
+        // 征募令与军校招募采用相同的工资生效边界；必须在扣道具之前推进旧名单。
+        economy.settleEconomyBeforeChange(playerId);
         int consumed = playerItemRepository.tryConsume(playerId, "recruitOrd", 1, GameClock.now());
         if (consumed == 0) return error("征募令数量不足");
 
@@ -417,55 +461,9 @@ public class DepotService {
         return null;
     }
 
+    /** 仓库与军官页统一为加经验后手动升级，满级书仍直接升满。 */
     private Map<String, Object> useExpBook(Long playerId, String itemId, Long officerId) {
-        Officer officer = requireOfficer(playerId, officerId);
-        if (officer == null) return error("请先选择军官");
-
-        int level = officer.getLevel() != null ? officer.getLevel() : 1;
-        if (level >= 100) return error("军官已达最高等级 (Lv.100)");
-
-        if ("expBookMax".equals(itemId)) {
-            int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
-            if (consumed == 0) return error("满级经验书不足");
-
-            int upgraded = 100 - level;
-            int pointsGained = upgraded;
-            officer.setLevel(100);
-            officer.setExp(0L);
-            officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + pointsGained);
-            officerRepository.save(officer);
-
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("success", true);
-            result.put("message", "⚡ " + officer.getName() + " 使用满级经验书直升满级 Lv.100！获得 " + pointsGained + " 点可分配属性！");
-            result.put("exp", 0L);
-            result.put("level", 100);
-            return result;
-        }
-
-        int consumed = playerItemRepository.tryConsume(playerId, itemId, 1, GameClock.now());
-        if (consumed == 0) return error("经验书不足");
-
-        int gain = ItemDef.EXPERIENCE_BOOK_EXP.get(itemId);
-        long exp = (officer.getExp() != null ? officer.getExp() : 0L) + gain;
-        officer.setExp(exp);
-
-        while (level < OfficerExperienceRules.MAX_LEVEL && exp >= OfficerExperienceRules.expNeeded(level)) {
-            exp -= OfficerExperienceRules.expNeeded(level);
-            level += 1;
-            officer.setAttrPoints((officer.getAttrPoints() != null ? officer.getAttrPoints() : 0) + 1);
-        }
-        if (level >= OfficerExperienceRules.MAX_LEVEL) exp = 0L;
-        officer.setLevel(level);
-        officer.setExp(exp);
-        officerRepository.save(officer);
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("success", true);
-        result.put("message", officer.getName() + " 获得 " + gain + " 经验,当前 Lv." + level);
-        result.put("exp", exp);
-        result.put("level", level);
-        return result;
+        return officerService.useExpBook(playerId, officerId, itemId, 1);
     }
 
     private Map<String, Object> useSkillBook(Long playerId, Long officerId) {
@@ -544,12 +542,15 @@ public class DepotService {
      * @return 请求处理结果，upgraded 区分升星成功与已扣道具的失败结果
      */
     Map<String, Object> useStarUp(Long playerId, Long officerId, int roll) {
+        // 经济先结清，扣道具清空上下文后重新读取军官，不能把旧忠诚度合并回库。
+        economy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Officer officer = requireOfficer(playerId, officerId);
         if (officer == null) return error("请先选择军官");
         int star = officer.getStar() != null ? officer.getStar() : 1;
         if (star >= 5) return error("该军官已满星(5★)");
         int consumed = playerItemRepository.tryConsume(playerId, "starUp", 1, GameClock.now());
         if (consumed == 0) return error("星耀符不足");
+        officer = requireOfficer(playerId, officerId);
         int failurePercent = STAR_UP_FAILURE_PERCENT[star - 1];
         if (roll < failurePercent) {
             Map<String, Object> result = new LinkedHashMap<>();
@@ -605,20 +606,7 @@ public class DepotService {
             String name = eqDef != null ? eqDef.name() : eqKey;
             awardedNames.add(name);
 
-            Optional<PlayerItem> existing = playerItemRepository.findByPlayerIdAndItemKey(playerId, eqKey);
-            if (existing.isPresent()) {
-                PlayerItem pi = existing.get();
-                pi.setCount(pi.getCount() + 1);
-                pi.setUpdatedAt(now);
-                playerItemRepository.save(pi);
-            } else {
-                PlayerItem pi = new PlayerItem();
-                pi.setPlayerId(playerId);
-                pi.setItemKey(eqKey);
-                pi.setCount(1);
-                pi.setUpdatedAt(now);
-                playerItemRepository.save(pi);
-            }
+            inventory.add(playerId, eqKey, 1);
         }
 
         equipmentProgress.recordCollection(playerId, rewards.stream().map(OfficerEquipmentDef::key).toList());
@@ -682,6 +670,8 @@ public class DepotService {
     }
 
     private Map<String, Object> useStageGift(Long playerId, String itemId) {
+        if (resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).isEmpty()) return error("玩家资源数据不存在");
+        economy.beforeResourceChange(playerId, cityScope.slot(playerId));
         StageGiftReward gift = STAGE_GIFTS.get(itemId);
         if (gift == null) return error("未知的阶段礼包: " + itemId);
 
@@ -694,13 +684,18 @@ public class DepotService {
             return error("玩家资源数据不存在");
         }
 
+        // 城市物资发给当前城，钻石始终进入账号主城钱包；整组奖励同事务提交。
+        Resources wallet = cityScope.wallet(playerId);
+        long diamond = (long) (wallet.getDiamond() == null ? 0 : wallet.getDiamond()) + gift.diamond();
+        if (diamond > Integer.MAX_VALUE) throw new IllegalArgumentException("钻石余额已达上限，请先使用部分钻石");
         Map<String, Long> before = resourceAmounts(res);
         res.addResource("food", gift.food());
         res.addResource("steel", gift.steel());
         res.addResource("oil", gift.oil());
         res.addResource("rare", gift.rare());
         res.addResource("gold", gift.gold());
-        res.setDiamond((res.getDiamond() != null ? res.getDiamond() : 0) + gift.diamond());
+        wallet.setDiamond((int) diamond);
+        resourcesRepository.save(wallet);
         resourcesRepository.save(res);
 
         long now = GameClock.now();
@@ -716,6 +711,7 @@ public class DepotService {
         }
 
         List<String> rewards = resourceRewards(res, before);
+        if (wallet != res && gift.diamond() > 0) rewards.add("钻石×" + gift.diamond());
         rewards.addAll(bonusNames);
         chatService.sendItemOpened(playerId, gift.name(), rewards);
 
@@ -732,7 +728,7 @@ public class DepotService {
         result.put("message", msg.toString());
         result.put("itemId", itemId);
         result.put("gold", res.getGold());
-        result.put("diamond", res.getDiamond());
+        result.put("diamond", wallet.getDiamond());
         return result;
     }
 
@@ -757,26 +753,13 @@ public class DepotService {
         return rewards;
     }
 
+    @Transactional
     public void addItem(Long playerId, String itemKey, int count) {
         addItemToDepot(playerId, itemKey, count, GameClock.now());
     }
 
     private void addItemToDepot(Long playerId, String itemKey, int count, long now) {
-        if (count <= 0) return;
-        Optional<PlayerItem> opt = playerItemRepository.findByPlayerIdAndItemKey(playerId, itemKey);
-        if (opt.isPresent()) {
-            PlayerItem pi = opt.get();
-            pi.setCount(pi.getCount() + count);
-            pi.setUpdatedAt(now);
-            playerItemRepository.save(pi);
-        } else {
-            PlayerItem pi = new PlayerItem();
-            pi.setPlayerId(playerId);
-            pi.setItemKey(itemKey);
-            pi.setCount(count);
-            pi.setUpdatedAt(now);
-            playerItemRepository.save(pi);
-        }
+        inventory.add(playerId, itemKey, count);
     }
 
     // ================================================================

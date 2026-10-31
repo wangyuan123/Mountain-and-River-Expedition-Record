@@ -1,7 +1,6 @@
 package com.wargame;
 
 import com.wargame.model.constants.TechnologyRules;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.dto.BattleResult;
 import com.wargame.model.entity.March;
 import com.wargame.service.MarchService;
@@ -24,7 +23,7 @@ class MarchLootCapacityTest {
                                 Map<String, Integer> equipment, Map<String, Integer> carried) {
         March march = new March();
         march.setArmy(JsonUtil.toJson(Map.of("truck", 100)));
-        march.setUnitEquipmentSnapshot(JsonUtil.toJson(equipment));
+        march.setActionSnapshot(JsonUtil.toJson(equipment));
         march.setCarryRes(JsonUtil.toJson(carried));
         BattleResult result = new BattleResult();
         result.setWin(true);
@@ -59,7 +58,7 @@ class MarchLootCapacityTest {
     }
 
     @Test void frozenEquipmentAndTechnologyApplyAfterReservingExistingCargo() {
-        var equipment = Map.of(TechnologyRules.LOAD_SNAPSHOT, 2, UnitEquipmentEffects.key("truck", "load"), 1000);
+        var equipment = Map.of(TechnologyRules.LOAD_SNAPSHOT, 2, "@ue:" + "truck" + ":" + "load", 1000);
         int remaining = service.calcArmyLoad(Map.of("truck", 1), equipment) - 50;
         var result = settle(Map.of("truck", 1), Map.of("steel", 10000, "diamond", 20), equipment, Map.of("food", 50));
         assertEquals(remaining, result.getPlunderedResources().get("steel"));

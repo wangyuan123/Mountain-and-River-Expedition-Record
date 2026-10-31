@@ -98,8 +98,6 @@ public class IncomingIntelligenceService {
                 Map<String, Integer> combat = new TreeMap<>();
                 for (String key : applicable) combat.put(key, TechnologyRules.level(tech, key, 10));
                 data.put("combatTech", combat);
-                Map<String, Integer> gear = session == null ? JsonUtil.parseIntMap(march.getUnitEquipmentSnapshot()) : tech;
-                data.put("unitEquipment", UnitEquipmentEffects.only(UnitEquipmentEffects.forArmy(gear, army)));
                 if (level >= 10) {
                     if (session == null) {
                         Officer chief = targets.getCommanderInChief(march.getPlayerId(), Objects.requireNonNullElse(march.getCitySlot(), 0));
@@ -147,7 +145,7 @@ public class IncomingIntelligenceService {
         if (level >= 6) out.put("totalTroops", total);
         if (level >= 7 && raw.containsKey("army")) out.put("army", army);
         if (level >= 8) copy(raw, out, "commander", "commanderStar", "commanderLevel");
-        if (level >= 9) copy(raw, out, "combatTech", "unitEquipment", "intelligenceAt", "intelligenceSource");
+        if (level >= 9) copy(raw, out, "combatTech", "intelligenceAt", "intelligenceSource");
         if (level >= 10) copy(raw, out, "commandBonus");
         return out;
     }

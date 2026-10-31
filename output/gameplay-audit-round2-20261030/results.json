@@ -1,0 +1,67 @@
+{
+  "impossible_building_quests": {
+    "upgradeAt10": {
+      "success": false,
+      "message": "已达当前市政厅上限"
+    },
+    "unreachable": [
+      "q6_5:command>=15",
+      "q7_4:command>=20",
+      "q7_5:wall>=20"
+    ]
+  },
+  "locked_chapter_claim": {
+    "displayedChapterStatus": "locked",
+    "claim": {
+      "success": true,
+      "message": "已领取【石油开采】的任务奖励",
+      "reward": {
+        "food": 0,
+        "steel": 3000,
+        "oil": 3000,
+        "rare": 0,
+        "gold": 400,
+        "exp": 0,
+        "skillBook": null,
+        "expBook": null,
+        "itemKey": null,
+        "itemCount": 0,
+        "empty": false
+      },
+      "questId": "q2_1"
+    }
+  },
+  "building_level_counts_operations": {
+    "questProgress": 2,
+    "houseLevels": [
+      1,
+      1
+    ],
+    "questStatus": "completed"
+  },
+  "surrender_scheduler_transaction": {
+    "overdueCityStillFrozen": true,
+    "afterScheduler": "PENDING",
+    "afterTransactionalProxy": "EXPIRED",
+    "acceptedAfterScheduler": "ACCEPTED",
+    "lockWithoutTransaction": "InvalidDataAccessApiUsageException:Query requires transaction be in progress, but no transaction is known to be in progress"
+  },
+  "market_cross_city_slot_race": {
+    "requests": [
+      3,
+      4
+    ],
+    "activeOrders": 4,
+    "cap": 3
+  },
+  "healing_retroactive_food": {
+    "foodBefore": 10000,
+    "foodAfter": 9900,
+    "healedNow": 100,
+    "elapsedBeforeHealingHours": 1
+  },
+  "tax_salary_tick_frequency": {
+    "twoHalfHourlySettlements": 19999950,
+    "oneHourlySettlement": 19999900
+  }
+}

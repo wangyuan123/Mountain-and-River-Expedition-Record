@@ -39,7 +39,7 @@ class GameClockStartupTest {
         assertEquals(after, jdbc.queryForObject("SELECT game_time FROM game_clock WHERE singleton_id=1", Long.class));
         var response = mvc.perform(get("/api/auth/server").header("Origin", "http://localhost:3000"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Expose-Headers", "X-Game-Time"))
+                .andExpect(header().string("Access-Control-Expose-Headers", "X-Game-Time, Retry-After"))
                 .andExpect(header().exists("X-Game-Time"))
                 .andReturn().getResponse();
         assertTrue(Long.parseLong(response.getHeader("X-Game-Time")) >= after);

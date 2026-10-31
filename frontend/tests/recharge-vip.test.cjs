@@ -64,7 +64,7 @@ test('充值入口保留钻石余额并提示未开放，不切换页面或修�
   game.Core.state.resources.diamond = 1234;
   game.Core.render();
   assert.match(topbar.innerHTML, /💎 1234/);
-  assert.match(topbar.innerHTML, /title="暂未开放充值，敬请期待"/);
+  assert.match(topbar.innerHTML, /title="账号共享钻石；暂未开放充值，敬请期待"/);
   const oldView = view.innerHTML;
   const oldHistory = Array.from(game.Core.history);
   game.go('recharge');

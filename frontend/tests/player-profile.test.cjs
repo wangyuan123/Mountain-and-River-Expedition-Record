@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function load(context, file) {
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context, { filename: file });
@@ -29,6 +29,7 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   load(context, 'data.js');
   load(context, 'player-profile.js');
 
+  context.Game.Core.state.gameplay.leadershipPercent=20;
   context.Game.PlayerProfile.showRankCapInfo();
   const mask = elements.rankCapInfoMask;
   assert.ok(mask);
@@ -37,8 +38,9 @@ test('profile rank opens the full rank-to-cap table with the current city bonus'
   assert.match(mask.innerHTML, /下士 <span>（当前）<\/span>/);
   assert.match(mask.innerHTML, /<td>17<\/td><th scope="row"><span class="rank-cap-label"><svg[^>]*rank-insignia-general/);
   assert.match(mask.innerHTML, /上将<\/span><\/th><td>600,000<\/td>/);
-  assert.match(mask.innerHTML, /三军统帅 Lv\.5（\+20%）。/);
-  assert.match(mask.innerHTML, /当前实际带兵上限：90,000/);
+  assert.match(mask.innerHTML, /三军统帅（满级）：\+20%。/);
+  assert.match(mask.innerHTML, /当前实际出征带兵上限：90,000/);
+  assert.match(mask.innerHTML, /守城不受带兵上限限制/);
   assert.match(mask.innerHTML, /当前可拥有城市上限：3 座<\/strong>（含主城）/);
   assert.match(mask.innerHTML, /<th scope="col">城市上限<\/th>/);
   const cityCaps = [...mask.innerHTML.matchAll(/<td>\d+<\/td><th scope="row">.*?<\/th><td>[\d,]+<\/td><td>(\d+) 座<\/td>/g)]

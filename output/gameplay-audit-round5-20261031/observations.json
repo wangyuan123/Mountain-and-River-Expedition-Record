@@ -1,0 +1,68 @@
+{
+  "scheduled_completion_notification": {
+    "tickPayloads": [
+      {
+        "containsTech": false,
+        "containsCompletedResearch": false,
+        "containsCityState": false,
+        "containsCompletedBuilds": false
+      }
+    ],
+    "technologyLevel": 1,
+    "buildingLevel": 1
+  },
+  "population_tax_settlement_frequency": {
+    "hourGold": 108,
+    "minuteGold": 55,
+    "hourPopulation": 180,
+    "minutePopulation": 180
+  },
+  "managed_food_offline_window": {
+    "managedFood": 7600,
+    "initialFood": 10000,
+    "configuredWindowHours": 8,
+    "offlineHours": 24,
+    "standardFood": 9200
+  },
+  "resource_receipt_economic_boundary": {
+    "pendingReceiptSuccess": true,
+    "pendingGold": 49900,
+    "settledLoyalty": 0,
+    "pendingLoyalty": 80,
+    "settledReceiptSuccess": true,
+    "settledGold": 50000
+  },
+  "demobilization_existing_population": {
+    "populationBefore": 1500,
+    "populationAfter": 1200,
+    "housingCapacity": 1200,
+    "response": {
+      "success": true,
+      "message": "解散 步兵-加兰德步枪兵（M1） x1 回收钢9",
+      "count": 1,
+      "refund": 9
+    }
+  },
+  "building_prestige_cost_snapshot": {
+    "baseline": {
+      "prestigeAfter": 113,
+      "paidCost": "{\"food\":455,\"steel\":911}"
+    },
+    "researchDuringConstruction": {
+      "prestigeAfter": 112,
+      "paidCost": "{\"food\":455,\"steel\":911}"
+    }
+  },
+  "frozen_city_periodic_inventory_loss": {
+    "beforeFood": 1000000100,
+    "reports": 1,
+    "afterFood": 1000000050,
+    "cityFrozen": true
+  },
+  "capped_gold_continuous_balance": {
+    "taxIncomePerHour": 600,
+    "salaryPerHour": 100,
+    "openingGold": 20000000,
+    "closingGoldAfterHour": 20000000.0
+  }
+}

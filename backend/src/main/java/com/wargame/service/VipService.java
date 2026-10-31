@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class VipService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private com.wargame.service.TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
 
     /** VIP 每日额度按游戏时钟的北京时间自然日结算，避免服务器时区影响刷新边界。 */
     private static final ZoneId GAME_ZONE = ZoneId.of("Asia/Shanghai");
@@ -310,84 +312,62 @@ public class VipService {
                 appeaseType = "batch_gold";
             }
         }
-        List<PlayerCity> branchCities = playerCityRepository.findByOwnerId(playerId);
-
-        if ("free_amnesty".equalsIgnoreCase(appeaseType)) {
-            if (today.equals(player.getLastFreeAmnestyDate())) {
-                throw new IllegalArgumentException("今日免费军委会特赦令已使用，明日 00:00 刷新，可使用一键黄金赈民");
-            }
-            player.setLastFreeAmnestyDate(today);
-
-            // 主城 (slot 0)
-            player.setMorale(100);
-            player.setResentment(0);
-            player.setLastAppeaseAt(GameClock.now());
-            playerRepository.save(player);
-
-            // 分城
-            for (PlayerCity c : branchCities) {
-                c.setMorale(100);
-                c.setResentment(0);
-                c.setLastAppeaseAt(GameClock.now());
-                playerCityRepository.save(c);
-            }
-
-            Map<String, Object> res = new LinkedHashMap<>();
-            res.put("success", true);
-            res.put("type", "free_amnesty");
-            res.put("action", "free_amnesty");
-            res.put("affectedCities", branchCities.size() + 1);
-            res.put("message", "军委会全域大赦令颁布生效！名下 " + (branchCities.size() + 1) + " 座城池民心拉满至 100，民怨全域清零！");
-            return res;
-        } else if ("batch_gold".equalsIgnoreCase(appeaseType)) {
-            // 一键合并黄金赈民 (享 8 折特权)
-            long totalGoldDeducted = 0L;
-
-            // 主城扣减
-            Resources mainRes = resourcesRepository.findByPlayerIdAndCitySlot(playerId, 0).orElse(null);
-            if (mainRes != null) {
-                int civ = Objects.requireNonNullElse(player.getCivilianPopulation(), 0);
-                long cost = Math.round(Math.max(1000, Math.min(10000, civ * 2)) * 0.8);
-                if (mainRes.getGold() != null && mainRes.getGold() >= cost) {
-                    mainRes.setGold(mainRes.getGold() - cost);
-                    totalGoldDeducted += cost;
-                    player.setMorale(Math.min(100, Objects.requireNonNullElse(player.getMorale(), 70) + 10));
-                    player.setResentment(Math.max(0, Objects.requireNonNullElse(player.getResentment(), 0) - 5));
-                    player.setLastAppeaseAt(GameClock.now());
-                    resourcesRepository.save(mainRes);
-                    playerRepository.save(player);
-                }
-            }
-
-            // 各分城扣减
-            for (PlayerCity c : branchCities) {
-                if (c.getCitySlot() == null || c.getCitySlot() == 0) continue;
-                Resources bRes = resourcesRepository.findByPlayerIdAndCitySlot(playerId, c.getCitySlot()).orElse(null);
-                if (bRes != null) {
-                    int civ = Objects.requireNonNullElse(c.getCivilianPopulation(), 0);
-                    long cost = Math.round(Math.max(1000, Math.min(10000, civ * 2)) * 0.8);
-                    if (bRes.getGold() != null && bRes.getGold() >= cost) {
-                        bRes.setGold(bRes.getGold() - cost);
-                        totalGoldDeducted += cost;
-                        c.setMorale(Math.min(100, Objects.requireNonNullElse(c.getMorale(), 70) + 10));
-                        c.setResentment(Math.max(0, Objects.requireNonNullElse(c.getResentment(), 0) - 5));
-                        c.setLastAppeaseAt(GameClock.now());
-                        resourcesRepository.save(bRes);
-                        playerCityRepository.save(c);
-                    }
-                }
-            }
-
-            Map<String, Object> res = new LinkedHashMap<>();
-            res.put("success", true);
-            res.put("type", "batch_gold");
-            res.put("action", "batch_gold");
-            res.put("totalGoldDeducted", totalGoldDeducted);
-            res.put("message", "全域一键黄金赈民完成，总计消耗 " + totalGoldDeducted + " 黄金 (已享 VIP 8 折优惠)！");
-            return res;
-        } else {
-            throw new IllegalArgumentException("未知的全域政务类型: " + appeaseType);
+        long now = GameClock.now();
+        List<PlayerCity> owned = playerCityRepository.findByOwnerId(playerId);
+        Map<Integer, PlayerCity> eligible = new LinkedHashMap<>();
+        List<Map<String, Object>> skipped = new ArrayList<>();
+        for (PlayerCity city : owned) {
+            if (city.getCitySlot() == null) continue;
+            if (city.isSurrenderFrozen(now) || Objects.requireNonNullElse(city.getReadyAt(), 0L) > now) {
+                skipped.add(Map.of("cityId", city.getId(), "name", city.getName(), "reason",
+                        city.isSurrenderFrozen(now) ? "归降移交中" : "城市建设中"));
+            } else eligible.put(city.getCitySlot(), city);
         }
+        // 兼容尚未补建主城实体的旧账号；主城存在时不能重复计入。
+        if (owned.stream().noneMatch(c -> Integer.valueOf(0).equals(c.getCitySlot()))) eligible.put(0, null);
+        boolean free = "free_amnesty".equalsIgnoreCase(appeaseType);
+        if (!free && !"batch_gold".equalsIgnoreCase(appeaseType)) throw new IllegalArgumentException("未知的全域政务类型");
+        if (free && today.equals(player.getLastFreeAmnestyDate())) throw new IllegalArgumentException("今日免费军委会特赦令已使用");
+        int affected = 0;
+        long paid = 0;
+        // 每城按旧民心结清经济后再安抚；冻结/建设中的城市不扣费，也不写入经济字段。
+        for (var entry : eligible.entrySet()) {
+            try (var ignored = cityScope.enter(playerId, entry.getKey())) {
+                cityScope.assertWritable(playerId);
+                economy.settleEconomyBeforeChange(playerId);
+                CityEconomy local = cityScope.economy(playerId);
+                if (!free) {
+                    Resources stock = resourcesRepository.findByPlayerIdAndCitySlot(playerId, entry.getKey()).orElse(null);
+                    long cost = Math.round(Math.max(1000L, Math.min(10000L,
+                            2L * Objects.requireNonNullElse(local.getCivilianPopulation(), 0))) * .8);
+                    if (stock == null || Objects.requireNonNullElse(stock.getGold(), 0L) < cost) {
+                        skipped.add(Map.of("citySlot", entry.getKey(), "reason", "黄金不足"));
+                        continue;
+                    }
+                    stock.setGold(stock.getGold() - cost);
+                    resourcesRepository.save(stock);
+                    paid += cost;
+                }
+                local.adjustSentiment(free ? 100 : 10, free ? -100 : -5);
+                local.setLastAppeaseAt(now);
+                cityScope.saveEconomy(playerId);
+                affected++;
+            }
+        }
+        if (free && affected > 0) {
+            player.setLastFreeAmnestyDate(today);
+            playerRepository.save(player);
+        }
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("success", true);
+        result.put("type", appeaseType);
+        result.put("action", appeaseType);
+        result.put("affectedCities", affected);
+        result.put("skippedCities", skipped);
+        result.put("totalGoldDeducted", paid);
+        result.put("message", free ? "全域特赦完成，实际处理 " + affected + " 座城市"
+                : "全域黄金赈民完成，实际处理 " + affected + " 座城市，消耗 " + paid + " 黄金（8折）");
+        return result;
     }
 
     // -------------------------------------------------------------
@@ -609,6 +589,24 @@ public class VipService {
         data.put("marchPresetLimit", curDef.marchPresetLimit());
         data.put("levels", VipConfig.getAllLevels());
         data.put("milestones", VipConfig.getAllMilestones());
+        // 展示资格与执行使用同一配置和已领取记录；客户端不得按充值额重建领奖规则。
+        data.put("isMax", nextDef == null);
+        data.put("currentLevelRequiredCents", curDef.requiredCents());
+        data.put("nextLevelRequiredCents", nextDef == null ? curDef.requiredCents() : nextDef.requiredCents());
+        data.put("dailySalaryClaimable", !dailyClaimed);
+        data.put("salaryBacklogDays", player.getStoredDailySalariesCount()
+                + (today.equals(player.getLastVipDailyRewardDate()) ? 0 : 1));
+        data.put("levelViews", VipConfig.getAllLevels().stream().map(def -> Map.of(
+                "level", def.level(), "achieved", vipLevel >= def.level(),
+                "centsNeeded", Math.max(0L, def.requiredCents() - totalCents))).toList());
+        data.put("levelPacks", VipConfig.getAllLevels().stream().filter(def -> def.level() > 0).map(def -> Map.of(
+                "level", def.level(), "name", def.title(), "requiredCents", def.requiredCents(),
+                "rewards", def.levelPackRewards(), "claimed", claimedPackLevels.contains(def.level()),
+                "claimable", vipLevel >= def.level() && !claimedPackLevels.contains(def.level()))).toList());
+        data.put("milestoneViews", VipConfig.getAllMilestones().stream().map(def -> Map.of(
+                "milestoneCents", def.milestoneCents(), "name", def.title(), "rewards", def.rewards(),
+                "claimed", claimedMilestones.contains(def.milestoneCents()),
+                "claimable", totalCents >= def.milestoneCents() && !claimedMilestones.contains(def.milestoneCents()))).toList());
         return data;
     }
 
@@ -698,6 +696,7 @@ public class VipService {
         Map<String, Integer> finalRewards = new LinkedHashMap<>();
         if (rewards == null || rewards.isEmpty() || multiplier <= 0) return finalRewards;
 
+        resourceEconomy.beforeResourceChange(playerId, targetCitySlot);
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, targetCitySlot)
                 .orElseGet(() -> {
                     Resources r = new Resources();
@@ -710,7 +709,9 @@ public class VipService {
         boolean resChanged = false;
         for (Map.Entry<String, Integer> entry : rewards.entrySet()) {
             String key = entry.getKey();
-            int totalCount = entry.getValue() * multiplier;
+            int totalCount;
+            try { totalCount = Math.multiplyExact(entry.getValue(), multiplier); }
+            catch (ArithmeticException e) { throw new IllegalArgumentException("奖励数量超出库存范围"); }
             if (totalCount <= 0) continue;
 
             finalRewards.put(key, totalCount);

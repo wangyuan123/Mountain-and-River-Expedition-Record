@@ -42,7 +42,7 @@ class DisplayNameTest extends BaseServiceTest {
     @Test
     void savesGameDisplayNameWithoutChangingLoginUsername() {
         Player player = createTestPlayer("login-user", 30);
-        assertEquals("login-user", ((Map<?, ?>) gameStateService.getGameState(player.getId()).get("player")).get("name"));
+        assertEquals("统帅" + player.getId(), ((Map<?, ?>) gameStateService.getGameState(player.getId()).get("player")).get("name"));
 
         PlayerItem card = new PlayerItem();
         card.setPlayerId(player.getId());

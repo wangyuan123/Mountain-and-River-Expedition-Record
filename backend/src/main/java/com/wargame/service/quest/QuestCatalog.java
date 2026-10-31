@@ -2,6 +2,7 @@ package com.wargame.service.quest;
 
 import java.util.List;
 import com.wargame.model.constants.TechDef;
+import com.wargame.model.constants.GameConstants;
 
 /** 主线任务与阶段引导的静态定义。 */
 public final class QuestCatalog {
@@ -104,7 +105,7 @@ public final class QuestCatalog {
             q("q6_2", "stage6", "大洋舰队", "海军部队总数达到 20,000（战列舰/航母特混舰队）", "ARMY_NAVY_TOTAL", null, 20000, r(100000, 120000, 60000, 15000, 10000), "q6_1"),
             q("q6_3", "stage6", "威震八荒", "统帅声望达到 100,000（10w 声望大关）", "PRESTIGE_VALUE", null, 100000, r(80000, 80000, 40000, 10000, 8000), "q6_2"),
             q("q6_4", "stage6", "高阶科研", "至少 5 项科技研发等级达到 8 级以上", "TECH_LEVEL_COUNT", null, 5, r(100000, 100000, 60000, 15000, 10000), "q6_3"),
-            q("q6_5", "stage6", "宏伟首府", "主城市政厅升级至 15 级", "BUILD_UPGRADE_DONE", "command", 15, r(120000, 120000, 60000, 15000, 12000), "q6_4"),
+            q("q6_5", "stage6", "宏伟首府", "主城市政厅升级至 " + (GameConstants.BUILDING_MAX_LEVEL - 2) + " 级", "BUILD_UPGRADE_DONE", "command", GameConstants.BUILDING_MAX_LEVEL - 2, r(120000, 120000, 60000, 15000, 12000), "q6_4"),
             q("q6_6", "stage6", "拜领少将", "统帅军衔晋升至少将（第15阶，声望达到8,000,000）", "MILITARY_RANK_TIER", null, 15, r(150000, 150000, 80000, 20000, 15000), "q6_5"),
             q("q6_7", "stage6", "六城呼应", "拥有城池数量达到 6 座", "CITY_COUNT", null, 6, r(200000, 200000, 100000, 30000, 20000), "q6_6")
         )),
@@ -116,8 +117,8 @@ public final class QuestCatalog {
             q("q7_1", "stage7", "半壁江山", "全军总兵力达到 500,000（50w 兵力大关）", "ARMY_TOTAL", null, 500000, r(300000, 300000, 150000, 40000, 30000), null),
             q("q7_2", "stage7", "十万水师", "海军部队总数达到 100,000（10w 海军大关）", "ARMY_NAVY_TOTAL", null, 100000, r(400000, 500000, 250000, 60000, 40000), "q7_1"),
             q("q7_3", "stage7", "巅峰科研", "至少 3 项科技研发至各自满级", "TECH_MAX_COUNT", null, 3, r(300000, 300000, 200000, 50000, 35000), "q7_2"),
-            q("q7_4", "stage7", "筑城极境", "主城市政厅升级至满级（20级）", "BUILD_UPGRADE_DONE", "command", 20, r(500000, 500000, 300000, 80000, 50000), "q7_3"),
-            q("q7_5", "stage7", "金汤要塞", "城防升级至满级（20级）", "BUILD_UPGRADE_DONE", "wall", 20, r(400000, 600000, 200000, 60000, 40000), "q7_4"),
+            q("q7_4", "stage7", "筑城极境", "主城市政厅升级至满级（" + GameConstants.BUILDING_MAX_LEVEL + "级）", "BUILD_UPGRADE_DONE", "command", GameConstants.BUILDING_MAX_LEVEL, r(500000, 500000, 300000, 80000, 50000), "q7_3"),
+            q("q7_5", "stage7", "金汤要塞", "城防升级至满级（" + GameConstants.BUILDING_MAX_LEVEL + "级）", "BUILD_UPGRADE_DONE", "wall", GameConstants.BUILDING_MAX_LEVEL, r(400000, 600000, 200000, 60000, 40000), "q7_4"),
             q("q7_6", "stage7", "中将督军", "统帅军衔晋升至中将（第16阶，声望达到9,000,000）", "MILITARY_RANK_TIER", null, 16, r(600000, 600000, 400000, 100000, 60000), "q7_5"),
             q("q7_7", "stage7", "七星连珠", "拥有城池数量达到 7 座", "CITY_COUNT", null, 7, r(800000, 800000, 500000, 120000, 80000), "q7_6"),
             q("q7_8", "stage7", "威加海内", "统帅声望达到 500,000", "PRESTIGE_VALUE", null, 500000, r(500000, 500000, 300000, 80000, 50000), "q7_7")
@@ -127,7 +128,7 @@ public final class QuestCatalog {
         //  第八阶段 · 山河远征
         // =====================================================================
         new Chapter("stage8", "第八阶段 · 山河远征", "全建筑满级，全科技满级，百万大军，三十万舰队，八城大成，最高军衔【上将】！", "stage_gift_8", "三军统帅大礼包", List.of(
-            q("q8_1", "stage8", "核心满级", "主城全套核心工业与军事建筑均升至满级", "BUILD_ALL_MAX", null, 1, r(1000000, 1000000, 600000, 150000, 100000), null),
+            q("q8_1", "stage8", "核心满级", "主城可建的全套核心工业与军事建筑均升至满级；内陆主城不要求军港", "BUILD_ALL_MAX", null, 1, r(1000000, 1000000, 600000, 150000, 100000), null),
             q("q8_2", "stage8", "科技巅峰", "全部 " + TechDef.TECHS.size() + " 种军工科技全部研发至满级", "TECH_ALL_MAX", null, TechDef.TECHS.size(), r(1500000, 1500000, 1000000, 250000, 150000), "q8_1"),
             q("q8_3", "stage8", "百万雄师", "全军总兵力突破 1,000,000（100w 终极兵力）", "ARMY_TOTAL", null, 1000000, r(2000000, 2000000, 1200000, 300000, 200000), "q8_2"),
             q("q8_4", "stage8", "大洋主宰", "海军舰队总数突破 300,000", "ARMY_NAVY_TOTAL", null, 300000, r(2500000, 3000000, 1500000, 400000, 250000), "q8_3"),

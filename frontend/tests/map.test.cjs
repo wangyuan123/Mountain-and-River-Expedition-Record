@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const path = require('node:path');
 function context(game = {}) {
   const c=vm.createContext({console,Date,Map,Set,Promise,Math,setTimeout,clearTimeout,Game:game});c.window=c;return c;
@@ -37,7 +37,7 @@ test('camera zoom keeps finger anchor and camera never moves game coordinates',(
   cam.pan(99999,99999);let b=cam.bounds();assert.ok(b.minX>=0&&b.minY>=0);
   const minimum={scale:cam.scale,x:cam.x,y:cam.y};
   cam.zoom(.0001,195,275);assert.deepEqual({scale:cam.scale,x:cam.x,y:cam.y},minimum);
-  cam.zoom(100,195,275);assert.equal(cam.scale,88);
+  cam.zoom(100,195,275);assert.equal(cam.scale,144);
   cam.x=199;cam.y=199;cam.clamp();const chunks=cam.chunks();assert.ok(chunks.every(v=>v.cx<=12&&v.cy<=12));
   const lastVisible=chunks.findIndex(v=>!v.visible);assert.ok(chunks.slice(lastVisible).every(v=>!v.visible));
 });
@@ -45,17 +45,17 @@ test('map starts at its minimum scale and zoom-out input cannot go below it',()=
   const c=context();load(c,'map-camera.js');
   for(const factor of [1/1.3,0.5]){
     const cam=new c.Game.MapCamera(200,100,100);cam.width=1920;cam.height=1080;
-    assert.equal(cam.scale,57.2);
+    assert.equal(cam.scale,80);
     const anchor=cam.world(120,200);
     for(let step=0;step<4;step++)cam.zoom(factor,120,200);
-    assert.equal(cam.scale,57.2);
+    assert.equal(cam.scale,80);
     const zoomedAnchor=cam.world(120,200);
     assert.ok(Math.abs(zoomedAnchor.x-anchor.x)<1e-9);
     assert.ok(Math.abs(zoomedAnchor.y-anchor.y)<1e-9);
     cam.zoom(factor,120,200);
-    assert.equal(cam.scale,57.2);
+    assert.equal(cam.scale,80);
     cam.zoom(2,120,200);
-    assert.equal(cam.scale,88);
+    assert.equal(cam.scale,144);
   }
 });
 test('chunks deduplicate requests, limit concurrency, preserve cached regions on failure',async()=>{
@@ -87,7 +87,7 @@ test('map actions resolve fixed IDs after list replacement and preserve dispatch
   const state={world:{bandits:[{id:9,name:'wrong'}],wildTiles:[]}};let route;
   const c=context({DATA:{},Core:{state,views:{}},go:r=>route=r,toast:()=>{}});load(c,'world.js');
   const fresh={kind:'bandit',id:42,name:'寇 Lv.1',x:10,y:20};c.Game.World.mapAction(fresh,'plunder');
-  assert.equal(state.world._dispatchTarget.target.id,42);assert.equal(state.world._dispatchTarget.action,'campaign');assert.equal(c.Game.World.resolveDispatchAction(state.world._dispatchTarget),'plunder');assert.equal(route,'dispatch');
+  assert.equal(state.world._dispatchTarget.target.id,42);assert.equal(state.world._dispatchTarget.action,'campaign');assert.equal(c.Game.World.resolveDispatchAction(state.world._dispatchTarget),'guerrilla');assert.equal(route,'dispatch');
   state.world.bandits=[{id:100}];assert.equal(state.world._dispatchTarget.target.id,42);
   c.Game.World.mapAction({kind:'wild',id:13,type:'forest',x:30,y:30},'conquer');assert.equal(state.world._dispatchTarget.target.id,13);
 });
@@ -112,8 +112,8 @@ test('wild map dispatch renders safely with zero troop defaults and excludes app
     tech:{},resources:{},reports:[],
     army:{scout:687,infantry:20},
     officers:[
-      {id:1,name:'first',military:330,star:1,level:1},
-      {id:2,name:'second',military:330,star:1,level:1},
+      {id:1,name:'first',military:330,star:1,level:1,dispatch:{allowed:true}},
+      {id:2,name:'second',military:330,star:1,level:1,dispatch:{allowed:true}},
       {id:3,name:'mayor',role:'mayor',military:500},
       {id:4,name:'commander',role:'commander',military:900},
       {id:5,name:'marching_role',role:'march',military:1000},
@@ -138,11 +138,12 @@ test('dispatch cap card opens a dismissible breakdown for the selected city',()=
   const c=context({DATA:{},Core:{state:{player:{militaryRank:3}},views:{},buildingLevel:()=>10,getCommanderSkills:()=>({leadership:5}),skillBonus:id=>id==='leadership'?0.2:0,armyCap:()=>90000},fmt:String,getMilitaryRankTierInfo:()=>({name:'下士',baseCap:75000})});
   c.document={body,createElement:()=>({setAttribute(){},querySelector:()=>closeButton})};
   load(c,'world.js');
+  c.Game.Core.state.gameplay.leadershipPercent=20;
   c.Game.World.showArmyCapInfo();
   assert.match(body.mask.innerHTML,/下士/);
   assert.doesNotMatch(body.mask.innerHTML,/城防 Lv|100000|100,000/);
   assert.match(body.mask.innerHTML,/三军统帅[^<]*当前 Lv\.5，加成 \+20%/);
-  assert.match(body.mask.innerHTML,/当前带兵上限：90000/);
+  assert.match(body.mask.innerHTML,/当前出征带兵上限：90000/);
   assert.doesNotMatch(body.mask.innerHTML,/75000 ×|少校为 300,000/);
   assert.match(body.mask.innerHTML,/市政厅、作战参谋部和指挥官等级不直接增加上限/);
   assert.equal(closeButton.focused,true);

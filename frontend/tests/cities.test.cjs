@@ -122,7 +122,7 @@ test('city transfer offers logistics for transport and every available unit for 
   assert.equal(number.max,'50');
   truckRange.value='1';form.handlers.input.call(form,{target:truckRange});
   assert.equal(truckNumber.value,'1');assert.equal(truckRemaining.textContent,'1');assert.equal(progress['unit---p'],'50.0%');
-  assert.match(hint.textContent,/部队负重 50/);
+  assert.match(hint.textContent,/部队负重等待服务端路线报价/);
   truckNumber.value='8';form.handlers.input.call(form,{target:truckNumber});
   assert.equal(truckNumber.value,'2');assert.equal(truckRange.value,'2');assert.equal(truckRemaining.textContent,'0');
   ctx.Game.Cities.transferForm(2,'rebase');

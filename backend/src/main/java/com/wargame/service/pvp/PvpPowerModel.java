@@ -20,7 +20,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 @RequiredArgsConstructor
 public class PvpPowerModel {
     public static final String VERSION = "power-v1-" + PvpSnapshotService.RULES;
-    public static final Set<String> COMBAT_SKILLS = Set.of("frenzy", "bulwark", "blitz", "suppress", "pierce", "counter", "learn", "borrow_armor");
+    public static final Set<String> COMBAT_SKILLS = com.wargame.model.constants.OfficerSkillDef.combatSkills();
+    /** 两种战场均使用五个固定种子，使每条配置至少包含5000场实际对照战斗。 */
+    public static final List<Long> CALIBRATION_SEEDS = List.of(71001L, 71002L, 71003L, 71004L, 71005L);
     private final PvpPowerCalibrationRepository calibrations;
     private final JdbcTemplate jdbc;
     private static final Map<String, Map<String, Object>> MEASURED = loadMeasured();
@@ -89,16 +91,29 @@ public class PvpPowerModel {
         double baseline = performance(field, formations, Map.of(), 1);
         double raw = performance(field, formations, skills, 1);
         double lo = .5, hi = 1.5;
+        // 条件技能可能在参考阵容中完全不触发，必须保留等量实测点，不能凭二分误差制造负收益。
+        double scale = 1, residual = raw - baseline;
+        int measurements = 2;
         for (int i = 0; i < 7; i++) {
             double mid = (lo + hi) / 2;
-            if (performance(field, formations, skills, mid) > baseline) hi = mid; else lo = mid;
+            double difference = performance(field, formations, skills, mid) - baseline;
+            measurements++;
+            if (Math.abs(difference) < Math.abs(residual)) { scale = mid; residual = difference; }
+            if (difference > 0) hi = mid; else lo = mid;
         }
-        double scale = (lo + hi) / 2;
-        double residual = performance(field, formations, skills, scale) - baseline;
+        // 兵力取整使战果不连续；保留残差最小的真实测点，必要时细化，避免直接采用区间中点。
+        for (int i = 0; i < 5; i++) {
+            double mid = (lo + hi) / 2;
+            double difference = performance(field, formations, skills, mid) - baseline;
+            measurements++;
+            if (Math.abs(difference) < Math.abs(residual)) { scale = mid; residual = difference; }
+            if (Math.abs(residual) < .02) break;
+            if (difference > 0) hi = mid; else lo = mid;
+        }
         return Map.of("factor", 1 / scale, "quantityScale", scale, "baseline", baseline, "skillScore", raw,
-                "residual", residual, "samples", formations.size() * formations.size() * 2 * 2 * 2 * 2 * 2 * 10,
-                "seeds", List.of(71001L, 71002L), "modelVersion", VERSION,
-                "method", "mean weighted loss difference; 7-step quantity bisection; mirrored A/B; scale 100/1000; tech 0/5; gear 0/10%; military/defense 60");
+                "residual", residual, "samples", formations.size() * formations.size() * 2 * 2 * CALIBRATION_SEEDS.size() * 2 * measurements,
+                "seeds", CALIBRATION_SEEDS, "modelVersion", VERSION,
+                "method", "mean weighted loss difference; 7-step quantity bisection with up to 5 refinement steps; best measured residual including equal quantities; mirrored A/B; scale 100/1000; tech 0/5; military/defense 60");
     }
 
     public static List<Map<String, Integer>> formations(String field) {
@@ -109,9 +124,9 @@ public class PvpPowerModel {
     private static double performance(String field, List<Map<String, Integer>> forms, Map<String, Integer> skills, double quantity) {
         double sum = 0; int samples = 0;
         for (var own : forms) for (var foe : forms) for (int scale : new int[]{100, 1000}) for (int tech : new int[]{0, 5})
-            for (boolean gear : new boolean[]{false, true}) for (long seed : new long[]{71001, 71002}) for (boolean mirror : new boolean[]{false, true}) {
+            for (long seed : CALIBRATION_SEEDS) for (boolean mirror : new boolean[]{false, true}) {
                 Map<String, Integer> a = sized(own, scale, quantity, field), b = sized(foe, scale, 1, field);
-                var ac = context(a, skills, tech, gear); var bc = context(b, Map.of(), tech, gear);
+                var ac = context(a, skills, tech); var bc = context(b, Map.of(), tech);
                 var result = simulate(seed, mirror ? b : a, mirror ? a : b, mirror ? bc : ac, mirror ? ac : bc);
                 double ownLoss = loss(a, mirror ? result.b : result.a, field), enemyLoss = loss(b, mirror ? result.a : result.b, field);
                 sum += enemyLoss - ownLoss; samples++;
@@ -124,11 +139,10 @@ public class PvpPowerModel {
         form.forEach((id, n) -> out.put(id, Math.max(1, (int) Math.round(n * scale * 100 * multiplier / totalValue))));
         return out;
     }
-    private static BattleService.TechCtx context(Map<String, Integer> army, Map<String, Integer> skills, int level, boolean gear) {
+    private static BattleService.TechCtx context(Map<String, Integer> army, Map<String, Integer> skills, int level) {
         Map<String, Integer> tech = new HashMap<>();
         // 校准参考成长同时包含生命与其对应的火力科技，避免沿用旧输出节奏的技能系数。
         for (String key : List.of("attack_tech", "defense_tech", "cmd_hp", "fire_density", "weapon_range", "arm_engine", "air_engine", "nav_engine")) tech.put(key, level);
-        if (gear) army.keySet().forEach(id -> { for (String key : List.of("ground", "air", "sea", "defense", "hp", "speed")) tech.put(UnitEquipmentEffects.key(id, key), 10); });
         return new BattleService.TechCtx(tech, skills, 60, 60, CommandBonus.NONE);
     }
     private record Outcome(Map<String, Integer> a, Map<String, Integer> b) {}

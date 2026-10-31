@@ -14,18 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminAuditLogService {
 
     private final AdminOperationLogRepository logRepository;
+    private final com.wargame.security.ClientIpResolver clientIps;
 
-    public AdminAuditLogService(AdminOperationLogRepository logRepository) {
+    public AdminAuditLogService(AdminOperationLogRepository logRepository, com.wargame.security.ClientIpResolver clientIps) {
         this.logRepository = logRepository;
+        this.clientIps = clientIps;
     }
 
     @Transactional
     public void record(String adminUsername, String actionType, String targetType, String targetId, String detail, HttpServletRequest request) {
-        String ip = "unknown";
-        if (request != null) {
-            String forwarded = request.getHeader("X-Forwarded-For");
-            ip = (forwarded != null && !forwarded.isBlank()) ? forwarded.split(",")[0].trim() : request.getRemoteAddr();
-        }
+        String ip = clientIps.resolve(request);
         AdminOperationLog log = new AdminOperationLog();
         log.setAdminUsername(adminUsername != null ? adminUsername : "system");
         log.setActionType(actionType);

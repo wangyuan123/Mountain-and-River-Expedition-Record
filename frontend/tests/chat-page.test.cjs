@@ -70,7 +70,7 @@ function setup() {
   }
   const game = context.Game;
   game.Core.renderTop = () => {};
-  game.state = game.Core.state = { player: { id: 1, username: 'alice' }, prestige: 10000, world: { incoming: [] } };
+  game.state = game.Core.state = { player: { id: 1, username: 'alice' }, prestige: 10000, worldChatUnlocked: true, world: { incoming: [] } };
   game.Core.route = 'chat';
   return { game, view, box, input, button, classes, messages, forum, friends, messageTab, forumTab, friendsTab, title, subtitle, nodes };
 }
@@ -113,7 +113,7 @@ test('chat route renders world messages and preserves the draft and scroll durin
   assert.equal(view.innerHTML, rendered);
   assert.equal(box.scrollTop, 40);
   assert.equal(input.value, '尚未发送的草稿');
-  game.state.prestige = 9999;
+  game.state.prestige = 9999; game.state.worldChatUnlocked = false;
   game.Core.silentUpdate({});
   assert.equal(input.disabled, true);
   assert.equal(input.placeholder, '声望达到 10,000 后可发言');

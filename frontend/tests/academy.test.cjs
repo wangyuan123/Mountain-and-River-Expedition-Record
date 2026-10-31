@@ -2,11 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(chance, refreshAt = 0, quota = {}, list = []) {
   const state = { buildings: { academy: 10 }, resources: { gold: 1000 },
-    academy: { list, fiveStarBatchChance: chance, refreshAt,
+    academy: { list: list.map(o => ({ ...o, recruitCost: ({ 1: 80, 2: 160, 3: 240, 4: 320, 5: 400 })[o.star] })), fiveStarBatchChance: chance, refreshAt,
       refreshRoundLimit: 30, refreshDailyLimit: 100, ...quota } };
   const nodes = new Map();
   const document = {
@@ -196,7 +196,7 @@ test('军校候选人卡片采用紧凑自适应多列网格与微型属性矩�
   assert.match(html, /class="c-stat-pill pill-kno"[^>]*><span class="c-stat-lbl">学<\/span><span class="c-stat-val">60<\/span><\/div>/);
 
   // 特长技能标签与招募按钮集成价格
-  assert.match(html, /class="candidate-skill-tag"[^>]*>⚡ 战地急救 Lv2<\/span>/);
+  assert.match(html, /class="candidate-skill-tag"[^>]*>⚡ 战地急救 满级<\/span>/);
   assert.match(html, /class="link-act candidate-recruit-btn"/);
   assert.match(html, /<span class="btn-recruit-cost">🪙160<\/span>/);
   assert.match(html, /onclick="Game\.Officer\.recruit\(0\)"/);

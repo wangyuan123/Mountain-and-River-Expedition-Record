@@ -79,6 +79,9 @@ public interface PlayerRepository extends JpaRepository<Player, Long>, JpaSpecif
         return candidate;
     }
 
+    @org.springframework.data.jpa.repository.Query("select p from Player p where p.username in :names or p.displayName in :names")
+    List<Player> findReportParticipants(@org.springframework.data.repository.query.Param("names") java.util.Collection<String> names);
+
     List<Player> findByUsernameInAndAccountStatus(java.util.Collection<String> usernames, String accountStatus);
 
     boolean existsByUsernameAndDisabled(String username, Integer disabled);
@@ -94,4 +97,8 @@ public interface PlayerRepository extends JpaRepository<Player, Long>, JpaSpecif
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select p from Player p where p.id = :id")
     Optional<Player> lockById(@org.springframework.data.repository.query.Param("id") Long id);
+
+    /** 名额上限使用当前军衔，不能沿用鉴权阶段缓存的账号实体。 */
+    @org.springframework.data.jpa.repository.Query(value = "select military_rank from players where id = :id for update", nativeQuery = true)
+    Optional<Integer> findCurrentMilitaryRankForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 }

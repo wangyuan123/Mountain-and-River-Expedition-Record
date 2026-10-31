@@ -77,6 +77,8 @@
       var info = itemInfo(itemId);
       if (!info) return;
 
+      if (G.PlayGuide && G.PlayGuide.isTimedItem(itemId)) { G.PlayGuide.openTimedItem(itemId); return; }
+
       if (itemId === 'mobilizationOrder' || itemId === 'advancedMobilizationOrder' || itemId === 'rapidMobilizationOrder') {
         G.Mobilization.open(itemId);
         return;
@@ -238,7 +240,8 @@
         });
         return;
       }
-      // 护盾 / 行军令：走 depot use 接口
+      // 持续增益先显示本城实际续期和覆盖结果，确认后再消耗。
+      if (G.PlayGuide && G.PlayGuide.isTimedItem(itemId)) { G.PlayGuide.openTimedItem(itemId); return; }
       Depot._callBackend(itemId, null, null);
     },
 
@@ -369,9 +372,7 @@
         h += '<div class="menu">';
         var hasInCat = false;
 
-        if (cat === 'unitEquipment' && G.UnitEquipment) {
-          h += G.UnitEquipment.inventoryHtml(); hasInCat = true;
-        } else if (cat === 'equipment') {
+        if (cat === 'equipment') {
           var self = this;
           var hasActiveFilter = Boolean(self.equipmentTier || self.equipmentBranch || self.equipmentSlot);
 
@@ -466,8 +467,6 @@
             if (cnt > 0) {
               if (iid.indexOf('rank_certificate_') === 0) {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'mainQuest\')">[前往晋升军衔]</button>';
-              } else if (iid === 'officerPreparationParts') {
-                btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.go(\'officer\')">[前往军官整备]</button>';
               } else if (iid === 'mobilizationOrder' || iid === 'advancedMobilizationOrder' || iid === 'rapidMobilizationOrder') {
                 btnHtml = '<button type="button" class="btn depot-btn" onclick="Game.Depot.useItem(\'' + iid + '\')">[使用动员令]</button>';
               } else {

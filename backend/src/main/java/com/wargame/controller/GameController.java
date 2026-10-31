@@ -51,6 +51,14 @@ public class GameController {
         return ResponseEntity.ok(gameStateService.getGameState(playerId));
     }
 
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.GameplayViewService gameplayViews;
+
+    /** 只接收操作意图；账号来自认证上下文，城市仍经过 CityContextConfig 所有权校验。 */
+    @PostMapping("/preview")
+    public Map<String, Object> preview(@RequestBody com.wargame.service.GameplayViewService.Preview request) {
+        return gameplayViews.preview(authService.getCurrentPlayer().getId(), request);
+    }
+
     /** Versioned prerequisites are served from the same rules used by build and research validation. */
     @GetMapping("/prerequisites")
     public ResponseEntity<com.fasterxml.jackson.databind.JsonNode> getPrerequisites() {

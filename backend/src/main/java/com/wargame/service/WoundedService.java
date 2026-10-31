@@ -11,6 +11,7 @@ import java.util.*;
 
 @Service
 public class WoundedService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.compliance.AntiAddictionService protection;
@@ -21,6 +22,9 @@ public class WoundedService {
     @org.springframework.beans.factory.annotation.Autowired
     @org.springframework.context.annotation.Lazy
     private VipService vipService;
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private GarrisonFoodService garrisonFood;
     public static final long RETENTION_MS = 7L * 24 * 60 * 60 * 1000;
     private final WoundedUnitRepository wounded;
     private final ArmyUnitRepository army;
@@ -123,7 +127,8 @@ public class WoundedService {
         Player p = players.findById(playerId).orElse(null);
         double discount = vipService.getWoundedGoldDiscount(p);
         if (discount > 0) {
-            return Math.max(1L, (long) Math.ceil(original * (1.0 - discount)));
+            long percent = Math.round(discount * 100);
+            return Math.max(1L, (original * (100 - percent) + 99) / 100);
         }
         return original;
     }
@@ -131,6 +136,32 @@ public class WoundedService {
     /** 钻石按本次治疗的黄金总费用每 1000 黄金折算一颗，不足一颗向上取整。 */
     public long diamondCost(String unit, int count) {
         return (goldCost(unit, count) + 999) / 1000;
+    }
+
+    /** 数量报价与最大可支付数量都复用实际治疗费用，跨城和过期对象不参与预览。 */
+    public Map<String, Object> preview(Long playerId, Long batchId, int count) {
+        var batch = wounded.findById(batchId).filter(b -> playerId.equals(b.getPlayerId())
+                && b.getCitySlot() == cityScope.slot(playerId)).orElseThrow(() -> new IllegalArgumentException("伤兵不存在"));
+        long now = GameClock.now();
+        var city = cityScope.selected(playerId).orElse(null);
+        long validAt = city != null && city.isSurrenderFrozen(now) ? city.getSurrenderFrozenAt() : now;
+        // 冻结城市暂停救治倒计时，与列表和实际治疗使用同一有效时点。
+        if (count < 0 || count > batch.getCount() || batch.getExpiresAt() <= validAt) throw new IllegalArgumentException("伤兵数量或期限无效");
+        long gold = resources.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).map(Resources::getGold).orElse(0L);
+        long diamond = Objects.requireNonNullElse(cityScope.wallet(playerId).getDiamond(), 0);
+        return Map.of("count", count, "gold", count == 0 ? 0 : goldCost(playerId, batch.getType(), count),
+                "originalGold", goldCost(batch.getType(), count), "diamond", diamondCost(batch.getType(), count),
+                "maxGold", maximumAffordable(playerId, batch, gold, false), "maxDiamond", maximumAffordable(playerId, batch, diamond, true));
+    }
+
+    private int maximumAffordable(Long playerId, WoundedUnit batch, long balance, boolean diamond) {
+        int low = 0, high = batch.getCount();
+        while (low < high) {
+            int mid = low + (int) (((long) high - low + 1) / 2);
+            long price = diamond ? diamondCost(batch.getType(), mid) : goldCost(playerId, batch.getType(), mid);
+            if (price <= balance) low = mid; else high = mid - 1;
+        }
+        return low;
     }
 
     /** 返回当前请求城市的批次与余额；坐标仅为展示快照，不能用于划分城市。 */
@@ -141,10 +172,13 @@ public class WoundedService {
         Player player = players.findById(playerId).orElse(null);
         double vipDiscount = vipService != null ? vipService.getWoundedGoldDiscount(player) : 0.0;
         int vipDiscountPercent = (int) Math.round(vipDiscount * 100);
+        PlayerCity selected = cityScope.selected(playerId).orElse(null);
+        boolean frozen = selected != null && selected.isSurrenderFrozen(now);
+        long validAt = frozen ? selected.getSurrenderFrozenAt() : now;
 
         List<Map<String, Object>> batches = new ArrayList<>();
         long total = 0;
-        for (WoundedUnit batch : wounded.findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, citySlot, now)) {
+        for (WoundedUnit batch : wounded.findByPlayerIdAndCitySlotAndExpiresAtGreaterThanOrderByExpiresAtAscIdAsc(playerId, citySlot, validAt)) {
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", batch.getId());
             item.put("citySlot", batch.getCitySlot());
@@ -155,7 +189,8 @@ public class WoundedService {
             item.put("unit", batch.getType());
             item.put("count", batch.getCount());
             item.put("createdAt", batch.getCreatedAt());
-            item.put("expiresAt", batch.getExpiresAt());
+            item.put("expiresAt", batch.getExpiresAt() + (frozen ? now - validAt : 0));
+            item.put("frozen", frozen);
             item.put("recoveryPercent", batch.getRecoveryPercent());
 
             long origGoldPerUnit = goldCost(batch.getType(), 1);
@@ -169,6 +204,7 @@ public class WoundedService {
             item.put("goldCost", finalGoldCost);
             item.put("vipDiscountPercent", vipDiscountPercent);
             item.put("diamondCost", diamondCost(batch.getType(), batch.getCount()));
+            item.put("preview", preview(playerId, batch.getId(), batch.getCount()));
             batches.add(item);
             total += batch.getCount();
         }
@@ -176,7 +212,9 @@ public class WoundedService {
         camp.put("batches", batches);
         camp.put("total", total);
         camp.put("medicalLevel", medicalLevel(playerId));
+        camp.put("medicalPercent", recoveryPercent(playerId, null));
         camp.put("vipDiscountPercent", vipDiscountPercent);
+        camp.put("maximumRecoveryPercent", 65);
         camp.put("serverTime", now);
         camp.put("citySlot", citySlot);
         CityEconomy economy = cityScope.economy(playerId);
@@ -192,16 +230,22 @@ public class WoundedService {
         return camp;
     }
 
+    /** 先在账号锁内结清归队前的粮账，再消费治疗货币并增加现役兵力。 */
     @Transactional
     public Map<String, Object> heal(Long playerId, Long batchId, Integer count, String currency) {
         if (batchId == null || count == null || count <= 0) throw new IllegalArgumentException("请输入有效的治疗数量");
         if (!"gold".equals(currency) && !"diamond".equals(currency)) throw new IllegalArgumentException("请选择黄金或钻石");
+        players.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
+        long now = GameClock.now();
+        // 未启用粮账的城市从旧经济时刻接管，防止下一次 tick 把新兵计入治疗前的区间。
+        cityScope.selected(playerId).ifPresent(city -> garrisonFood.activate(city, now));
         // 同一玩家治疗串行化，跨批次治疗也不能重复消费或重复生成新兵种记录。
         Resources balance = resources.findCityForTreatment(playerId, "diamond".equals(currency) ? 0 : cityScope.slot(playerId)).orElseThrow(() -> new IllegalArgumentException("资源不存在"));
         WoundedUnit batch = wounded.findForTreatment(playerId, batchId)
                 .orElseThrow(() -> new IllegalArgumentException("伤兵不存在或已治疗"));
         if (batch.getCitySlot() != cityScope.slot(playerId)) throw new IllegalArgumentException("请切换到伤兵所属城市后治疗");
-        if (batch.getExpiresAt() <= GameClock.now()) throw new IllegalArgumentException("该批伤兵已超过救治期限");
+        if (batch.getExpiresAt() <= now) throw new IllegalArgumentException("该批伤兵已超过救治期限");
         if (count > batch.getCount()) throw new IllegalArgumentException("治疗数量超过剩余伤兵");
         long cost = "gold".equals(currency) ? goldCost(playerId, batch.getType(), count) : diamondCost(batch.getType(), count);
         long available = "gold".equals(currency) ? Objects.requireNonNullElse(balance.getGold(), 0L) : Objects.requireNonNullElse(balance.getDiamond(), 0).longValue();

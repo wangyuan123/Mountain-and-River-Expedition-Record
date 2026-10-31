@@ -1,0 +1,25 @@
+{
+  "results": [
+    {
+      "x": 7,
+      "y": 272,
+      "title": "平原 · (7, 272)"
+    },
+    {
+      "x": 8,
+      "y": 272,
+      "title": "森林 · (8, 272)"
+    }
+  ],
+  "errors": [],
+  "metrics": {
+    "mounted": true,
+    "x": 8.5,
+    "y": 272.5,
+    "scale": 80,
+    "chunks": 12,
+    "pending": 0,
+    "markers": 0,
+    "water": "canvas"
+  }
+}

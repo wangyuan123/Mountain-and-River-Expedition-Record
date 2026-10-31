@@ -7,44 +7,16 @@ window.Game = window.Game || {};
 
   var D = G.DATA;
   var Core = G.Core;
-  var WILD_BASE_CAP = (G.Constants && G.Constants.wildOccupation && G.Constants.wildOccupation.baseCap) || 2;
-  // 每城开局提供 3 支施工队，新建、升级与拆除共用；与后端 BuildService.MAX_CONCURRENT 保持一致。
-  var MAX_CONCURRENT = (G.Constants && G.Constants.buildMaxConcurrent) || 3;
-  var DEFAULT_BUILD_DURATION = { baseSeconds: 30, growth: 2.4, capSeconds: 24 * 60 * 60 };
-  // 核心建筑后期工期单独拉长；需与服务端 BuildService 的曲线保持一致。
-  var SPECIAL_BUILD_DURATIONS = {
-    command: { baseSeconds: 60, growth: 2.5, capSeconds: 72 * 60 * 60 },
-    lab: { baseSeconds: 45, growth: 2.6, capSeconds: 72 * 60 * 60 },
-    headquarters: { baseSeconds: 45, growth: 2.5, capSeconds: 48 * 60 * 60 }
-  };
-
   function buildCost(id, fromLevel) {
-    var b = D.buildings[id];
-    var lv = (fromLevel == null) ? (Core.state.buildings[id] || 0) : fromLevel;
-    // 营造技能只改变工期，材料预览必须与后端实际扣费一致。
-    var mul = Math.pow(b.growth, lv) * (Core.buildCostMul ? Core.buildCostMul() : Core.buildMul());
-    var cost = {};
-    for (var k in b.baseCost) cost[k] = Math.floor(b.baseCost[k] * mul);
-    return cost;
+    var level = fromLevel == null ? (Core.state.buildings[id] || 0) : fromLevel;
+    return G.ServerRules.level('buildings', id, level).cost || {};
   }
 
-  function buildMaxLevel(id) {
-    if (id === 'command') return 10;
-    return Math.min(10, (Core.state.buildings.command || 1));
-  }
+  function buildMaxLevel(id) { return (G.ServerRules.value('buildings', {})[id] || {}).maxLevel || 0; }
 
-  /**
-   * 计算建筑升至目标等级的工期，应用建筑加速与市长营造倍率及建筑专属上限。
-   * @param {string} id - 建筑类型
-   * @param {number} [fromLevel] - 当前等级，省略时读取当前城等级
-   * @returns {number} 升级工期（秒）
-   */
   function buildDuration(id, fromLevel) {
-    var lv = ((fromLevel == null) ? (Core.state.buildings[id] || 0) : fromLevel) + 1;
-    var curve = SPECIAL_BUILD_DURATIONS[id] || DEFAULT_BUILD_DURATION;
-    var techMul = Math.max(0.35, Core.buildMul());
-    var sec = curve.baseSeconds * Math.pow(curve.growth, lv - 1);
-    return Math.min(curve.capSeconds, Math.ceil(sec * techMul));
+    var level = fromLevel == null ? (Core.state.buildings[id] || 0) : fromLevel;
+    return G.ServerRules.level('buildings', id, level).duration;
   }
 
   function fmtVal(val) {
@@ -113,11 +85,9 @@ window.Game = window.Game || {};
   var Build = {
     init: function () {},
 
-    /** 按服务端下发的剩余工期门槛展示免费入口，最终资格由后端校验。 */
+    /** 只比较服务端给出的免费起点；缺字段时等待队列同步。 */
     canFreeSpeedUp: function (job) {
-      var seconds = Core.state.freeBuildSpeedUpSeconds;
-      if (seconds == null) seconds = 300;
-      return !!job && job.finishesAt > 0 && job.finishesAt - G.gameNow() <= seconds * 1000;
+      return !!job && job.freeSpeedUpAt != null && G.gameNow() >= job.freeSpeedUpAt;
     },
 
     renderSpeedUpButton: function (job, count, attrs) {
@@ -411,7 +381,7 @@ window.Game = window.Game || {};
         '<div class="modal-card" style="max-width:340px">' +
           '<div class="modal-title">🏗 施工队全忙</div>' +
           '<div class="modal-body" style="font-size:13px">' +
-            '<div class="cu-warn" style="margin-top:0;margin-bottom:10px">' + MAX_CONCURRENT + ' 支施工队均在作业中，无法开始新工程。请等待完工或使用加速符：</div>' +
+            '<div class="cu-warn" style="margin-top:0;margin-bottom:10px">' + G.ServerRules.value('maxConcurrent', 0) + ' 支施工队均在作业中，无法开始新工程。请等待完工或使用加速符：</div>' +
             rows +
           '</div>' +
           '<div class="modal-foot">' +
@@ -480,7 +450,7 @@ window.Game = window.Game || {};
         return;
       }
       // 若施工队全满，转到施工队全忙提示
-      if (jobs.length >= MAX_CONCURRENT) {
+      if (jobs.length >= G.ServerRules.value('maxConcurrent', 0)) {
         this.showBusyJobs();
         return;
       }
@@ -540,9 +510,9 @@ window.Game = window.Game || {};
       // 升级确认给出墙体实际成长，便于评估征服战耐久收益。
       var wallGrowthHtml = id === 'wall'
         ? '<div class="cu-row"><span class="cu-name">墙体生命</span><span class="cu-val">'
-          + G.fmt(fromLv * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + ' → ' + G.fmt(toLv * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '</span></div>'
+          + G.fmt(G.ServerRules.effect(id, fromLv).wallHp) + ' → ' + G.fmt(G.ServerRules.effect(id, toLv).wallHp) + '</span></div>'
           + '<div class="cu-row"><span class="cu-name">墙体防御</span><span class="cu-val">'
-          + Math.round(fromLv * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + ' → ' + Math.round(toLv * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '（仅墙体）</span></div>'
+          + G.ServerRules.effect(id, fromLv).wallDefense + ' → ' + G.ServerRules.effect(id, toLv).wallDefense + '（仅墙体）</span></div>'
         : '';
 
       var mask = document.createElement('div');
@@ -628,7 +598,7 @@ window.Game = window.Game || {};
         this.showJobDetails(id, slotIdx);
         return;
       }
-      if (jobs.length >= MAX_CONCURRENT) {
+      if (jobs.length >= G.ServerRules.value('maxConcurrent', 0)) {
         this.showBusyJobs();
         return;
       }
@@ -656,7 +626,7 @@ window.Game = window.Game || {};
       for (var k in cost) {
         var resName = (G.DATA.resources[k] && G.DATA.resources[k].name) || k;
         var ico = G.resourceIconHtml(k);
-        var refundAmt = Math.floor(cost[k] * 0.3);
+        var refundAmt = (G.ServerRules.level('buildings', id, curLv).refund || {})[k] || 0;
         if (refundAmt > 0) {
           refundRows +=
             '<div class="cu-row">' +
@@ -777,21 +747,18 @@ window.Game = window.Game || {};
       // 1. 关键属性与资源产出详情
       var statsRows = '';
       if (id === 'prisoner_camp') {
-        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">俘虏池容量</span><span class="bdetail-stat-val">' + G.fmt(s.prisonerCount || 0) + ' / ' + G.fmt(curLv * 2000) + '</span></div>';
-        if (curLv < max) statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">下一级容量</span><span class="bdetail-stat-val">' + G.fmt((curLv + 1) * 2000) + '</span></div>';
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">俘虏池容量</span><span class="bdetail-stat-val">' + G.fmt(s.prisonerCount || 0) + ' / ' + G.fmt(G.ServerRules.effect(id, curLv).prisonerCapacity) + '</span></div>';
+        if (curLv < max) statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">下一级容量</span><span class="bdetail-stat-val">' + G.fmt(G.ServerRules.effect(id, curLv + 1).prisonerCapacity) + '</span></div>';
       }
       if (b.produces) {
         var resName = G.DATA.resources[b.produces] ? G.DATA.resources[b.produces].name : b.produces;
         var resIco = G.resourceIconHtml(b.produces);
-        var mul = (Core.resBonusMul ? Core.resBonusMul(b.produces) : 1);
+
         var singleProduce = 0;
-        var baseProd = b.baseProduce || 0;
         if (curLv > 0) {
-          var curve = curLv * (1 + 0.12 * (curLv - 1));
-          singleProduce = Math.floor(baseProd * curve * mul);
+          singleProduce = G.ServerRules.effect(id, curLv).production || 0;
         }
-        var nextCurve = (curLv + 1) * (1 + 0.12 * curLv);
-        var nextProduce = Math.floor(baseProd * nextCurve * mul);
+        var nextProduce = G.ServerRules.effect(id, curLv + 1).production || 0;
 
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">本建筑产出</span>' +
@@ -815,18 +782,18 @@ window.Game = window.Game || {};
         var totalLv = isMulti ? Core.buildingLevel(id) : (s.buildings[id] || 0);
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">对应生产容量</span>' +
-          '<span class="bdetail-stat-val">' + G.fmt(totalLv * 200000) + '</span>' +
+          '<span class="bdetail-stat-val">' + G.fmt((Core.capacity() || {})[b.produces] || 0) + '</span>' +
         '</div>';
       }
 
       if (b.popPer) {
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">人口容量加成</span>' +
-          '<span class="bdetail-stat-val">+' + (curLv * b.popPer) + (curLv < max ? (' (下级 +' + ((curLv + 1) * b.popPer) + ')') : '') + '</span>' +
+          '<span class="bdetail-stat-val">+' + (G.ServerRules.effect(id, curLv).population) + (curLv < max ? (' (下级 +' + (G.ServerRules.effect(id, curLv + 1).population) + ')') : '') + '</span>' +
         '</div>';
       }
       if (b.protectPer) {
-        var protect = Math.floor(curLv * b.protectPer * (1 + 0.05 * Math.max(0, Math.min(10, (s.tech && s.tech.log_warehouse) || 0))));
+        var protect = G.ServerRules.effect(id, curLv).protection;
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">资源掠夺保护</span>' +
           '<span class="bdetail-stat-val">每种基础资源保 ' + protect + '</span>' +
@@ -834,24 +801,24 @@ window.Game = window.Game || {};
       }
       if (id === 'wall') {
         // 墙体自身耐久与防御独立成长，守军不享受建筑防御加成。
-        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">墙体生命</span><span class="bdetail-stat-val">' + G.fmt(Math.min(10, curLv) * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '</span></div>';
-        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">墙体防御</span><span class="bdetail-stat-val">' + Math.round(Math.min(10, curLv) * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '（仅保护墙体）</span></div>';
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">墙体生命</span><span class="bdetail-stat-val">' + G.fmt(G.ServerRules.effect(id, curLv).wallHp) + '</span></div>';
+        statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">墙体防御</span><span class="bdetail-stat-val">' + G.ServerRules.effect(id, curLv).wallDefense + '（仅保护墙体）</span></div>';
         // 四类工事共享每级3000容量，与 FortService / 城防页面一致。
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">城防武器容量</span>' +
-          '<span class="bdetail-stat-val">' + G.fmt(curLv * (b.fortCapPerLevel || 3000)) + '（四类共享）</span>' +
+          '<span class="bdetail-stat-val">' + G.fmt(G.ServerRules.effect(id, curLv).fortCapacity) + '（四类共享）</span>' +
         '</div>';
       }
       if (b.airSpdBonus) {
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">空军飞行航速</span>' +
-          '<span class="bdetail-stat-val">+' + (curLv * b.airSpdBonus) + '%</span>' +
+          '<span class="bdetail-stat-val">+' + (G.ServerRules.effect(id, curLv).airSpeedPercent) + '%</span>' +
         '</div>';
       }
       if (b.resBonus) {
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">本城四种基础资源产量</span>' +
-          '<span class="bdetail-stat-val">+' + (curLv * b.resBonus) + '%</span>' +
+          '<span class="bdetail-stat-val">+' + (G.ServerRules.effect(id, curLv).resourceBonusPercent) + '%</span>' +
         '</div>';
       }
       if (id === 'staff') {
@@ -861,8 +828,8 @@ window.Game = window.Game || {};
         '</div>';
       }
       if (id === 'academy') {
-        var fiveStarRate = (Math.min(10, curLv) * 0.3).toFixed(1);
-        var nextRate = (Math.min(10, curLv + 1) * 0.3).toFixed(1);
+        var fiveStarRate = Number(G.ServerRules.effect(id, curLv).fiveStarPercent || 0).toFixed(1);
+        var nextRate = Number(G.ServerRules.effect(id, curLv + 1).fiveStarPercent || 0).toFixed(1);
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">整批五星概率</span>' +
           '<span class="bdetail-stat-val">+' + fiveStarRate + '%' + (curLv < max ? (' (下级 +' + nextRate + '%)') : '') + '</span>' +
@@ -932,13 +899,13 @@ window.Game = window.Game || {};
         '</div>';
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">本城野地上限</span>' +
-          '<span class="bdetail-stat-val">' + (WILD_BASE_CAP + curLv) + '（基础' + WILD_BASE_CAP + '＋市政厅等级）' + (curLv < max ? '，下级 ' + (WILD_BASE_CAP + curLv + 1) : '') + '</span>' +
+          '<span class="bdetail-stat-val">' + (G.ServerRules.effect(id, curLv).wildCap) + '（基础' + G.ServerRules.effect(id, 0).wildCap + '＋市政厅等级）' + (curLv < max ? '，下级 ' + G.ServerRules.effect(id, curLv + 1).wildCap : '') + '</span>' +
         '</div>';
       }
       if (id === 'headquarters') {
         var chief = typeof Core.getOfficerByRole === 'function' ? Core.getOfficerByRole('commander_in_chief') : null;
-        var curMarches = 5 + curLv;
-        var nextMarches = 5 + (curLv + 1);
+        var curMarches = G.ServerRules.effect(id, curLv).maxMarches;
+        var nextMarches = G.ServerRules.effect(id, curLv + 1).maxMarches;
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">出征队伍上限</span>' +
           '<span class="bdetail-stat-val">' + curMarches + ' 支' + (curLv < max ? (' (下级 ' + nextMarches + ' 支)') : '') + '</span>' +
@@ -947,12 +914,12 @@ window.Game = window.Game || {};
         statsRows += '<div class="bdetail-stat-row"><span class="bdetail-stat-lbl">战斗加成</span><span class="bdetail-stat-val">四属性每点 +0.1%，本城全部战斗常驻；技能不参与</span></div>';
       }
       if (id === 'exchange') {
-        var exRate = (0.50 + curLv * 0.04) * 100;
-        var nextExRate = (0.50 + (curLv + 1) * 0.04) * 100;
-        var slotCap = 2 + curLv;
-        var nextSlotCap = 2 + (curLv + 1);
-        var taxRate = Math.max(5, 10 - (curLv - 1) * 0.5);
-        var nextTaxRate = Math.max(5, 10 - curLv * 0.5);
+        var exRate = G.ServerRules.effect(id, curLv).exchangeRate * 100;
+        var nextExRate = G.ServerRules.effect(id, curLv + 1).exchangeRate * 100;
+        var slotCap = G.ServerRules.effect(id, curLv).marketSlots;
+        var nextSlotCap = G.ServerRules.effect(id, curLv + 1).marketSlots;
+        var taxRate = G.ServerRules.effect(id, curLv).taxPercent;
+        var nextTaxRate = G.ServerRules.effect(id, curLv + 1).taxPercent;
 
         statsRows += '<div class="bdetail-stat-row">' +
           '<span class="bdetail-stat-lbl">战略调配比率</span>' +
@@ -1032,7 +999,7 @@ window.Game = window.Game || {};
           var uCost = buildCost(id, curLv);
           var uDur = buildDuration(id, curLv);
           var canAfford = Core.costEnough(uCost);
-          var isBusy = jobs.length >= MAX_CONCURRENT;
+          var isBusy = jobs.length >= G.ServerRules.value('maxConcurrent', 0);
 
           var costItems = '';
           for (var rk in uCost) {
@@ -1047,7 +1014,7 @@ window.Game = window.Game || {};
             '</div>';
           }
 
-          var upBtnText = prereqBlocked ? '前置未满足' : (isBusy ? ('施工队全忙 (' + jobs.length + '/' + MAX_CONCURRENT + ')') : (canAfford ? ('🚀 升级至 Lv.' + toLv) : '资源不足无法升级'));
+          var upBtnText = prereqBlocked ? '前置未满足' : (isBusy ? ('施工队全忙 (' + jobs.length + '/' + G.ServerRules.value('maxConcurrent', 0) + ')') : (canAfford ? ('🚀 升级至 Lv.' + toLv) : '资源不足无法升级'));
           var upBtnDisabled = prereqBlocked || (!canAfford && !isBusy) ? ' disabled' : '';
 
           upHtml = '<div class="bdetail-action-card">' +
@@ -1072,7 +1039,7 @@ window.Game = window.Game || {};
           var curCost = buildCost(id, curLv - 1);
           var refundStrs = [];
           for (var dk in curCost) {
-            var rfAmt = Math.floor(curCost[dk] * 0.3);
+            var rfAmt = (G.ServerRules.level('buildings', id, curLv).refund || {})[dk] || 0;
             if (rfAmt > 0) {
               var dkIco = G.resourceIconHtml(dk);
               refundStrs.push(dkIco + rfAmt);
@@ -1205,7 +1172,7 @@ window.Game = window.Game || {};
         if (upBtn) {
           upBtn.onclick = function () {
             close();
-            if (jobs.length >= MAX_CONCURRENT) {
+            if (jobs.length >= G.ServerRules.value('maxConcurrent', 0)) {
               self.showBusyJobs();
             } else {
               self.confirmUpgrade(id, slotIdx != null ? slotIdx : null);
@@ -1233,7 +1200,7 @@ window.Game = window.Game || {};
       if (!g) return;
 
       var jobs = this.getConstructions();
-      var isBusy = jobs.length >= MAX_CONCURRENT;
+      var isBusy = jobs.length >= G.ServerRules.value('maxConcurrent', 0);
 
       var order = g.order;
       var buildable = [];
@@ -1281,7 +1248,7 @@ window.Game = window.Game || {};
 
           var tipHtml = '';
           if (isBusy) {
-            tipHtml = '<div class="build-picker-tip busy">⏱ 施工队全忙 (' + jobs.length + '/' + MAX_CONCURRENT + ')</div>';
+            tipHtml = '<div class="build-picker-tip busy">⏱ 施工队全忙 (' + jobs.length + '/' + G.ServerRules.value('maxConcurrent', 0) + ')</div>';
           } else if (prereqBlocked) {
             tipHtml = '<div class="build-picker-tip prereq">⚠ 前置未达成：需 ' + missingPrereqText + '</div>';
           } else if (!enough) {
@@ -1535,34 +1502,33 @@ window.Game = window.Game || {};
       var stats = '';
       if (id === 'prisoner_camp') {
         var campLv = s.buildings[id] || 0;
-        stats += '<div class="bcard-stat"><span class="bcard-stat-name">俘虏池容量</span><span class="bcard-stat-val">' + G.fmt(s.prisonerCount || 0) + ' / ' + G.fmt(campLv * 2000) + '</span></div>';
-        if (campLv < max) stats += '<div class="bcard-stat"><span class="bcard-stat-name">下一级容量</span><span class="bcard-stat-val">' + G.fmt((campLv + 1) * 2000) + '</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-name">俘虏池容量</span><span class="bcard-stat-val">' + G.fmt(s.prisonerCount || 0) + ' / ' + G.fmt(G.ServerRules.effect(id, campLv).prisonerCapacity) + '</span></div>';
+        if (campLv < max) stats += '<div class="bcard-stat"><span class="bcard-stat-name">下一级容量</span><span class="bcard-stat-val">' + G.fmt(G.ServerRules.effect(id, campLv + 1).prisonerCapacity) + '</span></div>';
       }
       if (b.produces) {
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">' + G.resourceIconHtml(b.produces) + '</span><span class="bcard-stat-name">产出</span><span class="bcard-stat-val">' + G.DATA.resources[b.produces].name + ' ' + G.fmt(Core.produceOf(id)) + '/h</span></div>';
       }
-      if (b.produces && b.slots && multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">生产容量</span><span class="bcard-stat-val">' + G.fmt(totalLv * 200000) + '</span></div>';
-      if (b.produces && !multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">生产容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * 200000) + '</span></div>';
+      if (b.produces && b.slots && multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">生产容量</span><span class="bcard-stat-val">' + G.fmt((Core.capacity() || {})[b.produces] || 0) + '</span></div>';
+      if (b.produces && !multi) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📦</span><span class="bcard-stat-name">生产容量</span><span class="bcard-stat-val">' + G.fmt((Core.capacity() || {})[b.produces] || 0) + '</span></div>';
       if (b.popPer) {
-        var popBase = (s.buildings[id] || 0) * b.popPer;
-        var popTotal = multi ? totalLv * b.popPer : popBase;
+        var popTotal = Core.populationCapacity();
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">👥</span><span class="bcard-stat-name">人口上限</span><span class="bcard-stat-val">' + popTotal + '</span></div>';
       }
       if (b.protectPer) {
         var lvForCap = multi ? totalLv : (s.buildings[id] || 0);
-        var protect = Math.floor(lvForCap * b.protectPer * (1 + 0.05 * Math.max(0, Math.min(10, (s.tech && s.tech.log_warehouse) || 0))));
+        var protect = Core.protectCap();
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">掠夺保护</span><span class="bcard-stat-val">每资源保 ' + protect + '</span></div>';
       }
       if (id === 'wall') {
         var wallLevel = Math.min(10, s.buildings[id] || 0);
-        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">❤</span><span class="bcard-stat-name">墙体生命</span><span class="bcard-stat-val">' + G.fmt(wallLevel * b.wallHpPerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '</span></div>';
-        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">墙体防御</span><span class="bcard-stat-val">' + Math.round(wallLevel * b.wallDefensePerLevel * (Core.wallMul ? Core.wallMul() : 1)) + '（仅墙体）</span></div>';
-        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🏰</span><span class="bcard-stat-name">城防武器容量</span><span class="bcard-stat-val">' + G.fmt((s.buildings[id] || 0) * (b.fortCapPerLevel || 3000)) + '</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">❤</span><span class="bcard-stat-name">墙体生命</span><span class="bcard-stat-val">' + G.fmt(G.ServerRules.value('wall', {}).maxHp) + '</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🛡</span><span class="bcard-stat-name">墙体防御</span><span class="bcard-stat-val">' + G.ServerRules.value('wall', {}).defense + '（仅墙体）</span></div>';
+        stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🏰</span><span class="bcard-stat-name">城防武器容量</span><span class="bcard-stat-val">' + G.fmt(G.ServerRules.effect(id, s.buildings[id] || 0).fortCapacity) + '</span></div>';
       }
-      if (b.airSpdBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军飞行航速</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.airSpdBonus) + '%</span></div>';
-      if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">四种基础资源产量</span><span class="bcard-stat-val">+' + ((s.buildings[id] || 0) * b.resBonus) + '%</span></div>';
-      if (id === 'command') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🗺️</span><span class="bcard-stat-name">本城野地上限</span><span class="bcard-stat-val">' + (WILD_BASE_CAP + (s.buildings[id] || 0)) + '</span></div>';
-      if (id === 'academy') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">五星概率</span><span class="bcard-stat-val">+' + ((Math.min(10, s.buildings[id] || 0)) * 0.3).toFixed(1) + '%</span></div>';
+      if (b.airSpdBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">✈</span><span class="bcard-stat-name">空军飞行航速</span><span class="bcard-stat-val">+' + (G.ServerRules.effect(id, s.buildings[id] || 0).airSpeedPercent) + '%</span></div>';
+      if (b.resBonus) stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📈</span><span class="bcard-stat-name">四种基础资源产量</span><span class="bcard-stat-val">+' + (G.ServerRules.effect(id, s.buildings[id] || 0).resourceBonusPercent) + '%</span></div>';
+      if (id === 'command') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🗺️</span><span class="bcard-stat-name">本城野地上限</span><span class="bcard-stat-val">' + (G.ServerRules.effect(id, s.buildings[id] || 0).wildCap) + '</span></div>';
+      if (id === 'academy') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">⭐</span><span class="bcard-stat-name">五星概率</span><span class="bcard-stat-val">+' + Number(G.ServerRules.effect(id, s.buildings[id] || 0).fiveStarPercent || 0).toFixed(1) + '%</span></div>';
       if (id === 'lab') {
         var labAccess = G.researchAccess(s.buildings[id] || 0);
         stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🔬</span><span class="bcard-stat-name">科技准入</span><span class="bcard-stat-val">' + labAccess.unlocked.length + ' 项 / 最高 Lv.' + labAccess.level + '</span></div>';
@@ -1571,7 +1537,7 @@ window.Game = window.Game || {};
       if (id === 'guild_radar') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📡</span><span class="bcard-stat-name">联防覆盖半径</span><span class="bcard-stat-val">' + (s.buildings[id] || 0) + ' 格</span></div>';
       if (id === 'radar' || id === 'guild_radar') stats += '<div class="bcard-stat"><span class="bcard-stat-name">情报明细</span><span class="bcard-stat-val">由雷达预警科技等级决定</span></div>';
       if (id === 'liaison') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">📞</span><span class="bcard-stat-name">情报联络</span><span class="bcard-stat-val">Lv.' + (s.buildings[id] || 0) + '</span></div>';
-      if (id === 'headquarters') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🚩</span><span class="bcard-stat-name">出征队伍</span><span class="bcard-stat-val">' + (5 + (s.buildings[id] || 0)) + ' 支</span></div>';
+      if (id === 'headquarters') stats += '<div class="bcard-stat"><span class="bcard-stat-ico">🚩</span><span class="bcard-stat-name">出征队伍</span><span class="bcard-stat-val">' + G.ServerRules.effect(id, s.buildings[id] || 0).maxMarches + ' 支</span></div>';
       if (stats) expand += '<div class="bcard-stats">' + stats + '</div>';
 
       // 快捷入口按钮
@@ -1601,7 +1567,7 @@ window.Game = window.Game || {};
             expand += '<button class="btn sm" style="background:#8f7b53;border-color:#8f7b53" onclick="Game.Build.showJobDetails(\'' + id + '\',' + si + ')">' + (isDis ? '拆除中 (查看)' : '施工中 (查看)') + '</button>';
           } else {
             if (slv < max) {
-              if (jobs.length >= MAX_CONCURRENT) {
+              if (jobs.length >= G.ServerRules.value('maxConcurrent', 0)) {
                 expand += '<button class="btn sm" onclick="Game.Build.showBusyJobs()">升 Lv.' + (slv + 1) + '</button>';
               } else {
                 expand += '<button class="btn sm ok" onclick="Game.Build.confirmUpgrade(\'' + id + '\',' + si + ')">升 Lv.' + (slv + 1) + '</button>';
@@ -1619,7 +1585,7 @@ window.Game = window.Game || {};
           var groupKey = Core.buildingGroup(id);
           var groupRemain = groupKey ? Core.groupSlotsRemaining(groupKey) : 1;
           var targetSlot = newSlot >= 0 ? newSlot : arr.length;
-          var newBtnAction = jobs.length >= MAX_CONCURRENT ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\',' + targetSlot + ')');
+          var newBtnAction = jobs.length >= G.ServerRules.value('maxConcurrent', 0) ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\',' + targetSlot + ')');
           expand += '<div class="bcard-slot-row bcard-slot-new">';
           expand += '<span class="bcard-slot-tag">+' + (arr.length + 1) + '</span>';
           expand += '<span class="bcard-slot-lv">空闲槽位</span>';
@@ -1637,8 +1603,8 @@ window.Game = window.Game || {};
           expand += '<button class="btn ok" onclick="Game.Build.showJobDetails(\'' + id + '\')">' + btnLabel + '</button>';
         } else {
           if (lvN < max) {
-            var btnLabel = jobs.length >= MAX_CONCURRENT ? '施工队全忙 (点击查看)' : (lvN === 0 ? '新建至 Lv.1' : '升级至 Lv.' + (lvN + 1));
-            var btnAction = jobs.length >= MAX_CONCURRENT ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\')');
+            var btnLabel = jobs.length >= G.ServerRules.value('maxConcurrent', 0) ? '施工队全忙 (点击查看)' : (lvN === 0 ? '新建至 Lv.1' : '升级至 Lv.' + (lvN + 1));
+            var btnAction = jobs.length >= G.ServerRules.value('maxConcurrent', 0) ? 'Game.Build.showBusyJobs()' : ('Game.Build.confirmUpgrade(\'' + id + '\')');
             expand += '<button class="btn ok" onclick="' + btnAction + '">' + btnLabel + '</button>';
           } else {
             expand += '<span class="bcard-max-tip">已达最大等级</span>';
@@ -1797,7 +1763,7 @@ window.Game = window.Game || {};
       var now = G.gameNow();
       var self = this;
       var h = '';
-      var buildDisc = (1 - Core.buildMul()) * 100;
+      var buildDisc = G.ServerRules.value('buildDiscountPercent', 0);
       var groupUsed = Core.groupSlotsUsed(groupKey);
       var groupCap = Core.groupSlotsCap(groupKey);
       if (groupKey === 'res') {
@@ -1878,14 +1844,7 @@ window.Game = window.Game || {};
       var rows = '';
       for (var j = 0; j < owned.length; j++) {
         var o = owned[j];
-        var cardSec = o.seconds || 0;
-        var need = 0;
-        if (cardSec > 0 && remSec > 0) {
-          need = Math.floor(remSec / cardSec);
-          if (need === 0) need = 1;
-        }
-        var useCount = Math.min(need, o.cnt);
-        if (useCount <= 0 && o.cnt > 0) useCount = 1;
+        var useCount = (job && job.speedUpCounts || {})[o.id] || 1;
 
         rows += '<div class="spicker-row" data-sid="' + o.id + '" data-count="' + useCount + '">' +
                   '<span class="spicker-name">⚡ ' + o.name + ' <small style="font-weight:normal;color:#8a7a58">(余' + o.cnt + ')</small></span>' +
@@ -1975,9 +1934,9 @@ window.Game = window.Game || {};
           qh += speedBtn;
           qh += '</div>';
         }
-        if (jobs.length < MAX_CONCURRENT) qh += '<div class="bfield">剩余 ' + (MAX_CONCURRENT - jobs.length) + ' 支施工队空闲：还可开始 ' + (MAX_CONCURRENT - jobs.length) + ' 项建筑工程</div>';
+        if (jobs.length < G.ServerRules.value('maxConcurrent', 0)) qh += '<div class="bfield">剩余 ' + (G.ServerRules.value('maxConcurrent', 0) - jobs.length) + ' 支施工队空闲：还可开始 ' + (G.ServerRules.value('maxConcurrent', 0) - jobs.length) + ' 项建筑工程</div>';
       } else {
-        qh += '<div class="bfield">' + MAX_CONCURRENT + ' 支施工队空闲：可同时进行 ' + MAX_CONCURRENT + ' 项建筑工程</div>';
+        qh += '<div class="bfield">' + G.ServerRules.value('maxConcurrent', 0) + ' 支施工队空闲：可同时进行 ' + G.ServerRules.value('maxConcurrent', 0) + ' 项建筑工程</div>';
       }
       return qh;
     },

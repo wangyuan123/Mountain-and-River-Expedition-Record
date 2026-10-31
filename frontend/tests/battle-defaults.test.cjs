@@ -12,18 +12,7 @@ function setup() {
     sortieArmy: null, sortieCap: 25000, locked: false
   };
   const nodes = {};
-  for (const id of ['message', 'sortie-total', 'sortie-remaining', 'sortie-cap']) {
-    nodes['battle-defaults-' + id] = { textContent: '' };
-  }
-  for (const unitId of ['infantry', 'rocket']) {
-    nodes['battle-defaults-sortie-limit-' + unitId] = { textContent: '' };
-    for (const type of ['range', 'number']) {
-      nodes['battle-defaults-sortie-' + type + '-' + unitId] = {
-        value: '0', max: '0', disabled: false,
-        style: { setProperty(name, value) { this[name] = value; } }
-      };
-    }
-  }
+  nodes['battle-defaults-message'] = { textContent: '' };
   const Game = {
     Core: { route: 'battleDefaults', state: { player: { id: 10 }, army: { infantry: 50000, rocket: 50000 } }, views: {}, render() {} },
     DATA: { units: { infantry: { name: '步兵' }, rocket: { name: '反坦克火箭' } } },
@@ -49,8 +38,6 @@ test('战斗期间禁用战术表单并拒绝本地编辑和保存', async () =>
   assert.match(view.innerHTML, /id="battle-defaults-save"[^>]*disabled/);
   assert.match(view.innerHTML, /class="battle-defaults-trigger"[^>]*disabled/);
   Game.BattleDefaults.setAction('outgoing', 'infantry', 'RETREAT');
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.BattleDefaults.setSortieCount('infantry', 100);
   await Game.BattleDefaults.save();
   assert.equal(calls.length, 1);
   assert.equal(nodes['battle-defaults-message'].textContent, '战斗或进攻行军期间无法修改默认战术');
@@ -62,207 +49,12 @@ test('页面打开后新增进攻行军也立即禁止编辑和保存', async ()
   Game.Core.views.battleDefaults(view);
   await Promise.resolve();
   Game.Core.state.world = { marches: [{ action: 'conquer', returning: false }] };
+  Game.Core.state.gameplay = { battleDefaultsLocked: true };
   Game.Core.views.battleDefaults(view);
   assert.match(view.innerHTML, /id="battle-defaults-save"[^>]*disabled/);
   Game.BattleDefaults.setAction('outgoing', 'infantry', 'RETREAT');
   await Game.BattleDefaults.save();
   assert.equal(calls.length, 1);
-});
-
-test('迎战按兵种编辑并随战术保存，自动与零兵力配置可区分', async () => {
-  const { Game, calls, nodes } = setup();
-  const view = { innerHTML: '' };
-  Game.Core.views.battleDefaults(view);
-  await Promise.resolve();
-  Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /出城迎战兵力/);
-  assert.match(view.innerHTML, /迎战与出征上限一致/);
-  assert.match(view.innerHTML, /25000/);
-  assert.match(view.innerHTML, /disabled placeholder="自动"/);
-  assert.match(view.innerHTML, /type="range"[^>]*aria-label="步兵迎战数量滑动条" disabled/);
-  nodes['battle-defaults-message'] = { textContent: '' };
-  nodes['battle-defaults-sortie-total'] = { textContent: '' };
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.BattleDefaults.setSortieCount('infantry', '15000');
-  Game.BattleDefaults.setSortieCount('rocket', '10000');
-  assert.equal(nodes['battle-defaults-sortie-total'].textContent, '25000');
-  await Game.BattleDefaults.save();
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).sortieArmy)), { infantry: 15000, rocket: 10000 });
-  assert.equal(calls.at(-1).defending.infantry, 'HOLD');
-  assert.equal(calls.at(-1).sortieCap, undefined);
-  Game.BattleDefaults.setSortieCount('infantry', '0');
-  Game.BattleDefaults.setSortieCount('rocket', '0');
-  await Game.BattleDefaults.save();
-  assert.deepEqual(JSON.parse(JSON.stringify(calls.at(-1).sortieArmy)), { infantry: 0, rocket: 0 });
-  Game.BattleDefaults.setAutomaticSortie(true);
-  await Game.BattleDefaults.save();
-  assert.equal(calls.at(-1).sortieArmy, null);
-});
-
-test('非法数字恢复上一有效选择，超限整数自动限制后保存', async () => {
-  const { Game, calls, nodes } = setup();
-  Game.Core.views.battleDefaults({ innerHTML: '' });
-  await Promise.resolve();
-  nodes['battle-defaults-message'] = { textContent: '' };
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.BattleDefaults.setSortieCount('infantry', '12345');
-  for (const count of ['-1', '1.5', 'NaN', 'Infinity', '9007199254740992']) {
-    nodes['battle-defaults-sortie-number-infantry'].value = count;
-    Game.BattleDefaults.setSortieCount('infantry', count);
-    assert.equal(calls.length, 1);
-    assert.match(nodes['battle-defaults-message'].textContent, /非负整数/);
-    assert.equal(nodes['battle-defaults-sortie-number-infantry'].value, '12345');
-    assert.equal(nodes['battle-defaults-sortie-range-infantry'].value, '12345');
-    assert.equal(nodes['battle-defaults-sortie-total'].textContent, '12345');
-  }
-  Game.BattleDefaults.setSortieCount('infantry', '25001');
-  assert.match(nodes['battle-defaults-message'].textContent, /已限制到该兵种可选上限 25000/);
-  await Game.BattleDefaults.save();
-  assert.equal(calls.length, 2);
-  assert.equal(calls.at(-1).sortieArmy.infantry, 25000);
-});
-
-test('百万驻军共用四十万防守额度，滑动与数字输入联动且降低数量释放额度', async () => {
-  const { Game, calls, nodes, saved } = setup();
-  saved.sortieCap = 400000;
-  Game.Core.state.army = { infantry: 600000, rocket: 400000 };
-  const view = { innerHTML: '' };
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.Core.views.battleDefaults(view);
-  let renders = 0;
-  Game.Core.render = () => { renders++; };
-  const enter = (type, unitId, value) => {
-    const id = 'battle-defaults-sortie-' + type + '-' + unitId;
-    const tag = view.innerHTML.match(new RegExp('<input[^>]*id="' + id + '"[^>]*>'))[0];
-    const handler = tag.match(/oninput="([^"]+)"/)[1];
-    nodes[id].value = String(value);
-    vm.runInNewContext('(function () { ' + handler + '; }).call(input)', { Game, input: nodes[id] });
-  };
-  enter('range', 'infantry', 300000);
-  assert.equal(nodes['battle-defaults-sortie-number-infantry'].value, '300000');
-  assert.equal(nodes['battle-defaults-sortie-range-infantry'].style['--p'], '75.0%');
-  assert.equal(nodes['battle-defaults-sortie-range-rocket'].max, '100000');
-  assert.equal(nodes['battle-defaults-sortie-number-rocket'].max, '100000');
-  enter('number', 'rocket', 400000);
-  assert.equal(nodes['battle-defaults-sortie-range-rocket'].value, '100000');
-  assert.equal(nodes['battle-defaults-sortie-number-rocket'].value, '100000');
-  assert.equal(nodes['battle-defaults-sortie-range-infantry'].max, '300000');
-  assert.equal(nodes['battle-defaults-sortie-total'].textContent, '400000');
-  assert.equal(nodes['battle-defaults-sortie-remaining'].textContent, '0');
-  await Game.BattleDefaults.save();
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 300000, rocket: 100000 });
-  enter('range', 'infantry', 200000);
-  assert.equal(nodes['battle-defaults-sortie-remaining'].textContent, '100000');
-  assert.equal(nodes['battle-defaults-sortie-range-rocket'].style['--p'], '50.0%');
-  assert.equal(nodes['battle-defaults-sortie-limit-rocket'].textContent, '200000');
-  enter('range', 'rocket', 200000);
-  assert.equal(nodes['battle-defaults-sortie-number-rocket'].value, '200000');
-  assert.equal(nodes['battle-defaults-sortie-remaining'].textContent, '0');
-  assert.equal(renders, 0, '拖动和输入不重新渲染整页');
-  assert.deepEqual(Game.Core.state.army, { infantry: 600000, rocket: 400000 });
-});
-
-test('选择数量不能超过该兵种驻军，未驻军兵种滑动条禁用', async () => {
-  const { Game, calls, nodes } = setup();
-  Game.Core.state.army = { infantry: 18, rocket: 0 };
-  Game.Core.views.battleDefaults({ innerHTML: '' });
-  await new Promise(resolve => setImmediate(resolve));
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.BattleDefaults.setSortieCount('infantry', '1000');
-  Game.BattleDefaults.setSortieCount('rocket', '1000');
-  assert.equal(nodes['battle-defaults-sortie-range-infantry'].value, '18');
-  assert.equal(nodes['battle-defaults-sortie-range-infantry'].max, '18');
-  assert.equal(nodes['battle-defaults-sortie-range-rocket'].disabled, true);
-  assert.equal(nodes['battle-defaults-sortie-number-rocket'].value, '0');
-  assert.equal(nodes['battle-defaults-sortie-total'].textContent, '18');
-  await Game.BattleDefaults.save();
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 18, rocket: 0 });
-});
-
-test('账号旧编队按当前驻军和额度缩减为草稿，余数不分给零出战兵种', async () => {
-  const { Game, calls, saved } = setup();
-  saved.sortieArmy = { htank: 0, infantry: 10, rocket: 2 };
-  saved.sortieCap = 3;
-  Game.DATA.units.htank = { name: '重型坦克' };
-  Game.Core.state.army = { htank: 100, infantry: 2, rocket: 2 };
-  const view = { innerHTML: '' };
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /已按当前驻军和迎战上限调整编队，请保存生效/);
-  assert.match(view.innerHTML, /id="battle-defaults-sortie-total">3</);
-  assert.deepEqual(saved.sortieArmy, { htank: 0, infantry: 10, rocket: 2 });
-  assert.deepEqual(calls, ['load'], '只调整草稿，不自动覆盖账号预设');
-  await Game.BattleDefaults.save();
-  assert.deepEqual(calls.at(-1).sortieArmy, { htank: 0, infantry: 2, rocket: 1 });
-  assert.equal(calls.at(-1).defending.infantry, 'HOLD');
-});
-
-test('旧版三万七千五百人迎战预设按新上限缩减并可保存', async () => {
-  const { Game, calls, saved } = setup();
-  saved.sortieArmy = { infantry: 22500, rocket: 15000 };
-  const view = { innerHTML: '' };
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /已按当前驻军和迎战上限调整编队，请保存生效/);
-  assert.match(view.innerHTML, /id="battle-defaults-sortie-total">25000</);
-  await Game.BattleDefaults.save();
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 15000, rocket: 10000 });
-});
-
-test('保存前驻军或上限变化时同步表单并一次性保存', async () => {
-  const { Game, calls, nodes } = setup();
-  let cap = 400000;
-  Game.Core.sortieCap = () => cap;
-  Game.Core.state.army = { infantry: 600000, rocket: 400000 };
-  const view = { innerHTML: '' };
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.BattleDefaults.setSortieCount('infantry', 300000);
-  Game.BattleDefaults.setSortieCount('rocket', 100000);
-  cap = 150000;
-  Game.Core.state.army.infantry = 100000;
-  await Game.BattleDefaults.save();
-  assert.equal(calls.length, 2);
-  assert.equal(nodes['battle-defaults-sortie-total'].textContent, '150000');
-  assert.equal(nodes['battle-defaults-sortie-cap'].textContent, '150000');
-  assert.equal(nodes['battle-defaults-sortie-number-infantry'].value, '75000');
-  assert.equal(nodes['battle-defaults-sortie-number-rocket'].value, '75000');
-  assert.match(nodes['battle-defaults-message'].textContent, /已保存/);
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 75000, rocket: 75000 });
-  cap = 0;
-  Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /id="battle-defaults-sortie-total">0</);
-  await Game.BattleDefaults.save();
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 0, rocket: 0 });
-});
-
-test('切换城市重新加载配置和上限，切换账号不保留前一个账号草稿', async () => {
-  const { Game, calls, saved } = setup();
-  const view = { innerHTML: '' };
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  saved.sortieCap = 137500;
-  Game.Core.state.player.activeCityId = 2;
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /137500/);
-  assert.equal(calls.filter(call => call === 'load').length, 2);
-  Game.BattleDefaults.setAutomaticSortie(false);
-  Game.BattleDefaults.setSortieCount('infantry', 42);
-  Game.API.getBattleDefaults = () => Promise.resolve({ outgoing: {}, defending: {}, sortieArmy: null, sortieCap: 25000 });
-  Game.Core.state.player.id = 20;
-  Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /disabled placeholder="自动"/);
-  await Game.BattleDefaults.save();
-  assert.equal(calls.at(-1).sortieArmy, null);
 });
 
 test('保存过程中重新渲染按钮后恢复可用，并保留后续编辑的未保存提示', async () => {
@@ -276,7 +68,7 @@ test('保存过程中重新渲染按钮后恢复可用，并保留后续编辑�
   Game.API.saveBattleDefaults = () => new Promise(resolve => { completeSave = resolve; });
   const pending = Game.BattleDefaults.save();
   assert.equal(nodes['battle-defaults-save'].disabled, true);
-  Game.BattleDefaults.setAutomaticSortie(false);
+  Game.BattleDefaults.setAction('defending', 'infantry', 'RETREAT');
   Game.Core.views.battleDefaults(view);
   nodes['battle-defaults-save'] = { disabled: true };
   completeSave();
@@ -302,7 +94,7 @@ test('分别编辑攻守兵种，只在保存时提交两套完整预设', async
   Game.Core.views.battleDefaults(view);
   await Promise.resolve();
   Game.Core.views.battleDefaults(view);
-  assert.match(view.innerHTML, /出城战斗/);
+  assert.match(view.innerHTML, /出征战斗/);
   assert.match(view.innerHTML, /守城战斗/);
   assert.match(view.innerHTML, /保存默认战术/);
   assert.match(view.innerHTML, /离线战斗时，兵种优先攻击射程内的敌方同类型兵种/);
@@ -317,76 +109,105 @@ test('分别编辑攻守兵种，只在保存时提交两套完整预设', async
   assert.equal(calls[1].defending.rocket, 'RETREAT');
 });
 
-test('动员到期丢弃临时草稿并加载默认编队，保存不会覆盖成缩减后的旧编队', async () => {
+test('守城全员规则可见且没有数量配置，仅提交攻守行动', async () => {
   const { Game, calls, saved } = setup();
-  let key = 'mobilization:1';
-  Game.Mobilization = { info: () => ({ key }), widget: () => '' };
-  saved.formationKey = key;
-  saved.sortieCap = 37500;
-  saved.sortieArmy = { infantry: 22500, rocket: 15000 };
+  saved.sortieArmy = { infantry: 0 };
+  Game.Core.state.army = { infantry: 1000000, rocket: 1000000 };
   const view = { innerHTML: '' };
-  Game.Core.render = () => Game.Core.views.battleDefaults(view);
   Game.Core.views.battleDefaults(view);
-  await new Promise(resolve => setImmediate(resolve));
-  assert.match(view.innerHTML, /当前编辑：动员防守编队/);
-  Game.BattleDefaults.setSortieCount('infantry', 20000);
-  key = 'default';
-  saved.formationKey = key;
-  saved.sortieCap = 25000;
-  saved.sortieArmy = { infantry: 10000, rocket: 10000 };
+  await new Promise(setImmediate);
+  Game.Core.views.battleDefaults(view);
+  assert.match(view.innerHTML, /守城：不受带兵上限限制/);
+  assert.match(view.innerHTML, /出征：受带兵上限限制/);
+  assert.match(view.innerHTML, /25000/);
+  assert.match(view.innerHTML, /当前城内 1000000/);
+  assert.match(view.innerHTML, /全部参战/);
+  assert.match(view.innerHTML, /参战名单在开战时锁定/);
+  assert.match(view.innerHTML, /下一场战斗开始参战/);
+  assert.match(view.innerHTML, /后勤部队同样参战并承担战损/);
+  assert.match(view.innerHTML, /伤兵、在途部队不加入本场/);
+  assert.match(view.innerHTML, /禁止从该城市发起任何新出征/);
+  assert.doesNotMatch(view.innerHTML, /type="(?:range|number|checkbox)"/);
+  assert.doesNotMatch(view.innerHTML, /按比例缩减|迎战上限|自动选兵/);
   await Game.BattleDefaults.save();
-  await new Promise(resolve => setImmediate(resolve));
-  assert.match(view.innerHTML, /当前编辑：默认防守编队/);
-  assert.equal(calls.filter(call => call !== 'load').length, 0);
-  await Game.BattleDefaults.save();
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 10000, rocket: 10000 });
-  assert.equal(calls.at(-1).formationKey, 'default');
+  assert.deepEqual(Object.keys(calls.at(-1)).sort(), ['defending', 'outgoing']);
 });
 
-test('另一台设备启用动员后，先校准账号状态再加载战术，页面不会停留在加载中', async () => {
+test('动员到期只更新出征容量，保留未保存的默认行动', async () => {
+  const { Game, calls, nodes, saved } = setup();
+  let cap = 37500;
+  Game.Core.armyCap = () => cap;
+  Game.Mobilization = { info: () => ({ key: 'mobilization:2' }) };
+  saved.formationKey = 'default';
+  const view = { innerHTML: '' };
+  Game.Core.views.battleDefaults(view);
+  await new Promise(setImmediate);
+  Game.Core.views.battleDefaults(view);
+  assert.match(view.innerHTML, /37500/);
+  Game.BattleDefaults.setAction('defending', 'rocket', 'HOLD');
+  cap = 25000;
+  nodes['battle-defaults-dispatch-cap'] = { textContent: '' };
+  Game.BattleDefaults.refreshMobilization();
+  assert.equal(nodes['battle-defaults-dispatch-cap'].textContent, '25000');
+  await Game.BattleDefaults.save();
+  assert.equal(calls.filter(call => call === 'load').length, 1);
+  assert.equal(calls.at(-1).defending.rocket, 'HOLD');
+  assert.equal(Object.hasOwn(calls.at(-1), 'formationKey'), false);
+});
+
+test('无雷达来袭信息时城市战斗锁仍禁止编辑和保存', async () => {
+  const { Game, calls } = setup();
+  const view = { innerHTML: '' };
+  Game.Core.views.battleDefaults(view);
+  await new Promise(setImmediate);
+  Game.Core.state.cityBattleLocked = true;
+  Game.Core.state.gameplay = { battleDefaultsLocked: true };
+  Game.Core.views.battleDefaults(view);
+  assert.match(view.innerHTML, /id="battle-defaults-save"[^>]*disabled/);
+  Game.BattleDefaults.setAction('defending', 'rocket', 'HOLD');
+  await Game.BattleDefaults.save();
+  assert.equal(calls.length, 1);
+});
+
+test('切换城市后重读出征容量，旧账号迟到响应不会覆盖新账号', async () => {
   const { Game, calls, saved } = setup();
-  let key = 'default';
-  Game.Mobilization = { info: () => ({ key }), widget: () => '' };
-  saved.formationKey = 'mobilization:2';
-  saved.sortieArmy = { infantry: 27000 };
-  saved.sortieCap = 27500;
-  let refreshes = 0;
-  Game.API.getGameState = async force => {
-    assert.equal(force, true);
-    refreshes++;
-    key = saved.formationKey;
-  };
   const view = { innerHTML: '' };
   Game.Core.render = () => Game.Core.views.battleDefaults(view);
   Game.Core.render();
-  await new Promise(resolve => setImmediate(resolve));
-  assert.equal(refreshes, 1);
-  assert.equal(calls.length, 2);
-  assert.match(view.innerHTML, /当前编辑：动员防守编队/);
-  assert.doesNotMatch(view.innerHTML, /正在加载默认战术/);
+  await new Promise(setImmediate);
+  saved.sortieCap = 137500;
+  Game.Core.state.player.activeCityId = 2;
+  Game.Core.render();
+  await new Promise(setImmediate);
+  assert.match(view.innerHTML, /137500/);
+  let finish;
+  Game.API.getBattleDefaults = () => new Promise(resolve => { finish = resolve; });
+  Game.Core.state.player.activeCityId = 3;
+  Game.Core.render();
+  Game.Core.state.player.id = 20;
+  Game.API.getBattleDefaults = () => Promise.resolve({ outgoing: { infantry: 'RETREAT', rocket: 'HOLD' },
+    defending: { infantry: 'RETREAT', rocket: 'HOLD' }, sortieCap: 30000, locked: false });
+  Game.Core.render();
+  await new Promise(setImmediate);
+  finish(saved);
+  await new Promise(setImmediate);
+  assert.match(view.innerHTML, /30000/);
+  assert.doesNotMatch(view.innerHTML, /137500/);
   await Game.BattleDefaults.save();
-  assert.equal(calls.at(-1).formationKey, 'mobilization:2');
-  assert.deepEqual(calls.at(-1).sortieArmy, { infantry: 27000 });
+  assert.equal(calls.at(-1).outgoing.infantry, 'RETREAT');
 });
 
-test('校准状态期间切换账号，旧账号战术响应不会覆盖新账号', async () => {
-  const { Game, saved } = setup();
-  let key = 'default';
-  Game.Mobilization = { info: () => ({ key }), widget: () => '' };
-  saved.formationKey = 'mobilization:2';
-  let finish;
-  Game.API.getGameState = () => new Promise(resolve => { finish = resolve; });
+test('保存失败保留行动草稿以便重试', async () => {
+  const { Game, calls, nodes } = setup();
   const view = { innerHTML: '' };
-  Game.Core.render = () => Game.Core.views.battleDefaults(view);
-  Game.Core.render();
-  await new Promise(resolve => setImmediate(resolve));
-  Game.Core.state.player.id = 11;
-  saved.formationKey = key;
-  saved.sortieArmy = { rocket: 5000 };
-  Game.Core.render();
-  await new Promise(resolve => setImmediate(resolve));
-  finish();
-  await new Promise(resolve => setImmediate(resolve));
-  assert.match(view.innerHTML, /当前编辑：默认防守编队/);
-  assert.doesNotMatch(view.innerHTML, /当前编辑：动员防守编队/);
+  Game.Core.views.battleDefaults(view);
+  await new Promise(setImmediate);
+  Game.BattleDefaults.setAction('outgoing', 'infantry', 'RETREAT');
+  const save = Game.API.saveBattleDefaults;
+  Game.API.saveBattleDefaults = () => Promise.reject(new Error('网络异常'));
+  await Game.BattleDefaults.save();
+  assert.equal(nodes['battle-defaults-message'].textContent, '网络异常');
+  Game.API.saveBattleDefaults = save;
+  await Game.BattleDefaults.save();
+  assert.equal(calls.at(-1).outgoing.infantry, 'RETREAT');
 });

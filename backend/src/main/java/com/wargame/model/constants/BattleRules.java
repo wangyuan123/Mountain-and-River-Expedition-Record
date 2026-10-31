@@ -5,7 +5,7 @@ import java.util.Set;
 
 /** 四类攻击决定能否交战和基础火力；倍率只描述同一攻击领域内的专项克制。 */
 public final class BattleRules {
-    public static final String VERSION = "balance-v20-naval-capital-ships-20261019";
+    public static final String VERSION = "balance-v22-without-unit-equipment-20261030";
     /** 演习共用新移速与玩家距离；规则变更后旧校准不得复用。 */
     public static final String PRACTICE_VERSION = VERSION;
     private static final Set<String> ARTILLERY = Set.of("assault", "rocket", "howitzer", "antitank", "flak");
@@ -21,7 +21,7 @@ public final class BattleRules {
 
     /** 工事使用独立攻坚火力；特种兵仍按地面单位处理。 */
     public static String domain(String target) {
-        target = UnitEquipmentEffects.base(target);
+        target = BattleUnitIds.base(target);
         if ("wall".equals(target) || FortDef.FORTS.containsKey(target)) return "fort";
         UnitDef unit = UnitDef.UNITS.get(target);
         return unit == null ? "land" : unit.branch();
@@ -33,7 +33,7 @@ public final class BattleRules {
 
     /** 特种兵属于地面步兵；火炮单列，避免反坦克与反炮兵混成同一职责。 */
     public static String targetClass(String id) {
-        id = UnitEquipmentEffects.base(id);
+        id = BattleUnitIds.base(id);
         if (ARTILLERY.contains(id)) return "artillery";
         UnitDef unit = UnitDef.UNITS.get(id);
         if (unit == null) return "fort";
@@ -47,7 +47,7 @@ public final class BattleRules {
 
     /** 仅指定兵种组合享受专项克制，其他交战仍为 1.0。 */
     public static double multiplier(String attacker, String target) {
-        return MATCHUPS.getOrDefault(UnitEquipmentEffects.base(attacker), Map.of()).getOrDefault(UnitEquipmentEffects.base(target), 1.0);
+        return MATCHUPS.getOrDefault(BattleUnitIds.base(attacker), Map.of()).getOrDefault(BattleUnitIds.base(target), 1.0);
     }
 
     public static boolean ground(String id) {

@@ -179,14 +179,15 @@ window.Game = window.Game || {};
       var prevEl = document.getElementById('sysExPreview');
       if (!fromEl || !toEl || !amtEl || !prevEl) return;
 
-      var s = Core.state;
-      var exLv = s.buildings.exchange || 0;
-      var rate = 0.50 + exLv * 0.04;
-      var amt = parseInt(amtEl.value, 10) || 0;
-      var gain = Math.floor(amt * Math.round(rate * 100) / 100);
-      var toName = G.DATA.resources[toEl.value] ? G.DATA.resources[toEl.value].name : toEl.value;
-
-      prevEl.textContent = '预计获得: ' + G.fmt(gain) + ' ' + toName + ' (调配率 ' + (rate * 100).toFixed(0) + '%)';
+      var amount = Number(amtEl.value), sequence = (this._previewSequence || 0) + 1;
+      this._previewSequence = sequence;
+      if (!Number.isInteger(amount) || amount <= 0 || fromEl.value === toEl.value) { prevEl.textContent = '请选择资源并输入有效数量'; return; }
+      var self = this, toName = (G.DATA.resources[toEl.value] || {}).name || toEl.value;
+      prevEl.textContent = '正在获取兑换报价…';
+      G.ServerRules.preview({ action: 'exchange', id: fromEl.value, target: toEl.value, count: amount }).then(function (quote) {
+        if (sequence !== self._previewSequence || prevEl.isConnected === false) return;
+        prevEl.textContent = '预计获得: ' + G.fmt(quote.gain) + ' ' + toName + ' (调配率 ' + (quote.rate * 100).toFixed(0) + '%)';
+      }).catch(function (error) { if (sequence === self._previewSequence) prevEl.textContent = error.message || '报价失败'; });
     },
 
     renderView: function (v) {
@@ -208,9 +209,9 @@ window.Game = window.Game || {};
         this.loadOverview();
       }
 
-      var ratePct = ((0.50 + exLv * 0.04) * 100).toFixed(0);
-      var taxPct = Math.max(5, 10 - (exLv - 1) * 0.5).toFixed(1);
-      var slotCap = 2 + exLv;
+      var ratePct = ((this.overview && this.overview.exchangeRate || 0) * 100).toFixed(0);
+      var taxPct = ((this.overview && this.overview.taxRate || 0) * 100).toFixed(1);
+      var slotCap = this.overview && this.overview.slotCap || 0;
       var usedSlots = (this.overview && this.overview.usedSlots != null) ? this.overview.usedSlots : 0;
 
       var h = '';

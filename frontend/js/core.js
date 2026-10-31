@@ -44,7 +44,6 @@ window.Game = window.Game || {};
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-  function rand(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
 
   function escapeHtml(str) {
     if (str == null) return '';
@@ -204,68 +203,26 @@ window.Game = window.Game || {};
       return { status: 'peace', text: '和平', color: 'var(--accent)', detail: '正常发展' };
     },
 
-    enterWarState: function (durationHours) {
-      var s = this.state;
-      if (!s.cityState) s.cityState = { status: 'peace', warUntil: 0, shieldUntil: 0, peaceUntil: 0 };
-      s.cityState.status = 'war';
-      s.cityState.warUntil = G.gameNow() + (durationHours || 1) * 3600 * 1000;
-    },
+
 
     capacity: function () {
-      var caps = {
-        food: this.buildingLevel('farm') * 200000,
-        steel: this.buildingLevel('refinery') * 200000,
-        oil: this.buildingLevel('oilfield') * 200000,
-        rare: this.buildingLevel('raremine') * 200000,
-        gold: 20000000
-      };
-      return caps;
+      return G.ServerRules.value('capacity', {});
     },
 
     inventoryCapacity: function () {
-      return {
-        food: 1000000000,
-        steel: 1000000000,
-        oil: 1000000000,
-        rare: 1000000000,
-        gold: 1000000000
-      };
+      return G.ServerRules.value('inventoryCapacity', {});
     },
 
     protectCap: function () {
-      var depotLv = this.buildingLevel('depot');
-      var capMul = 1 + 0.05 * Math.max(0, Math.min(10, this.state.tech.log_warehouse || 0));
-      return Math.floor(depotLv * D.buildings.depot.protectPer * capMul);
+      return G.ServerRules.value('protectCap', 0);
     },
 
-    /** 城墙加固只放大当前城墙自身属性，零级城墙仍无生命和防御。 */
-    wallMul: function () { return 1 + 0.05 * Math.max(0, Math.min(10, (this.state.tech || {}).wall_reinforcement || 0)); },
 
     /** 城内四类产量分别读取科技，避免一项研究提高全部资源。 */
-    resBonusMul: function (resource) {
-      var s = this.state;
-      var mayor = this.getOfficerByRole('mayor');
-      var mayorLogi = mayor ? mayor.logistics : 0;
-      var bonus = 1 + 0.05 * (s.tech['prod_' + resource] || 0) + mayorLogi / 100;
-      var harvestBonus = this.mayorSkillBonus ? this.mayorSkillBonus('harvest') : 0;
-      if (harvestBonus > 0) bonus *= (1 + harvestBonus);
-      bonus *= 1 + 0.03 * (s.buildings.transit || 0);
-      return bonus;
-    },
+
 
     produceOf: function (id) {
-      var s = this.state;
-      var b = D.buildings[id];
-      if (!b || !b.produces) return 0;
-      var arr = this.buildingLevels(id);
-      var total = 0;
-      for (var i = 0; i < arr.length; i++) {
-        var lv = arr[i] || 0;
-        if (lv <= 0) continue;
-        var curve = lv * (1 + 0.12 * (lv - 1));
-        total += b.baseProduce * curve;
-      }
-      return Math.floor(total * this.resBonusMul(b.produces));
+      return (G.ServerRules.value('production', {}))[id] || 0;
     },
 
     buildingLevels: function (id) {
@@ -282,37 +239,17 @@ window.Game = window.Game || {};
       return sum;
     },
 
+    /** 区域占位和剩余名额只读服务端，新建资格仍由执行事务校验。 */
     groupSlotsUsed: function (groupKey) {
-      var s = this.state;
-      var used = 0;
-      var order = (G.Build && G.Build.GROUPS && G.Build.GROUPS[groupKey]) ? G.Build.GROUPS[groupKey].order : [];
-      for (var i = 0; i < order.length; i++) {
-        var id = order[i];
-        var arr = this.buildingLevels(id);
-        for (var j = 0; j < arr.length; j++) {
-          if (arr[j] > 0) used++;
-        }
-      }
-      if (groupKey === 'res' || groupKey === 'army') {
-        var jobs = s.constructions || (s.construction ? [s.construction] : []);
-        jobs.forEach(function (job) {
-          if (order.indexOf(job.id) >= 0 && job.targetLevel === 1) {
-            var arr = Core.buildingLevels(job.id);
-            var curLv = (job.slot != null) ? (arr[job.slot] || 0) : (arr[0] || 0);
-            if (curLv === 0) used++;
-          }
-        });
-      }
-      return used;
+      return (G.ServerRules.value('groupSlots', {})[groupKey] || {}).used || 0;
     },
 
-    /** 两区各固定35个卡槽，市政厅等级仅限制建筑等级。 */
     groupSlotsCap: function (groupKey) {
-      return (D.groupSlots && D.groupSlots[groupKey]) || 35;
+      return (G.ServerRules.value('groupSlots', {})[groupKey] || {}).cap || 0;
     },
 
     groupSlotsRemaining: function (groupKey) {
-      return Math.max(0, this.groupSlotsCap(groupKey) - this.groupSlotsUsed(groupKey));
+      return (G.ServerRules.value('groupSlots', {})[groupKey] || {}).remaining || 0;
     },
 
     buildingGroup: function (id) {
@@ -325,41 +262,26 @@ window.Game = window.Game || {};
     },
 
     foodPerHour: function () {
-      var s = this.state, sum = 0;
-      // 服务端粮账包含外来驻军与战斗中的存活编队，不能只统计本城库存。
-      if (s.foodSupply && Number.isFinite(s.foodSupply.totalPerHour)) return s.foodSupply.totalPerHour;
-      for (var id in s.army) sum += (D.units[id] ? D.units[id].food : 0) * s.army[id];
-      var techLv = this.techLevel ? this.techLevel('log_food') : 0;
-      var foodSave = 1 - 0.05 * techLv;
-      if (foodSave < 0.5) foodSave = 0.5;
-      var rationBonus = this.mayorSkillBonus ? this.mayorSkillBonus('ration') : 0;
-      if (rationBonus > 0) {
-        foodSave *= Math.max(0.1, 1.0 - rationBonus);
-      }
-      if (foodSave < 0.1) foodSave = 0.1;
-      return Math.round(sum * foodSave);
+      return (this.state.foodSupply || {}).totalPerHour || 0;
     },
 
     /** 城市状态只调整自然生产，不改变建筑基础产能或野地采集。 */
     cityProductionPerHour: function (buildingId) {
-      var status = this.getCityStatus();
-      return this.produceOf(buildingId) * (status === 'war' ? 0.7 : (status === 'shield' ? 1.1 : 1));
+      var resource = { farm: 'food', refinery: 'steel', oilfield: 'oil', raremine: 'rare' }[buildingId];
+      return ((this.state.resourceRates || {}).productionPerHour || {})[resource] || 0;
     },
 
     /** 采用实际粮账产量，包含城市战时／保护期的生产倍率。 */
     foodProductionPerHour: function () {
-      var supply = (this.state || {}).foodSupply;
-      return supply && Number.isFinite(supply.productionPerHour) ? supply.productionPerHour : this.cityProductionPerHour('farm');
+      return (this.state.foodSupply || {}).productionPerHour || 0;
     },
 
     popMax: function () {
-      return this.buildingLevel('house') * D.buildings.house.popPer;
+      return (this.state.population || {}).capacity || 0;
     },
 
     popUsed: function () {
-      var s = this.state, sum = 0;
-      for (var id in s.army) sum += (D.units[id] ? D.units[id].pop : 0) * s.army[id];
-      return sum;
+      return G.ServerRules.value('militaryPopulation', 0);
     },
 
     civilianPopulation: function () {
@@ -367,59 +289,21 @@ window.Game = window.Game || {};
     },
 
     populationCapacity: function () {
-      return (this.state.population && this.state.population.capacity != null)
-        ? this.state.population.capacity : this.popMax();
+      return (this.state.population || {}).capacity || 0;
     },
 
     popFree: function () { return this.civilianPopulation(); },
 
     populationGrowthPerHour: function () {
-      var civ = this.civilianPopulation();
-      var effCap = this.effectiveCapacity();
-      if (civ >= effCap) return 0;
-      return (this.state.population && this.state.population.growthPerHour != null)
-        ? this.state.population.growthPerHour : Math.round(this.populationCapacity() * 0.03 * Math.max(0.2, this.morale() / 70));
+      return (this.state.population || {}).growthPerHour || 0;
     },
 
     officerSalaryPerHour: function () {
-      var offs = (this.state && this.state.officers) || [];
-      var sum = 0;
-      for (var i = 0; i < offs.length; i++) {
-        sum += (offs[i].salary || 0);
-      }
-      return sum;
+      return ((this.state.resourceRates || {}).expensePerHour || {}).gold || 0;
     },
 
     resourceNetRate: function (key) {
-      var s = this.state || {};
-      var r = s.resources || {};
-      var cur = r[key] || 0;
-      var caps = this.capacity ? this.capacity() : {};
-      var cap = (caps && caps[key] != null) ? caps[key] : (key === 'gold' ? 20000000 : 0);
-      if (key === 'food') {
-        var foodProd = this.foodProductionPerHour();
-        var foodUse = this.foodPerHour();
-        if (cur >= cap) {
-          return foodProd >= foodUse ? 0 : foodProd - foodUse;
-        }
-        return foodProd - foodUse;
-      }
-      if (key === 'steel' || key === 'oil' || key === 'rare') {
-        var bType = key === 'steel' ? 'refinery' : (key === 'oil' ? 'oilfield' : 'raremine');
-        if (cur >= cap) return 0;
-        return this.cityProductionPerHour(bType);
-      }
-      if (key === 'gold') {
-        var mayor = this.getOfficerByRole('mayor');
-        var financeBonus = this.mayorSkillBonus ? this.mayorSkillBonus('finance') : 0;
-        var taxRate = Math.floor(this.civilianPopulation() * ((s.tax != null ? s.tax : 30) / 100) * (1 + (mayor ? mayor.knowledge / 100 : 0)) * (1 + financeBonus) * 2);
-        var salary = this.officerSalaryPerHour();
-        if (cur >= cap) {
-          return salary > 0 ? -salary : 0;
-        }
-        return taxRate - salary;
-      }
-      return 0;
+      return ((this.state.resourceRates || {}).netPerHour || {})[key] || 0;
     },
 
     morale: function () {
@@ -435,12 +319,7 @@ window.Game = window.Game || {};
     },
 
     effectiveCapacity: function () {
-      if (this.state && this.state.population && this.state.population.effectiveCapacity != null) {
-        return this.state.population.effectiveCapacity;
-      }
-      var cap = this.populationCapacity();
-      var m = this.morale();
-      return cap <= 0 ? 0 : Math.max(10, Math.round(cap * Math.min(1.0, m / 70.0)));
+      return (this.state.population || {}).effectiveCapacity || 0;
     },
 
     getOfficerByRole: function (role) {
@@ -463,7 +342,7 @@ window.Game = window.Game || {};
           var sDef = D.officerSkills && D.officerSkills[id];
           var name = (sDef && sDef.name) ? sDef.name : (item.name || id || '技能');
           var lv = item.lv != null ? item.lv : (item.level != null ? item.level : '');
-          parts.push(name + (lv !== '' ? 'Lv' + lv : ''));
+          parts.push(name + (sDef ? '（满级）' : (lv !== '' ? 'Lv' + lv : '')));
         }
       }
       return parts.join('/');
@@ -475,141 +354,33 @@ window.Game = window.Game || {};
       return s ? ' · 技能:' + s : '';
     },
 
-    /** 只读取服务器装备后的有效属性，不读取技能，也不影响世界地图行军速度。 */
-    commandBonusMul: function (attribute) {
-      var state = this.state || {};
-      if (!state.buildings || !state.buildings.headquarters) return 1;
-      var chief = this.getOfficerByRole('commander_in_chief');
-      return 1 + Math.max(0, Number(chief && chief[attribute]) || 0) * G.Constants.commandBonusRate;
+    /** 当前城市行动火力只显示服务端倍率；战斗页面使用其冻结快照。 */
+    firepowerMul: function () {
+      return G.ServerRules.value('multipliers', {}).firepower || 1;
     },
 
-    atkMul: function (cat) {
-      var s = this.state;
-      var cmd = this.getOfficerByRole('commander');
-      var cmdMil = cmd ? cmd.military : 0;
-      var allMul = 1 + 0.05 * (s.tech.attack_tech || 0);
-      return allMul * (1 + cmdMil / 100) * this.commandBonusMul('military');
-    },
-
-    /** 防御预览叠加防御科技和司令官属性，攻守双方共用相同倍率。 */
-    defMul: function () {
-      var s = this.state;
-      var allMul = 1 + 0.05 * (s.tech.defense_tech || 0);
-      return allMul * this.commandBonusMul('defense');
-    },
-
-    rangeMul: function () { return 1 + 0.05 * (this.state.tech.weapon_range || 0); },
-
-    /** 行动火力从参战科技快照读取；不传快照时使用账号科技，缺项按零级显示。 */
-    firepowerMul: function (tech) {
-      var levels = tech || (this.state && this.state.tech) || {};
-      return 1 + 0.05 * Math.max(0, Math.min(10, Number(levels.fire_density) || 0));
-    },
-
-    hpMul: function (cat) {
-      var s = this.state || {};
-      var tech = s.tech || {};
-      var allMul = 1 + 0.05 * (tech.cmd_hp || 0);
-      return allMul * this.commandBonusMul('logistics');
-    },
-
-    /** 行军倍率按兵种匹配引擎科技；省略 unitId 时保持类别计算兼容。 */
-    spdMul: function (cat, unitId) {
-      var s = this.state || {};
-      var tech = s.tech || {};
-      var catKey = G.Constants.unitSpeedTechKeys[unitId] || G.Constants.unitTechKeys[cat];
-      var techBonus = catKey ? 0.05 * (tech[catKey] || 0) : 0;
-      var buildingBonus = 0;
-      if (cat === 'air' && s.buildings && s.buildings.apron) {
-        buildingBonus = 0.03 * s.buildings.apron;
-      }
-      return 1 + techBonus + buildingBonus;
-    },
-
-    /** 全兵种资源负重和运输机运力共用科技倍率。 */
-    loadMul: function () {
-      var tech = (this.state && this.state.tech) || {};
-      return 1 + 0.05 * Math.max(0, Math.min(10, Number(tech.log_load) || 0));
-    },
-
-    trainMul: function () {
-      var tech = (this.state && this.state.tech) || {};
-      return 1 + 0.05 * (tech.log_train || 0);
-    },
-
-    /** 建筑资源折扣只来自科技；市长营造只缩短工期，不减少材料。 */
-    buildCostMul: function () {
-      var tech = (this.state && this.state.tech) || {};
-      return 1 - 0.05 * Math.max(0, Math.min(10, Number(tech.log_build) || 0));
-    },
-
-    buildMul: function () {
-      var mul = this.buildCostMul();
-      var constructBonus = this.mayorSkillBonus ? this.mayorSkillBonus('construct') : 0;
-      if (constructBonus > 0) mul *= (1 - constructBonus);
-      return Math.max(0.35, mul);
-    },
-
-    medicalMul: function () {
-      var tech = (this.state && this.state.tech) || {};
-      var v = 0.05 * (tech.log_medical || 0);
-      return Math.max(0, Math.min(0.5, v));
-    },
-
-    /** 账号动员对新行军与本城迎战统一生效，到期立即恢复普通容量。 */
+    /** 账号动员仅提高新出征容量；守城全员参战，不使用此上限。 */
     armyCap: function () {
-      var percent = G.Mobilization ? G.Mobilization.info().percent : 0;
-      return Math.min(2147483647, Math.floor(this.ordinaryArmyCap() * (100 + percent) / 100));
+      return G.ServerRules.value('armyCap', 0);
     },
 
     ordinaryArmyCap: function () {
-      var s = this.state || {};
-      var p = s.player || {};
-      var rankTier = p.militaryRank || 1;
-      var rankInfo = G.getMilitaryRankTierInfo ? G.getMilitaryRankTierInfo(rankTier) : { baseCap: 25000 };
-      var rankBase = rankInfo.baseCap || 25000;
-      // 带兵上限只取军衔基础与统帅技能，城防升级收益属于城防武器。
-      var leadBonus = 0;
-      if (this.skillBonus) {
-        leadBonus = Math.max(this.skillBonus('leadership'), this.skillBonus('supply'));
-      }
-      return Math.floor(rankBase * (1 + leadBonus));
+      return G.ServerRules.value('ordinaryArmyCap', 0);
     },
 
-    /** 迎战与普通出征共用带兵上限，不再额外增加守方兵力。 */
+    /** 兼容旧调用的出征容量别名；不得作为守城参战上限使用。 */
     sortieCap: function () {
       return this.armyCap();
     },
 
     /** 当前城池最大同时出征队伍数量：基础5支 + 司令部等级（0级5支，1级6支，满级15支） */
     maxMarches: function () {
-      var hqLv = this.buildingLevel('headquarters');
-      return 5 + hqLv;
+      return G.ServerRules.value('maxMarches', 0);
     },
 
     addExp: function () {},
 
-    addOfficerExp: function (officerId, n) {
-      var s = this.state;
-      var o = null;
-      for (var i = 0; i < s.officers.length; i++) {
-        if (s.officers[i] && String(s.officers[i].id) === String(officerId)) { o = s.officers[i]; break; }
-      }
-      if (!o) return;
-      if (o.level >= G.OFFICER_MAX_LEVEL) return;
-      o.exp = (o.exp || 0) + n;
-      var need = G.expNeeded(o.level);
-      var grew = 0;
-      while (o.exp >= need && o.level < G.OFFICER_MAX_LEVEL) {
-        o.exp -= need;
-        o.level += 1;
-        o.attrPoints = (o.attrPoints || 0) + 1;
-        need = G.expNeeded(o.level);
-        grew++;
-      }
-      if (o.level >= G.OFFICER_MAX_LEVEL) o.exp = 0;
-      if (grew > 0) G.toast(o.name + ' 升至 Lv.' + o.level + ' (+' + grew + '级)');
-    },
+
 
     costEnough: function (cost) {
       var r = this.state.resources;
@@ -620,74 +391,33 @@ window.Game = window.Game || {};
       return true;
     },
 
-    payCost: function (cost) {
-      if (!this.costEnough(cost)) return false;
-      var r = this.state.resources;
-      for (var k in cost) {
-        if (k === 'pop') continue;
-        r[k] = (r[k] || 0) - cost[k];
-      }
-      return true;
-    },
 
-    prestigeFromCost: function (cost) {
-      var total = 0;
-      for (var k in cost) if (k !== 'pop') total += Number(cost[k]) || 0;
-      return total > 0 ? Math.max(1, Math.floor(total / 100)) : 0;
-    },
+
+
 
     getCommanderSkills: function () {
-      var cmd = this.getOfficerByRole('commander');
-      if (!cmd || !cmd.skills) return {};
-      var map = {};
-      for (var i = 0; i < cmd.skills.length; i++) map[cmd.skills[i].id] = cmd.skills[i].lv;
-      return map;
+      var officer = this.getOfficerByRole('commander'), result = {};
+      ((officer && officer.skills) || []).forEach(function (skill) { result[skill.id] = skill.lv; });
+      return result;
     },
 
     getMayorSkills: function () {
-      var mayor = this.getOfficerByRole('mayor');
-      if (!mayor || !mayor.skills) return {};
-      var map = {};
-      for (var i = 0; i < mayor.skills.length; i++) {
-        if (mayor.skills[i] && mayor.skills[i].id) {
-          map[mayor.skills[i].id] = mayor.skills[i].lv;
-        }
-      }
-      return map;
+      var officer = this.getOfficerByRole('mayor'), result = {};
+      ((officer && officer.skills) || []).forEach(function (skill) { result[skill.id] = skill.lv; });
+      return result;
     },
 
     mayorSkillBonus: function (skillId) {
-      var skills = this.getMayorSkills();
-      var lv = skills[skillId] || 0;
-      if (lv <= 0) return 0;
-      var rates = {
-        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.04, research: 0.04
-      };
-      return (rates[skillId] || 0) * lv;
+      var mayor = this.getOfficerByRole('mayor');
+      return mayor && mayor.skillBonuses && mayor.skillBonuses[skillId] || 0;
     },
 
     skillBonus: function (skillId) {
-      var skills = this.getCommanderSkills();
-      var lv = skills[skillId] || 0;
-      if (lv <= 0) return 0;
-      if (skillId === 'counter') {
-        return 0.20 * Math.min(5, lv);
-      }
-      var rates = {
-        frenzy: 0.10, bulwark: 0.10, blitz: 0.06, suppress: 0.06,
-        pierce: 0.06, leadership: 0.04, supply: 0.04, medic: 0.03,
-        ration: 0.16, harvest: 0.10, construct: 0.04, finance: 0.04, research: 0.04,
-        learn: 0.06, borrow_armor: 0.06
-      };
-      return (rates[skillId] || 0) * lv;
+      var commander = this.getOfficerByRole('commander');
+      return commander && commander.skillBonuses && commander.skillBonuses[skillId === 'supply' ? 'leadership' : skillId] || 0;
     },
 
-    addPrestige: function (cost) {
-      var gain = this.prestigeFromCost(cost);
-      if (gain <= 0) return 0;
-      this.state.prestige = (this.state.prestige || 0) + gain;
-      return gain;
-    },
+
 
     toast: function (msg, type) {
       var container = $('toast');
@@ -821,7 +551,7 @@ window.Game = window.Game || {};
         '<div class="player-bar-right">' +
         '<span class="vip-entry-btn" title="战时特勤统帅部" onclick="if(Game.Vip)Game.Vip.openModal();">🎖️ 特勤部</span>' +
         '<span class="forum-entry-btn" title="进入战术参谋论坛" onclick="Game.Core.openForum()">🎖️ 论坛</span>' +
-        '<span class="diamond" title="暂未开放充值，敬请期待" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
+        '<span class="diamond" title="账号共享钻石；暂未开放充值，敬请期待" onclick="Game.go(\'recharge\')">💎 ' + fmt(diamond) + '</span>' +
         '</div>' +
         '</div>';
       var marches = this.militaryAlertMarches();
@@ -1083,7 +813,6 @@ window.Game = window.Game || {};
   G.$ = $;
   G.fmt = fmt;
   G.clamp = clamp;
-  G.rand = rand;
   G.fmtTime = fmtTime;
   G.formatSkills = function (skills) { return Core.formatSkills(skills); };
   G.skillText = function (o) { return Core.skillText(o); };

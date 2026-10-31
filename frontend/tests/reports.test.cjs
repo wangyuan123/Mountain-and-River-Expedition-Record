@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(initialCount = 0) {
   const state = { player: { id: 1 }, world: {}, reports: [], unreadReportCount: initialCount };
@@ -210,101 +210,15 @@ test('return arrival still renders the updated army page', async () => {
   assert.equal(renderedState, latestState);
 });
 
-for (const legacy of [true, false]) {
-  test(`unit renaming preserves log-only troop and casualty recovery: legacy=${legacy}`, () => {
-    const { G } = setup();
-    const dataContext = { window: { Game: { Constants: G.Constants } } };
-    vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
-    Object.assign(G.DATA, dataContext.window.Game.DATA);
-    G.fmt = String;
-    const nameOf = unit => legacy ? unit.name.split('-')[0] : unit.name;
-    for (const [id, unit] of Object.entries(G.DATA.units)) {
-      // 旧战报可能缺少初始兵力表，必须从日志恢复；新名称中的型号括号不能干扰数量解析。
-      const attacked = G.Battle.renderArmyUnits('enemy', null, { [id]: 7 }, [
-        `我方${nameOf(G.DATA.units.rocket)}(20)齐射敌${nameOf(unit)}(10) 伤害100 击毁3${legacy ? '' : ' 剩余攻击额度0% 有效射程1600 目标距离1500'}`
-      ]);
-      assert.ok(attacked.includes(unit.name), id);
-      assert.match(attacked, /rb-u-init">10<\/span>/, id);
-      assert.match(attacked, /rb-u-surv">7<\/span>/, id);
-      assert.match(attacked, /rb-loss-val lost">\(-3\)<\/span>/, id);
-      const moved = G.Battle.renderArmyUnits('mine', null, null, [
-        `我方${nameOf(unit)}(12) 前进 100 距离->200`
-      ]);
-      assert.ok(moved.includes(unit.name), id);
-      assert.match(moved, /rb-u-init">12<\/span>/, id);
-    }
-  });
-}
-
-test('pre-rename rocket reports recover troops and casualties under the current unit name', () => {
+test('历史纯文本战报缺少结构化兵力时不在客户端重建战损', () => {
   const { G } = setup();
-  const dataContext = { window: { Game: { Constants: G.Constants } } };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), dataContext);
-  Object.assign(G.DATA, dataContext.window.Game.DATA);
-  G.fmt = String;
-  assert.equal(G.DATA.units.rocket.name, '反坦克火箭-喀秋莎（BM-13）');
-  assert.equal(G.DATA.japaneseUnits.rocket.name, '反坦克火箭-四式喷进炮（Type 4）');
-  // 使用真实旧名称，覆盖无初始兵力表的历史战报，而非从改名后的配置生成测试输入。
-  for (const [oldName, isJapanese] of [
-    ['火箭', false],
-    ['火箭-喀秋莎（BM-13）', false],
-    ['火箭-四式喷进炮（Type 4）', true],
-    ['反坦克火箭车', false],
-    ['反坦克火箭车-喀秋莎（BM-13）', false],
-    ['反坦克火箭车-四式喷进炮（Type 4）', true]
-  ]) {
-    const currentName = (isJapanese ? G.DATA.japaneseUnits : G.DATA.units).rocket.name;
-    const attacked = G.Battle.renderArmyUnits('enemy', null, { rocket: 7 }, [
-      `我方步兵(20)射击敌${oldName}(10) 伤害100 击毁3`
-    ], null, isJapanese);
-    assert.ok(attacked.includes(currentName), oldName);
-    assert.match(attacked, /rb-u-init">10<\/span>/, oldName);
-    assert.match(attacked, /rb-u-surv">7<\/span>/, oldName);
-    assert.match(attacked, /rb-loss-val lost">\(-3\)<\/span>/, oldName);
-    const moved = G.Battle.renderArmyUnits('mine', null, null, [
-      `我方${oldName}(12) 前进 100 距离->200`
-    ], null, isJapanese);
-    assert.ok(moved.includes(currentName), oldName);
-    assert.match(moved, /rb-u-init">12<\/span>/, oldName);
-  }
+  G.fmt = String; G.DATA.units.rocket={name:'反坦克火箭'};
+  const html = G.Battle.renderArmyUnits('enemy', null, { rocket: 7 }, ['我方步兵(20)射击敌火箭(10) 伤害100 击毁3']);
+  assert.match(html, /rb-u-surv">7<\/span>/);
+  assert.doesNotMatch(html, /rb-u-init">10<\/span>|\(-3\)/);
+  const unknown = G.Battle.renderArmyUnits('mine', null, null, ['我方火箭(12) 前进 100 距离->200']);
+  assert.doesNotMatch(unknown, /rb-u-init">12<\/span>/);
 });
-
-for (const intercepted of [true, false]) {
-  test(`incoming scout report uses defender perspective: intercepted=${intercepted}`, () => {
-    const { G, context } = setup();
-    G.escapeHtml = value => String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const r = { id: 10, type: 'scout', time: Date.now(), readAt: 0, data: {
-      perspective: 'defender', attackerName: '<敌人>', targetName: '我方主城',
-      fromX: 10, fromY: 10, x: 100, y: 100, intercepted,
-      myScouts: intercepted ? 500 : 0, myLost: intercepted ? 5 : 0,
-      enemyScouts: 50, enemyLost: intercepted ? 50 : 0
-    } };
-    const card = G.Battle.renderScoutReportCard(r);
-    assert.match(card, /侦查报告<\/span>/);
-    assert.match(card, /&lt;敌人&gt; → 我方主城 \(100,100\)/);
-    assert.doesNotMatch(card, /我方侦察机|敌方出动|击落|拦截成功，敌方未获取情报|敌方侦查成功/);
-    assert.match(card, intercepted ? /已拦截/ : /被侦查/);
-    const board = G.Battle.renderScoutReportBoard(r);
-    assert.match(board, /【敌军侦查报告】/);
-    assert.match(board, /被侦查城市:<\/b> 我方主城/);
-    assert.match(board, intercepted ? /驻守: 500 架 ➔ 幸存: 495 架/ : /我方未驻防侦察机/);
-    assert.match(board, intercepted ? /出动: 50 架 ➔ 幸存: 0 架/ : /出动: 50 架 ➔ 幸存: 50 架/);
-    assert.doesNotMatch(board, /目标情报|侦查技术|侦测迷雾|<敌人>/);
-    G.state.reports.push(r);
-    const preview = { style: { display: 'none' }, innerHTML: '' };
-    const actionButton = { innerHTML: '查看完整战报' };
-    context.document.getElementById = id => {
-      if (id === 'rdetail_10') return preview;
-      if (id === 'rcta_10') return actionButton;
-      return null;
-    };
-    G.Battle.markOneRead = () => {};
-    G.Battle.toggleReport('10');
-    assert.equal(actionButton.innerHTML, '查看侦查详情');
-    G.Battle.toggleReport('10');
-    assert.equal(actionButton.innerHTML, '查看完整战报');
-  });
-}
 
 test('battle list uses action titles and keeps detailed results behind both detail entrances', () => {
   const { G, context } = setup();
@@ -694,10 +608,10 @@ test('battle commander skills show only names, levels and snapshot bonuses', () 
     attacker: {
       name: '朱可夫', level: 100, military: 219,
       skills: [
-        { name: '全军冲锋', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级' },
-        { name: '借甲御敌', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发；受击时借用交火阶段开始时存活同名敌军防御的30%，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技' },
-        { name: '火力压制', level: 2, description: '首次交战回合触发，此后间隔两个回合再次触发，降低敌方自身攻击力12%，仅本回合生效，主动攻击、余伤攻击与反击均适用' },
-        { name: '破甲打击', level: 5, description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用' }
+        { name: '全军冲锋', level: 5, bonusText:'全军攻击力 +50%', description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外+10%/级' },
+        { name: '借甲御敌', level: 5, bonusText:'借用同名敌军防御的 30%', description: '首次交战回合触发，此后间隔两个回合再次触发；受击时借用交火阶段开始时存活同名敌军防御的30%，单次最高为敌军同名兵种防御的30%，仅本回合生效；参考值只含基础防御与防御科技' },
+        { name: '火力压制', level: 2, bonusText:'敌方自身攻击力 -12%', description: '首次交战回合触发，此后间隔两个回合再次触发，降低敌方自身攻击力12%，仅本回合生效，主动攻击、余伤攻击与反击均适用' },
+        { name: '破甲打击', level: 5, bonusText:'无视敌方有效防御 30%', description: '首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），无视敌方有效防御30%，仅本回合生效，主动攻击、余伤攻击与反击均适用' }
       ]
     },
     defender: null

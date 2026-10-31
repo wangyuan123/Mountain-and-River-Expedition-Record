@@ -5,7 +5,6 @@ import com.wargame.model.dto.pvp.*;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.service.BattleService;
-import com.wargame.service.UnitEquipmentService;
 import com.wargame.service.pvp.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -261,24 +260,19 @@ class PvpPracticeTest extends BaseServiceTest {
         assertEquals(0, states.findById(e).orElseThrow().getConfirmationExits());
     }
 
-    @Autowired UnitEquipmentService unitEquipment;
     @Autowired PlayerItemRepository inventory;
     @Autowired OfficerEquipmentRepository officerGear;
-    @Test void carriedOfficerGearSkillsChiefAndUnitEquipmentAreFrozenAndChiefSkillsExcluded() {
+    @Test void carriedOfficerGearSkillsAndChiefAreFrozenAndChiefSkillsExcluded() {
         Long a = player(); createBuilding(a, "headquarters", 1);
         var chief = createOfficer(a, "commander_in_chief", 110, 120, 130, 140); chief.setSkills("[{\"id\":\"counter\",\"lv\":5}]"); chief = officerRepository.save(chief);
         var leader = createOfficer(a, "idle", 60, 70, 80, 90); leader.setSkills("[{\"id\":\"frenzy\",\"lv\":1}]"); leader = officerRepository.save(leader);
         OfficerEquipment gear = new OfficerEquipment(); gear.setPlayerId(a); gear.setOfficerId(leader.getId()); gear.setItemKey("test"); gear.setSetType("none"); gear.setTier(1); gear.setSlot("weapon");
         gear.setMilitaryBonus(10); gear.setDefenseBonus(5); gear.setLogisticsBonus(0); gear.setKnowledgeBonus(0); gear.setCreatedAt(1L); gear.setEquippedAt(1L); officerGear.save(gear);
-        PlayerItem item = new PlayerItem(); item.setPlayerId(a); item.setItemKey("ue_infantry_helmet"); item.setCount(1); item.setUpdatedAt(1L); inventory.save(item);
-        unitEquipment.save(a, "infantry", Map.of("protection", "ue_infantry_helmet"), null);
         var preset = (PvpPreset) pvp.preset(a).get("preset");
         var snap = model.estimate(snapshots.freeze(a, new PvpPreset(0, "LAND_AIR", Map.of("infantry", 100), leader.getId(), preset.defaults())));
-        assertEquals(70, snap.military()); assertEquals(75, snap.defense()); assertEquals(Map.of("frenzy", 1), snap.skills()); assertEquals(110, snap.chief().military());
-        assertEquals(1.08, UnitEquipmentEffects.mul(snap.tech(), "infantry", "defense"), 1e-9);
+        assertEquals(70, snap.military()); assertEquals(75, snap.defense()); assertEquals(Map.of("frenzy", 5), snap.skills()); assertEquals(110, snap.chief().military());
         String ticket = (String) pvp.enqueue(a, id(), 0, snap, Map.of("gear", 1)).get("ticketId");
         leader.setMilitary(200); leader.setRole("march"); officerRepository.save(leader); chief.setMilitary(200); chief.setRole("idle"); officerRepository.save(chief); officerGear.delete(gear);
-        unitEquipment.save(a, "infantry", Map.of(), null);
         var frozen = PvpJson.read(tickets.findById(ticket).orElseThrow().getSnapshot(), PvpSnapshot.class);
         assertEquals(snap, frozen);
         assertTrue(((List<?>) frozen.officerEquipment()).size() > 0);

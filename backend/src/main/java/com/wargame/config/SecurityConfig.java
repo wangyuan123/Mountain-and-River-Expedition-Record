@@ -28,6 +28,14 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
+    /** 仅通过 SecurityFilterChain 执行，确保 IP 限流、JWT 校验和账号限流按同一顺序生效。 */
+    @Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration() {
+        var registration = new org.springframework.boot.web.servlet.FilterRegistrationBean<>(jwtAuthenticationFilter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -38,7 +46,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/server", "/api/auth/register", "/api/auth/login", "/api/auth/guest", "/api/auth/recover", "/api/auth/deletion-status", "/ws/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/auth/register/email-code", "/api/auth/password/reset-code", "/api/auth/password/reset").permitAll()
-                .requestMatchers("/api/admin/auth/login").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/admin/auth/login").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/forum/boards", "/api/forum/topics", "/api/forum/topics/**", "/api/forum/hot").permitAll()
                 .requestMatchers("/api/**").authenticated()

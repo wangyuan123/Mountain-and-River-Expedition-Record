@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 const frontend = path.resolve(__dirname, '..');
 
@@ -456,6 +456,7 @@ test('战术地图与单位徽标展示兵种射程与接敌状态', () => {
   const Battle = setup().Battle;
   Battle._activeTactical = {
     targetName: '测试敌军', side: 'attacker', initialDistance: 3000, round: 1, maxRound: 24,
+    attackerStats: {rocket:{range:1600,speed:5},htank:{range:320,speed:4},truck:{range:0,speed:4}}, defenderStats:{htank:{range:320,speed:4}},
     attackerArmy: { rocket: 50, htank: 10, truck: 5 },
     defenderArmy: { htank: 10 },
     attackerPositions: { rocket: 500, htank: 300, truck: 100 },
@@ -497,7 +498,7 @@ test('行动火力只读取战斗冻结等级，旧会话不套用账号新等�
     targetName: '测试敌军', side: 'attacker', initialDistance: 3000, round: 1,
     attackerArmy: { rocket: 50 }, defenderArmy: { htank: 10 },
     attackerPositions: { rocket: 0 }, defenderPositions: { htank: 1900 },
-    attackerTech: { fire_density: 5 }, finished: false, log: ''
+    attackerFirepower:1.5, attackerStats:{rocket:{range:1600,speed:5}}, attackerTech: { fire_density: 5 }, finished: false, log: ''
   };
   Battle.startTacticalTimer = () => {};
   const view = { innerHTML: '' };
@@ -506,8 +507,9 @@ test('行动火力只读取战斗冻结等级，旧会话不套用账号新等�
   Battle.renderTacticalBattle(view);
   assert.match(view.innerHTML, /行动火力 <b>×1\.50<\/b>/);
   delete Battle._activeTactical.attackerTech;
+  delete Battle._activeTactical.attackerFirepower;
   Battle.renderTacticalBattle(view);
-  assert.match(view.innerHTML, /行动火力 <b>×1\.00<\/b>/);
+  assert.match(view.innerHTML, /行动火力 <b>×待同步<\/b>/);
 });
 
 test('武器射程科技加成在战术指挥界面中正确提升实战射程与判定接敌', () => {
@@ -518,6 +520,7 @@ test('武器射程科技加成在战术指挥界面中正确提升实战射程�
     defenderArmy: { htank: 10 },
     attackerPositions: { rocket: 0 },
     defenderPositions: { htank: 1700 },
+    attackerStats: {rocket:{range:1760,speed:5.3}}, defenderStats:{htank:{range:320,speed:4}},
     attackerTech: { weapon_range: 2, engine: 1 }, // 现行规则每级射程增加5%，Lv2为1760。
     finished: false, log: ''
   };

@@ -9,5 +9,6 @@ import java.util.Optional;
 public interface GuildApplicationRepository extends JpaRepository<GuildApplication, Long> {
     Optional<GuildApplication> findByGuildIdAndPlayerId(Long guildId, Long playerId);
     List<GuildApplication> findByGuildIdOrderByCreatedAtAsc(Long guildId);
+    void deleteByGuildId(Long guildId);
     void deleteByGuildIdAndPlayerId(Long guildId, Long playerId);
 }

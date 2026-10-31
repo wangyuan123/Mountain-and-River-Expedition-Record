@@ -1,0 +1,336 @@
+{
+  "method": "Current frontend functions in VM; backend comparisons derived from current source/config, not live API tests",
+  "findings": [
+    {
+      "id": "D1",
+      "scenario": "10 level-10 factories, no training tech",
+      "frontendAverageSpeed": 2.25,
+      "backendAverageSpeedFromSource": 1.5
+    },
+    {
+      "id": "D2",
+      "scenario": "VIP2, level-1 farm construction, no tech or mayor bonus",
+      "frontendSeconds": 30,
+      "backendSecondsFromSource": 29
+    },
+    {
+      "id": "D3",
+      "scenario": "VIP2 concurrent construction limit",
+      "frontendLimit": 3,
+      "backendLimitFromConfig": 5
+    },
+    {
+      "id": "D4",
+      "scenario": "Dismantle level-1 farm, log_build=10",
+      "frontendSteelRefund": 12,
+      "backendSteelRefundFromSource": 24
+    }
+  ],
+  "frontendFiles": [
+    {
+      "path": "frontend/js/account-email.js",
+      "lines": 301,
+      "sha256": "8a5960dd6d69ce1b2ca54fa006838e810e1d474f51aa550d5efaf8e3fabb9def"
+    },
+    {
+      "path": "frontend/js/account.js",
+      "lines": 245,
+      "sha256": "c1adb1528db37f0569dc5971dfc7f30c070a0c2da1220b652d34370a11497d01"
+    },
+    {
+      "path": "frontend/js/api-client.js",
+      "lines": 309,
+      "sha256": "0abc03744b827a4ba29c67bd65c6ad04550b62bb0e3c979dfcfc2f15a215e389"
+    },
+    {
+      "path": "frontend/js/api.js",
+      "lines": 1150,
+      "sha256": "8a2c9a09bb3b14e17bd069ca2e979f66a214a97cc0a2c6b031374f31c0ec7892"
+    },
+    {
+      "path": "frontend/js/army.js",
+      "lines": 809,
+      "sha256": "a9d986e7af8e54e616255fc4de440d5198b4fa6dea9283f8e4bd038e0472f0b5"
+    },
+    {
+      "path": "frontend/js/battle-defaults.js",
+      "lines": 276,
+      "sha256": "4574f02694e6a24c7fc38f968cddde7322b3e77ac5ba455e28a67f6d34a01326"
+    },
+    {
+      "path": "frontend/js/battle.js",
+      "lines": 3357,
+      "sha256": "e72ad003fc026000ead92d3bb2097efc2775ae6bc736bf111700c4368b64f1b5"
+    },
+    {
+      "path": "frontend/js/build.js",
+      "lines": 2010,
+      "sha256": "1bdafc007af3994b8322db61af9a2ff5f893e8612aeefd89e6b2487a60a837eb"
+    },
+    {
+      "path": "frontend/js/chat.js",
+      "lines": 708,
+      "sha256": "c43dc761b09b51a3416a8cb70bc9e114492b114ba83da2366b53ce4360e5908b"
+    },
+    {
+      "path": "frontend/js/cities.js",
+      "lines": 306,
+      "sha256": "5785bd7e1f82ea5335c6ab08a67adf68f22588e768f8c77cf2dd3a471d3a4898"
+    },
+    {
+      "path": "frontend/js/city-teleport.js",
+      "lines": 167,
+      "sha256": "3db69060c633619a9282f1c58348095457a94d8354ecc2f2be0eafbb3bff7122"
+    },
+    {
+      "path": "frontend/js/constants.js",
+      "lines": 1012,
+      "sha256": "6b74f8767e3d28fbbcc2dffd65175d66ed36cc94615478ed137069e4aab22bc4"
+    },
+    {
+      "path": "frontend/js/core.js",
+      "lines": 1108,
+      "sha256": "0b984fdb1020e473bd6ea979960d175797e26bf31cce6a48c092b8d55b1bc43c"
+    },
+    {
+      "path": "frontend/js/data.js",
+      "lines": 638,
+      "sha256": "92ae47b89c30b068e227ec2624a33fee895b707befec6523fd7509385398ebd5"
+    },
+    {
+      "path": "frontend/js/depot.js",
+      "lines": 603,
+      "sha256": "50d14f6b070f92b829f276b383a23f42b4a3191f0a3e25b3ed31f223ea6c2385"
+    },
+    {
+      "path": "frontend/js/dispatch-route.js",
+      "lines": 101,
+      "sha256": "dad27d96199893a9ee14bce0b27bc915281d8ece0d185823ce8761479fc60938"
+    },
+    {
+      "path": "frontend/js/fort.js",
+      "lines": 272,
+      "sha256": "02e8b235497659ea0bb58edf733ae1a837f5013d0f772e2855ff2fce9316e4fb"
+    },
+    {
+      "path": "frontend/js/friends.js",
+      "lines": 481,
+      "sha256": "49aaa327de70c7f8061969c2fef962b2a6d666473a60168195e521e2bd44b147"
+    },
+    {
+      "path": "frontend/js/guild.js",
+      "lines": 783,
+      "sha256": "44f4842db81a03c60d091139b596aeb7242b33f355ceaaae0e3190062db0dc1b"
+    },
+    {
+      "path": "frontend/js/icons.js",
+      "lines": 90,
+      "sha256": "222da5f1cd0f72e31da786414cf1d0261a720190492ebe5732298495b95a75fc"
+    },
+    {
+      "path": "frontend/js/item-buffs.js",
+      "lines": 216,
+      "sha256": "8058d0f474acdf47403ba280e0749aa287e5b519cc9c358e003df640cf95822a"
+    },
+    {
+      "path": "frontend/js/mail.js",
+      "lines": 603,
+      "sha256": "7c5b6332dff4ee87ca309c4addf843c50a722c767a9ad01841f5a68f40e5617b"
+    },
+    {
+      "path": "frontend/js/main-quest.js",
+      "lines": 735,
+      "sha256": "69446ec55b77ac28d3e985cb5b5bc91769ec0963ec9f5bf1fdbee0c2ca4f26f9"
+    },
+    {
+      "path": "frontend/js/main-view.js",
+      "lines": 1877,
+      "sha256": "b272a19ff941746bd26509b6472ded1db191b3c1604e720e15e07cdba71c04e9"
+    },
+    {
+      "path": "frontend/js/main.js",
+      "lines": 838,
+      "sha256": "22b257060a307c08a34b9fdb2fb1f1632d91f0b59be28bb239e120a7515208e9"
+    },
+    {
+      "path": "frontend/js/map-camera.js",
+      "lines": 87,
+      "sha256": "3f14af58e169391d5eafe4459f133d5e9adea73b0423880622cab21afaf98d27"
+    },
+    {
+      "path": "frontend/js/map-chunks.js",
+      "lines": 84,
+      "sha256": "894c47a480044f83d108a586fcf0a654e4f9a7e6b5f57c79c4e67efff19c19e1"
+    },
+    {
+      "path": "frontend/js/map-layout.js",
+      "lines": 109,
+      "sha256": "d3dffaf105e018e2acab6a722a248b50abc08fb7d1ab7605db48f30840f589ea"
+    },
+    {
+      "path": "frontend/js/map-ocean.js",
+      "lines": 188,
+      "sha256": "32f06e89e6176b4123f4d310252568bc5d09a2de25532d212a15c7fbc41929b0"
+    },
+    {
+      "path": "frontend/js/map-terrain.js",
+      "lines": 358,
+      "sha256": "f55927c1a7a8c1da7f253d6edae8612c6462a71a78f36b0ce304eb762b3ee199"
+    },
+    {
+      "path": "frontend/js/map-water.js",
+      "lines": 174,
+      "sha256": "954c23553e62da8d4b565f0905c7c7ae5df9028cd559967823991c47c8ba0599"
+    },
+    {
+      "path": "frontend/js/map.js",
+      "lines": 162,
+      "sha256": "f2c01e112d8034d74a8f00444aacf22cb7bf46791a7b7efe84d310662fd97204"
+    },
+    {
+      "path": "frontend/js/market.js",
+      "lines": 404,
+      "sha256": "5109499cc26562818eb0aa59948a4ee17e6e4c9a512a1cbbe45b7d74f920b9a8"
+    },
+    {
+      "path": "frontend/js/mobilization.js",
+      "lines": 210,
+      "sha256": "ba54aca0ee0d7dd731d08a5efe63e9cf83288d095fcd38882436427c25d27969"
+    },
+    {
+      "path": "frontend/js/officer.js",
+      "lines": 2289,
+      "sha256": "3577238ea2724a22bab17ace4b84af1c7a95d51cd3d51e4da4da9d96dc207963"
+    },
+    {
+      "path": "frontend/js/onboarding.js",
+      "lines": 769,
+      "sha256": "eebb6ba9766b7549a9dc291d058428fa738d1996b6522e3245a985490c04a7c3"
+    },
+    {
+      "path": "frontend/js/play-guide.js",
+      "lines": 244,
+      "sha256": "3c6e05cae7419906095e15797ac04fb75900ccd5fee6d451ce11a868313edef4"
+    },
+    {
+      "path": "frontend/js/player-profile.js",
+      "lines": 793,
+      "sha256": "d4029983a5a617339e472b4c45ca01e072b07e5647eb21cc58fd72d6bf884f0e"
+    },
+    {
+      "path": "frontend/js/prerequisites.js",
+      "lines": 183,
+      "sha256": "813a0d0dab7929db5a0d2ad7a0363b1466ff2590f3b79afd6f4fdc0f2cf0c8bd"
+    },
+    {
+      "path": "frontend/js/prisoners.js",
+      "lines": 135,
+      "sha256": "6af9fb542c0f73f8d92246df5b3df8976ba0ae8a7a09e51d6e1aee1a8d9e6c7d"
+    },
+    {
+      "path": "frontend/js/private-chat.js",
+      "lines": 267,
+      "sha256": "2fae99f7ff75968b3e7d29fd1b8a32222436344869fe82446ca05f58e4d0632d"
+    },
+    {
+      "path": "frontend/js/protection.js",
+      "lines": 265,
+      "sha256": "9dd2b7702238636a61402bf7f3d11613f6ea02672d5b7e5168c58f6cc4dc4537"
+    },
+    {
+      "path": "frontend/js/pvp.js",
+      "lines": 496,
+      "sha256": "b92c1e9d5ac0b39d54df593673747a9312f7f4872cd90fcc6db138088728e036"
+    },
+    {
+      "path": "frontend/js/radar.js",
+      "lines": 195,
+      "sha256": "314d131067c66463d15444d5424634f4cf778a0ec7ac4eb432d54d11aee5d3d5"
+    },
+    {
+      "path": "frontend/js/rankings.js",
+      "lines": 535,
+      "sha256": "3695e3deacbb0f9b543603c1528453e3a13d99634a4a0f13dd2789e91cc3d2c7"
+    },
+    {
+      "path": "frontend/js/recharge.js",
+      "lines": 32,
+      "sha256": "80d617dc0fda0bfb3a71b46a4db65697e8aaab6d03d2886d58971f5f939749d7"
+    },
+    {
+      "path": "frontend/js/save.js",
+      "lines": 65,
+      "sha256": "b949a82ef7f277ba346ca4e818e711266898a662438c3e61409d018d8ff6f8e6"
+    },
+    {
+      "path": "frontend/js/servers.js",
+      "lines": 44,
+      "sha256": "1e0fc561e726a9bd5c3412e10b269145cc6a8069e358438734a52a46a697c2f5"
+    },
+    {
+      "path": "frontend/js/shop.js",
+      "lines": 671,
+      "sha256": "8418d7782eb961b193f4288920d09d8d6b4a86d639c66f567e787c4fb0aed346"
+    },
+    {
+      "path": "frontend/js/sound.js",
+      "lines": 544,
+      "sha256": "635510f268bd8afc597ee40162ff97c3922811d819d985c90b0cb33388270047"
+    },
+    {
+      "path": "frontend/js/task-quests.js",
+      "lines": 64,
+      "sha256": "793db0b2a0e96e477f8c20dfb75dfd447dfd3a280cef7e78d7afc486b75ec7ab"
+    },
+    {
+      "path": "frontend/js/task.js",
+      "lines": 43,
+      "sha256": "b8133dc64cda835a685e5461207a895d81337ba587b8df36a6b1570fb1848342"
+    },
+    {
+      "path": "frontend/js/tech.js",
+      "lines": 619,
+      "sha256": "5cdf50e143802c7fab2249684f4ceddd02c8d545352e23b5c6ddfda8f25c6317"
+    },
+    {
+      "path": "frontend/js/theme.js",
+      "lines": 151,
+      "sha256": "d98282be3826a7a434a7954a5a7496380e76354002f7fd05bf8473b62446cfc9"
+    },
+    {
+      "path": "frontend/js/vip.js",
+      "lines": 1338,
+      "sha256": "f08656c66113796587f2dab9c8b5d843c02d2865ad43fd8c9cb410672393f691"
+    },
+    {
+      "path": "frontend/js/world-map.js",
+      "lines": 2451,
+      "sha256": "ff3643898d1ff75731693966b433d8750ed54916a3fa9ac3f7ce4c4b7a71f8db"
+    },
+    {
+      "path": "frontend/js/world-view.js",
+      "lines": 63,
+      "sha256": "9935e83fc3ea391c7893f163d1b052e1d7cc33c2f94e59fbd3484a0c5b7c1bec"
+    },
+    {
+      "path": "frontend/js/world.js",
+      "lines": 4638,
+      "sha256": "0e653050857302618e47e77e0e625b6adabf69a9bd5a0702974333f2c9cff9b8"
+    },
+    {
+      "path": "frontend/js/wounded.js",
+      "lines": 316,
+      "sha256": "45fdbe2a4d5ca59e8272af987761e0b85f598ad1ba5c928a23897d350dfa33f9"
+    },
+    {
+      "path": "frontend/js/ws-client.js",
+      "lines": 230,
+      "sha256": "6c0d1107087764b67749307e7aec89d6357b18a48c797629755a913be950a578"
+    },
+    {
+      "path": "frontend/js/ws-handlers.js",
+      "lines": 427,
+      "sha256": "57535834b572c7d17f6ddd63d21fa53b6355db53215d78417fb42c3cc0ac7bfd"
+    }
+  ]
+}

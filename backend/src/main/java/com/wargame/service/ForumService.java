@@ -18,6 +18,7 @@ import java.util.*;
 
 @Service
 public class ForumService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.config.RetentionPolicy retentionPolicy;
     @org.springframework.beans.factory.annotation.Autowired private ReportPrivacyService reportPrivacy;
 
@@ -175,6 +176,7 @@ public class ForumService {
 
         if ("BOUNTY".equals(type)) {
             bountyGold = req.bountyGold();
+            resourceEconomy.beforeResourceChange(playerId, 0);
             Resources res = resourcesRepository.findCityForTreatment(playerId, 0)
                     .orElseThrow(() -> new IllegalStateException("未找到玩家主城金库资源"));
             long currentGold = res.getGold() != null ? res.getGold() : 0L;
@@ -444,6 +446,9 @@ public class ForumService {
         }
 
         // 只有主城金库可用才结案；加锁避免不同悬赏同时奖励同一玩家时丢失黄金。
+        if (resourcesRepository.findByPlayerIdAndCitySlot(reply.getAuthorId(), 0).isEmpty())
+            throw new IllegalArgumentException("解答者主城金库不可用，暂无法结算");
+        resourceEconomy.beforeResourceChange(reply.getAuthorId(), 0);
         Resources solverRes = resourcesRepository.findCityForTreatment(reply.getAuthorId(), 0)
                 .orElseThrow(() -> new IllegalArgumentException("解答者主城金库不可用，暂无法结算"));
         reply.setIsAcceptedBounty(true);
@@ -477,7 +482,9 @@ public class ForumService {
         Player sender = playerRepository.findById(playerId)
                 .orElseThrow(() -> new IllegalArgumentException("打赏人不存在"));
 
-        Resources senderRes = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId)
+        // 论坛货币固定走双方主城；先结清旧账，打赏不能倒付此前的军官工资。
+        new TreeSet<>(List.of(playerId, topic.getAuthorId())).forEach(id -> resourceEconomy.beforeResourceChange(id, 0));
+        Resources senderRes = resourcesRepository.findCityForTreatment(playerId, 0)
                 .orElseThrow(() -> new IllegalStateException("金库资源异常"));
 
         long currentGold = senderRes.getGold() != null ? senderRes.getGold() : 0L;
@@ -488,12 +495,10 @@ public class ForumService {
         senderRes.setGold(currentGold - req.amountGold());
         resourcesRepository.save(senderRes);
 
-        Resources authorRes = resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(topic.getAuthorId())
-                .orElse(null);
-        if (authorRes != null) {
-            authorRes.addResource("gold", req.amountGold());
-            resourcesRepository.save(authorRes);
-        }
+        Resources authorRes = resourcesRepository.findCityForTreatment(topic.getAuthorId(), 0)
+                .orElseThrow(() -> new IllegalArgumentException("作者主城金库不可用，暂无法打赏"));
+        authorRes.addResource("gold", req.amountGold());
+        resourcesRepository.save(authorRes);
 
         ForumTip tip = new ForumTip();
         tip.setTopicId(topicId);
@@ -505,7 +510,7 @@ public class ForumService {
         tipRepository.save(tip);
 
         topic.setTipCount(topic.getTipCount() + 1);
-        topic.setTipTotalGold(topic.getTipTotalGold() + req.amountGold());
+        topic.setTipTotalGold(Math.addExact(topic.getTipTotalGold() == null ? 0L : topic.getTipTotalGold(), req.amountGold().longValue()));
         topicRepository.save(topic);
 
         return Map.of("success", true, "amountGold", req.amountGold(), "totalTips", topic.getTipCount(), "totalGold", topic.getTipTotalGold());
@@ -523,6 +528,7 @@ public class ForumService {
                 throw new IllegalArgumentException("权限不足，仅作者或管理员可删除话题");
             }
             if ("BOUNTY".equals(topic.getTopicType()) && "OPEN".equals(topic.getBountyStatus())) {
+                resourceEconomy.beforeResourceChange(topic.getAuthorId(), 0);
                 Resources authorRes = resourcesRepository.findCityForTreatment(topic.getAuthorId(), 0)
                         .orElseThrow(() -> new IllegalArgumentException("发帖人主城金库不可用，暂无法退还悬赏"));
                 authorRes.addResource("gold", topic.getBountyGold());

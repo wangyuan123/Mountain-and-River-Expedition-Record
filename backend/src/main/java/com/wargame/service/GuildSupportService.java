@@ -11,7 +11,7 @@ import com.wargame.repository.PlayerCityRepository;
 import com.wargame.repository.PlayerRepository;
 import com.wargame.util.JsonUtil;
 import com.wargame.util.PlayerNames;
-import com.wargame.model.constants.UnitEquipmentEffects;
+import com.wargame.model.constants.BattleUnitIds;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,6 @@ public class GuildSupportService {
     private final CityScope scope;
     private final BattleActionPreferences preferences;
     private final EntityManager em;
-    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService equipment;
 
     @org.springframework.beans.factory.annotation.Autowired private MarchTargetService targets;
     @org.springframework.beans.factory.annotation.Autowired private EquipmentService officerEquipment;
@@ -47,8 +46,8 @@ public class GuildSupportService {
         food.settle(city, GameClock.now()); city.setAcceptGarrison(allowed); cities.save(city);
     }
 
-    public record Defense(Map<String, Integer> army, Map<String, Map<String, Integer>> support, Map<String, Integer> equipment, Map<String, Object> sources) {
-        public Defense(Map<String, Integer> army, Map<String, Map<String, Integer>> support) { this(army, support, Map.of(), Map.of()); }
+    public record Defense(Map<String, Integer> army, Map<String, Map<String, Integer>> support, Map<String, Object> sources) {
+        public Defense(Map<String, Integer> army, Map<String, Map<String, Integer>> support) { this(army, support, Map.of()); }
     }
     public record SupportLoss(March march, Map<String, Integer> initial, Map<String, Integer> survivors) {}
     public record Losses(Map<String, Integer> initial, Map<String, Integer> survivors, List<SupportLoss> support) {}
@@ -60,7 +59,7 @@ public class GuildSupportService {
         Long owner = city.getOwnerId();
         if (expectedOwner != null && !expectedOwner.equals(owner)) return false;
         Player player = players.findById(owner).orElse(null);
-        return player != null && !player.deletionDue(now)
+        return player != null && !player.deletionDue(System.currentTimeMillis())
                 && (sender.equals(owner) || relations.areGuildmates(sender, owner));
     }
 
@@ -99,19 +98,19 @@ public class GuildSupportService {
             if (!viewer.equals(march.getSupportOwnerId())) continue;
             String sender = players.findById(march.getPlayerId()).map(PlayerNames::commanderName).orElse("已离开的玩家");
             result.add(Map.of("id", march.getId(), "playerId", march.getPlayerId(), "senderName", sender,
-                    "army", UnitEquipmentEffects.aggregate(food.living(march, sessions)), "targetName", city.getName(),
+                    "army", BattleUnitIds.aggregate(food.living(march, sessions)), "targetName", city.getName(),
                     "foodPerHour", GarrisonFoodService.baseUse(food.living(march, sessions)) * food.reduction(city),
                     "inBattle", food.locked(march, sessions)));
         }
         return result;
     }
 
-    /** 先选择本城迎战编队，再追加全量有效驻军，驻军不受城主预设二次裁剪。 */
+    /** 本城全部可战兵力与全部有效驻军共同参战，不受出征带兵上限限制。 */
     public Defense defense(PlayerCity city, Map<String, Integer> ownArmy) {
         return defense(city, ownArmy, true);
     }
 
-    /** 侦查情报及拦截统计全部驻军，不受战术迎战预设限制。 */
+    /** 侦查情报及拦截统计全部有效驻军，沿用侦查领域规则。 */
     public Defense reconnaissance(PlayerCity city, Map<String, Integer> ownArmy) {
         return defense(city, ownArmy, false);
     }
@@ -130,41 +129,27 @@ public class GuildSupportService {
         }
         Map<String, Integer> selected = total;
         Map<String, Map<String, Integer>> allocated = sortie ? sources : allocate(sources, selected);
-        Map<String, Integer> ownEquipment = equipment == null ? Map.of() : equipment.snapshot(city.getOwnerId());
-        Map<String, Integer> frozen = new LinkedHashMap<>(ownEquipment), grouped = new LinkedHashMap<>();
+        Map<String, Integer> grouped = new LinkedHashMap<>();
         Map<String, Map<String, Integer>> support = new LinkedHashMap<>();
         Map<String, Object> provenance = new LinkedHashMap<>();
-        Map<String, String> profileIds = new LinkedHashMap<>();
-        Map<Long, Map<String, Integer>> ownerEquipment = new HashMap<>(); ownerEquipment.put(city.getOwnerId(), ownEquipment);
-        // 普通守城无论配装是否相同均保留来源；独立侦察继续沿用旧配装分组。
+        // 战斗编队按驻军来源独立结算将领和战损；侦查统一按基础兵种合并。
         allocated.forEach((source, sent) -> {
-            Map<String, Integer> sourceEquipment = !"0".equals(source) && sortie
-                    ? marches.findById(Long.valueOf(source)).map(m -> JsonUtil.parseIntMap(m.getUnitEquipmentSnapshot())).orElse(Map.of())
-                    : ownerEquipment.computeIfAbsent(owners.get(source), id -> equipment == null ? Map.of() : equipment.snapshot(id));
             Map<String, Integer> groupedSource = new LinkedHashMap<>();
             sent.forEach((unit, count) -> {
-                Map<String, Integer> profile = UnitEquipmentEffects.profile(sourceEquipment, unit);
-                Map<String, Integer> ownProfile = UnitEquipmentEffects.profile(ownEquipment, unit);
-                // 空配装的 version 标记不产生人为分组。
-                profile.remove("version"); ownProfile.remove("version");
-                String signature = unit + JsonUtil.toJson(profile);
-                String alias = sortie ? ("0".equals(source) ? unit : unit + "~s" + new ArrayList<>(allocated.keySet()).indexOf(source))
-                        : profile.equals(ownProfile) ? unit : profileIds.computeIfAbsent(signature, k -> unit + "~" + (profileIds.size() + 1));
-                UnitEquipmentEffects.copyProfile(frozen, alias, profile);
-                if (!profile.isEmpty()) frozen.put(UnitEquipmentEffects.key(alias, "version"), UnitEquipmentEffects.VERSION);
+                String alias = sortie && !"0".equals(source)
+                        ? unit + "~s" + new ArrayList<>(allocated.keySet()).indexOf(source) : unit;
                 grouped.merge(alias, count, Integer::sum); groupedSource.put(alias, count);
             });
             if (!"0".equals(source)) support.put(source, groupedSource);
             Long owner = owners.get(source);
-            // 驻军面板和战斗来源使用同一公开昵称，不向其他玩家暴露登录账号。
             provenance.put(source, Map.of("playerId", owner, "playerName", players.findById(owner).map(PlayerNames::commanderName).orElse("已离开的玩家"), "army", groupedSource));
         });
-        return new Defense(grouped, support, frozen, provenance);
+        return new Defense(grouped, support, provenance);
     }
 
     /** 新编队按独立别名的实际幸存数结算；历史合编快照继续按原比例结算。 */
     public Losses settle(String snapshot, Map<String, Integer> initial, Map<String, Integer> survivors) {
-        if (JsonUtil.parseObjMap(snapshot).isEmpty()) return new Losses(UnitEquipmentEffects.aggregate(initial), UnitEquipmentEffects.aggregate(survivors), List.of());
+        if (JsonUtil.parseObjMap(snapshot).isEmpty()) return new Losses(BattleUnitIds.aggregate(initial), BattleUnitIds.aggregate(survivors), List.of());
         Map<String, Map<String, Integer>> sources = new LinkedHashMap<>();
         Map<String, Integer> ownInitial = new LinkedHashMap<>(initial);
         JsonUtil.parseObjMap(snapshot).forEach((id, army) -> {
@@ -190,39 +175,37 @@ public class GuildSupportService {
             Map<String, Integer> remaining = new LinkedHashMap<>(JsonUtil.parseIntMap(march.getArmy()));
             Map<String, Integer> alive = new LinkedHashMap<>(source.getValue());
             allocated.get(source.getKey()).forEach((unit, count) -> {
-                remaining.computeIfPresent(UnitEquipmentEffects.base(unit), (key, value) -> Math.max(0, value - count));
+                remaining.computeIfPresent(BattleUnitIds.base(unit), (key, value) -> Math.max(0, value - count));
                 alive.computeIfPresent(unit, (key, value) -> Math.max(0, value - count));
             });
             remaining.values().removeIf(count -> count <= 0);
             march.setArmy(JsonUtil.toJson(remaining));
             if (remaining.isEmpty()) marches.delete(march); else marches.save(march);
-            supportLosses.add(new SupportLoss(march, UnitEquipmentEffects.aggregate(source.getValue()), UnitEquipmentEffects.aggregate(alive)));
+            supportLosses.add(new SupportLoss(march, BattleUnitIds.aggregate(source.getValue()), BattleUnitIds.aggregate(alive)));
         }
         Map<String, Integer> ownAlive = new LinkedHashMap<>(ownInitial);
         allocated.get("0").forEach((unit, count) -> ownAlive.computeIfPresent(unit, (key, value) -> Math.max(0, value - count)));
-        return new Losses(UnitEquipmentEffects.aggregate(ownInitial), UnitEquipmentEffects.aggregate(ownAlive), supportLosses);
+        return new Losses(BattleUnitIds.aggregate(ownInitial), BattleUnitIds.aggregate(ownAlive), supportLosses);
     }
 
-    /** 冻结来源身份、随队军官和出发配装，战斗中不再读取实时换装或调任。 */
+    /** 冻结来源身份和随队军官，战斗中不再读取实时换装或调任。 */
     public JointDefenseState freeze(Defense defense, PlayerCity city, Officer home, March attack, Officer attacker,
-            Map<String, Integer> attackerArmy, Map<String, Integer> attackerEquipment, Map<String, Integer> defenderArmy) {
+            Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy) {
         JointDefenseState state = new JointDefenseState(); state.setSeed(attack.getId());
         state.getFormations().put("attack", formation("attack", "attack", attack.getPlayerId(), attack.getCitySlot(), attack.getId(), attacker,
-                attackerArmy, attackerEquipment));
+                attackerArmy));
         Map<String, Integer> homeArmy = new LinkedHashMap<>(defenderArmy);
         defense.support().values().forEach(army -> army.keySet().forEach(homeArmy::remove));
-        state.getFormations().put("0", formation("0", "home", city.getOwnerId(), city.getCitySlot(), null, home, homeArmy,
-                UnitEquipmentEffects.only(defense.equipment())));
+        state.getFormations().put("0", formation("0", "home", city.getOwnerId(), city.getCitySlot(), null, home, homeArmy));
         defense.support().forEach((id, army) -> {
             March m = marches.findById(Long.valueOf(id)).orElseThrow();
             Officer officer = targets.getOfficerById(m.getPlayerId(), m.getCommanderId());
-            state.getFormations().put(id, formation(id, "support", m.getPlayerId(), m.getCitySlot(), m.getId(), officer, army,
-                    UnitEquipmentEffects.only(defense.equipment())));
+            state.getFormations().put(id, formation(id, "support", m.getPlayerId(), m.getCitySlot(), m.getId(), officer, army));
         });
         return state;
     }
     private JointDefenseState.Formation formation(String id, String kind, Long owner, Integer slot, Long marchId,
-            Officer officer, Map<String, Integer> army, Map<String, Integer> equipment) {
+            Officer officer, Map<String, Integer> army) {
         var f = new JointDefenseState.Formation(); f.setId(id); f.setKind(kind); f.setPlayerId(owner); f.setCitySlot(slot); f.setMarchId(marchId);
         f.setPlayerName(owner == null ? "来袭敌军" : players.findById(owner).map(PlayerNames::commanderName).orElse("已离开的玩家"));
         f.setOfficerName(officer == null ? "无随队将领" : officer.getName()); f.setOfficerId(officer == null ? null : officer.getId());
@@ -231,7 +214,6 @@ public class GuildSupportService {
             f.setCommanderSnapshot(CommanderReportSnapshot.from(officer, attrs));
         }
         f.setSkills(new LinkedHashMap<>(targets.getCommanderSkills(officer))); f.setInitial(new LinkedHashMap<>(army));
-        f.setEquipment(new LinkedHashMap<>(UnitEquipmentEffects.forArmy(equipment, army)));
         return f;
     }
 

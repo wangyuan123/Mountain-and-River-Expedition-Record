@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>玩法说明验收预览</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/themes.css">
+  <link rel="stylesheet" href="../css/officer.css">
+  <link rel="stylesheet" href="../css/landscape.css">
+</head>
+<body>
+  <main id="screen">
+    <h1>玩法说明验收预览</h1>
+    <p>此页使用合成数据和模拟接口，操作不会连接游戏账号或修改数据库。</p>
+    <p><button type="button" class="btn" onclick="Game.PlayGuide.openTimedItem('shield')">预览8小时护盾</button>
+      <button type="button" class="btn" onclick="Game.PlayGuide.openTimedItem('marchOrd')">预览高档行军令</button>
+      <button type="button" class="btn" onclick="Game.PlayGuide.openRewards()">待领取奖励</button>
+      <button type="button" class="btn" onclick="Game.PlayGuide.openOfficerPreview(1)">任命效果</button></p>
+    <div id="previewContent"></div>
+    <p id="previewReceipt" role="status">尚未消耗道具。</p>
+  </main>
+  <script src="../js/constants.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    var testNow = Date.now();
+    Game.gameNow = function () { return testNow; };
+    Game.escapeHtml = function (v) { return String(v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    Game.Core = { state: { player: { id: 1, activeCityId: 11, cityName: '联防验收城', vipDailySalaryClaimed: false },
+      resources: { food: 500000 }, items: { shield: 3, marchOrd: 2 }, rankDiamondGifts: { unopenedCount: 2 },
+      cityState: { shieldUntil: testNow + 3600000, marchBoostPercent: 25, marchBoostUntil: testNow + 1800000 },
+      foodSupply: { ownPerHour: 8000, supportPerHour: 30000, totalPerHour: 38000, productionPerHour: 12000 },
+      officers: [{ id: 1, name: '验收将领', role: 'idle', military: 279, baseMilitary: 219, defense: 160, logistics: 180, knowledge: 150,
+        skills: [{ id: 'frenzy', lv: 5 }, { id: 'counter', lv: 5 }, { id: 'leadership', lv: 5 }] }],
+      world: { incoming: [], regionalRadar: { joinedGuild: true, cities: [{ cityId: 11, level: 5, radius: 5, enabled: true }], contacts: [] } } },
+      render: function () {} };
+    Game.go = function (route) { Game.toast('验收页：前往 ' + route); };
+    Game.toast = function (message) { document.getElementById('previewReceipt').textContent = message; };
+    Game.MainQuest = { loadQuests: function () { return Promise.resolve(); }, rewardSummary: function () { return { tasks: 3, checkin: { claimed: false } }; } };
+    Game.API = { getToken: function () { return 'synthetic-preview'; },
+      depotUse: function (id) {
+        var preview = Game.PlayGuide.timedPreview(id);
+        Game.Core.state.items[id]--;
+        if (id === 'shield') Game.Core.state.cityState.shieldUntil = preview.end;
+        else { Game.Core.state.cityState.marchBoostUntil = preview.end; Game.Core.state.cityState.marchBoostPercent = 50; }
+        return Promise.resolve({ success: true, message: '模拟确认成功；剩余库存 ' + Game.Core.state.items[id] });
+      },
+      listMail: function () { return Promise.resolve({ mails: [{ hasAttachment: true }], hasMore: false }); },
+      vipStatus: function () { return Promise.resolve({ vipLevel: 0, dailyClaimed: false, levels: [{ level: 0 }], claimedPackLevels: [], milestones: [] }); } };
+    Game.Vip = { openModal: function () { Game.toast('验收页：打开特勤部'); } };
+    Game.Depot = { openRankGifts: function () { Game.toast('验收页：打开晋升礼包'); } };
+  </script>
+  <script src="../js/play-guide.js"></script>
+  <script src="../js/radar.js"></script>
+  <script>
+    document.getElementById('previewContent').innerHTML = Game.PlayGuide.foodOutlook() + Game.Radar.helpHtml()
+      + '<p>' + Game.PlayGuide.combatWindow(4, 4) + '</p>' + Game.PlayGuide.combatConditions({ counter: 5, last_stand: 5 });
+  </script>
+</body>
+</html>

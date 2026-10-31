@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 // 按服务端已授衔阶数渲染资料，验证新门槛进度及老账号展示，不模拟自动授衔。
 function profile(tier, prestige) {

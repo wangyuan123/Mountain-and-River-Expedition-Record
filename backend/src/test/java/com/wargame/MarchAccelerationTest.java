@@ -219,7 +219,13 @@ class MarchAccelerationTest extends BaseServiceTest {
         march.setTargetKind("wild_gather"); march.setAction("gather"); march.setGatherMode(mode);
         March accelerated = accelerate(march);
         long arrival = accelerated.getArriveAt();
-        marchService.processMarches(playerId, arrival);
+        // 已在旧版开始采集的加速行军，继续验证返程不继承去程加速。
+        accelerated.setGathering(true);
+        accelerated.setGatherStartAt(arrival);
+        accelerated.setGatherEndAt(arrival + 60_000L);
+        accelerated.setGatherAmount(500);
+        accelerated.setGatherRes("food");
+        marchRepository.saveAndFlush(accelerated);
         March gathering = marchRepository.findById(march.getId()).orElseThrow();
         assertTrue(gathering.getGathering());
         // 旧 auto 记录也统一走手动收获和回城；采满本身不能触发自动返城。

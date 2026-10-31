@@ -1,0 +1,98 @@
+{
+  "results": [
+    {
+      "x": 4,
+      "y": 274,
+      "title": "丘陵 · (4, 274)",
+      "draw": {
+        "x": 4.5,
+        "y": 274.5,
+        "width": 64,
+        "height": 64,
+        "src": "/img/map/wild-hill-peak-integrated.webp"
+      }
+    },
+    {
+      "x": 7,
+      "y": 272,
+      "title": "平原 · (7, 272)",
+      "draw": null
+    },
+    {
+      "x": 8,
+      "y": 272,
+      "title": "森林 · (8, 272)",
+      "draw": {
+        "x": 8.5,
+        "y": 272.5,
+        "width": 64,
+        "height": 64,
+        "src": "/img/map/wild-forest-dense-integrated.webp"
+      }
+    },
+    {
+      "x": 21,
+      "y": 264,
+      "title": "森林 · (21, 264)",
+      "draw": {
+        "x": 21.5,
+        "y": 264.5,
+        "width": 64,
+        "height": 64,
+        "src": "/img/map/wild-forest-dense-integrated.webp"
+      }
+    },
+    {
+      "x": 11,
+      "y": 266,
+      "title": "灌木 · (11, 266)",
+      "draw": {
+        "x": 11.5,
+        "y": 266.5,
+        "width": 64,
+        "height": 64,
+        "src": "/img/map/wild-shrub-grass-patch.webp"
+      }
+    },
+    {
+      "x": 14,
+      "y": 267,
+      "title": "湿地 · (14, 267)",
+      "draw": {
+        "x": 14.5,
+        "y": 267.5,
+        "width": 64,
+        "height": 64,
+        "src": "/img/map/wild-swamp-marsh-integrated.webp"
+      }
+    },
+    {
+      "x": 19,
+      "y": 264,
+      "title": "草地 · (19, 264)",
+      "draw": {
+        "x": 19.5,
+        "y": 264.5,
+        "width": 64,
+        "height": 64,
+        "src": "/img/map/wild-grassland.webp"
+      }
+    },
+    {
+      "viewport": "844x390",
+      "title": "湿地 · (14, 267)",
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "metrics": {
+    "mounted": true,
+    "x": 14.5,
+    "y": 267.5,
+    "scale": 80,
+    "chunks": 12,
+    "pending": 0,
+    "markers": 0,
+    "water": "canvas"
+  }
+}

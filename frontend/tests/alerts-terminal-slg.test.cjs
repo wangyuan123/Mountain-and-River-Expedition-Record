@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(initialState = {}) {
   const routes = [];
@@ -108,6 +108,7 @@ function setup(initialState = {}) {
   });
   context.window = context;
   require('./load-constants.cjs')(context);
+  game.Core.state.gameplay.shieldQuotes = [null, {cost:200,unitPrice:200,allowed:true}, {cost:400,unitPrice:200,allowed:true}, {cost:600,unitPrice:200,allowed:true}];
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/world.js'), 'utf8'), context);
 
   return { game, routes, toasts, nodes, context };
@@ -243,6 +244,7 @@ test('出征卡片展示 [出征] 字符Badge、进度条与加速召回按钮',
         startAt: now - 100000,
         arriveAt: now + 150000,
         version: 1,
+        acceleration: { allowed: true, expiresAt: now + 120000 },
         army: { infantry: 50000, fighter: 35000 }
       }],
       reinforcements: []
@@ -450,7 +452,7 @@ test('普通敌军来袭拦截出征可配置并提交任意可用兵种', async
   game.API.worldDispatch = async body => { request = body; };
   nodes.set('dqty_infantry', { value: '10' });
   nodes.set('dqty_htank', { value: '2' });
-  game.World._currentRoute = game.World.calcInterceptionPlan({ infantry: 10, htank: 2 }, game.Core.state.world._dispatchTarget);
+  game.World._currentRoute = { seconds: 9, oil: 12, targetX: 330, targetY: 670 };
   game.World._currentRoute.plannedAt = game.gameNow();
   game.World._interceptionPreviewKey = JSON.stringify(game.World.interceptionPreviewRequest({ infantry: 10, htank: 2 }, game.Core.state.world._dispatchTarget));
   await game.World.launchDispatch();
@@ -565,121 +567,34 @@ test('出城拦截出征界面更新防空战力，胜负以实际交战为准',
   nodes.set('dqty_fighter', { value: '0' });
   nodes.set('dqty_armored', { value: '0' });
   game.World.updateDispatchStats();
-  assert.equal(powerEl.textContent, '0');
-  assert.equal(rateEl.textContent, '--');
+  assert.equal(powerEl.textContent, '—');
+  assert.equal(rateEl.textContent, '以实际交战结果为准');
 
   // 2. 选择 2 架战斗机 (每架对空火力 64，总计 128)
   nodes.set('dqty_fighter', { value: '2' });
+  game.World._currentRoute = { antiAir: 128, oil: 12, seconds: 9 };
   game.World.updateDispatchStats();
   assert.equal(powerEl.textContent, '128');
   assert.equal(rateEl.textContent, '以实际交战结果为准');
 });
 
-test('calcInterceptionPlan: 根据敌机到达剩余时间与拦截兵种移速，精确计算迎头相遇拦截坐标与所需耗时', () => {
-  const now = Date.now();
-  const { game } = setup({
-    world: {
-      cityPos: { x: 342, y: 681 }
-    }
-  });
-
-  const dt = {
-    targetX: 300,
-    targetY: 650,
-    interceptTarget: {
-      fromX: 300,
-      fromY: 650,
-      startAt: now - 30000,
-      arriveAt: now + 60000,
-      duration: 90000
-    }
-  };
-
-  // 派遣空军战机 (spd = 8)
-  const planFighter = game.World.calcInterceptionPlan({ fighter: 5 }, dt);
-  assert.ok(planFighter.targetX < 342 && planFighter.targetX >= 300);
-  assert.ok(planFighter.targetY < 681 && planFighter.targetY >= 650);
-  assert.ok(planFighter.seconds > 0 && planFighter.seconds <= 60);
-  assert.equal(planFighter.roundSeconds, planFighter.seconds * 2);
-  assert.equal(planFighter.totalAntiAir, 64 * 5);
-
-  // 派遣移速较慢的防空装甲车 (spd = 5)
-  const planArmored = game.World.calcInterceptionPlan({ armored: 5 }, dt);
-  assert.ok(planArmored.targetX < 342 && planArmored.targetX >= 300);
-  // 移速较慢时出城距离更短，相遇点更偏向我方城池
-  assert.ok(planArmored.distance <= planFighter.distance);
+test('拦截规划公式已移除，篡改本地速度和火力不会生成拦截计划', () => {
+  const { game } = setup();
+  assert.equal(game.World.calcInterceptionPlan, undefined);
+  assert.equal(game.World.calcDispatchSpeed, undefined);
+  game.DATA.units.fighter.spd = 999999;
+  assert.equal(game.World._currentRoute, undefined);
 });
 
-test('执行出城拦截：计算迎头截击点并生成出城行军路线，导航至大地图且敌机交火前不提前结算', async () => {
-  const now = Date.now();
-  const { game, toasts, routes, nodes } = setup({
-    resources: { oil: 10000 },
-    army: { fighter: 20, armored: 10 },
-    world: {
-      cityPos: { x: 342, y: 681 },
-      incoming: [{
-        id: 'scout-threat-1',
-        attackerName: '极光要塞 · 影刃',
-        action: 'scout',
-        fromX: 300,
-        fromY: 650,
-        startAt: now - 20000,
-        arriveAt: now + 40000,
-        duration: 60000
-      }],
-      _dispatchTarget: {
-        kind: 'incoming_scout',
-        action: 'intercept_scout',
-        incomingIdx: 0,
-        incomingId: 'scout-threat-1',
-        target: { id: 'scout-threat-1', x: 300, y: 650, arriveAt: now + 40000, duration: 60000 },
-        interceptTarget: { id: 'scout-threat-1', fromX: 300, fromY: 650, startAt: now - 20000, arriveAt: now + 40000, duration: 60000 }
-      },
-      marches: []
-    }
-  });
-
-  // 配置 5 架野马战机出战拦截
-  nodes.set('dqty_fighter', { value: '5' });
-  nodes.set('dqty_armored', { value: '0' });
-
+test('离线拦截无法扣兵、扣油或伪造行军与战果', async () => {
+  const { game, nodes } = setup({ army: { fighter: 20 }, resources: { oil: 10000 },
+    world: { cityPos: {x:342,y:681}, marches: [], incoming: [{id:91}],
+      _dispatchTarget: { action:'intercept_scout', marchId:91, target:{id:91}, interceptTarget:{} } } });
+  nodes.set('dqty_fighter', {value:'5'});
   game.API.client = null;
+  const before = JSON.stringify(game.Core.state);
   await game.World.launchDispatch();
-
-  // 1. 验证出征兵力从城内扣除
-  assert.equal(game.Core.state.army.fighter, 15, '5架战机已扣除并起飞出征');
-
-  // 2. 验证生成了真实的截击行军记录（未结算）
-  assert.equal(game.Core.state.world.marches.length, 1, '大地图应生成1支截击行军编队');
-  const march = game.Core.state.world.marches[0];
-  assert.equal(march.action, 'intercept_scout');
-  assert.equal(march.returning, false);
-  assert.equal(march.fromX, 342);
-  assert.equal(march.fromY, 681);
-  // 验证拦截点根据相对速度计算出在城市与敌机航线之间
-  assert.ok(march.targetX < 342 && march.targetX >= 300, '截击点X坐标应在城池与敌军航线区间');
-  assert.ok(march.targetY < 681 && march.targetY >= 650, '截击点Y坐标应在城池与敌军航线区间');
-
-  // 3. 验证此时敌方侦察机仍然保留在 incoming 列表中（绝不能点击出征瞬间提前结算击落）
-  assert.equal(game.Core.state.world.incoming.length, 1, '敌军侦察机在交火前仍应在航向城池的来袭列表中');
-
-  // 4. 验证跳转至大地图视图，供玩家查看迎头截击动画
-  assert.equal(routes.at(-1), 'world', '应跳转至世界大地图查看行军');
-  assert.ok(toasts.some(t => t.includes('截击部队已出发') && t.includes('拦截')));
-
-  // 5. 到达拦截空域触发交火：判定防空火力击落敌机，解除侦查警报并掉头返航
-  game.World.resolveInterceptionArrival(march);
-  assert.equal(game.Core.state.world.incoming.length, 0, '交火后敌方高空侦察机被成功击落，来袭瓦解');
-  assert.equal(march.returning, true, '截击机群交火后应掉头返航');
-  assert.equal(march.targetX, 342, '返航终点为本城基地');
-  assert.equal(march.targetY, 681, '返航终点为本城基地');
-  assert.ok(toasts.some(t => t.includes('【截击空战大捷】') && t.includes('击落敌方高空侦察机')));
-
-  // 6. 返航抵达基地归仓：恢复城池兵力
-  game.World.resolveInterceptionArrival(march);
-  assert.equal(game.Core.state.army.fighter, 20, '返航归建后5架战机恢复入库');
-  assert.equal(game.Core.state.world.marches.length, 0, '返航完成后大地图行军移除');
-  assert.ok(toasts.some(t => t.includes('截击机群已完成拦截巡航任务') && t.includes('安全返航归建基地')));
+  assert.equal(JSON.stringify(game.Core.state), before);
 });
 
 test('联网出城拦截采用后端状态，前端不重复扣兵和结算敌军行军', async () => {
@@ -700,7 +615,7 @@ test('联网出城拦截采用后端状态，前端不重复扣兵和结算敌�
           army: { fighter: 5 }, fromX: 342, fromY: 681, targetX: 320, targetY: 670, startAt: now - 10000, arriveAt: now - 1, returning: false }] } };
     return game.Core.state;
   };
-  game.World._currentRoute = game.World.calcInterceptionPlan({ fighter: 5 }, game.Core.state.world._dispatchTarget);
+  game.World._currentRoute = { seconds: 9, oil: 12, targetX: 330, targetY: 670 };
   game.World._currentRoute.plannedAt = game.gameNow();
   game.World._interceptionPreviewKey = JSON.stringify(game.World.interceptionPreviewRequest({ fighter: 5 }, game.Core.state.world._dispatchTarget));
   await game.World.launchDispatch();
@@ -710,7 +625,7 @@ test('联网出城拦截采用后端状态，前端不重复扣兵和结算敌�
   assert.equal(game.Core.state.resources.oil, 9000);
   assert.equal(game.Core.state.world.marches.length, 1);
   const march = game.Core.state.world.marches[0];
-  game.World.resolveInterceptionArrival(march);
+  assert.equal(game.World.resolveInterceptionArrival, undefined);
   game.World.checkMarchArrivals();
   assert.equal(march.returning, false);
   assert.equal(game.Core.state.world.incoming.length, 1);
@@ -1048,6 +963,7 @@ test('城防护盾：钻石不足时拒绝开启护盾并提示差额', async ()
     }
   });
 
+  game.Core.state.gameplay.shieldQuotes[1].allowed = false;
   const res = await game.World.confirmCityShield([1]);
   assert.equal(res.success, false);
   assert.equal(res.reason, 'insufficient_diamond');

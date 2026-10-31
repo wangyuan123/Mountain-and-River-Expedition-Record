@@ -8,11 +8,13 @@ import java.util.*;
 @Data
 public class JointDefenseState {
     public static final String VERSION = "joint-defense-v1-20261024";
+    private BattleSkillState skillState = new BattleSkillState();
     private long seed;
     private List<Map<String, Object>> events = new ArrayList<>();
     private Map<String, Formation> formations = new LinkedHashMap<>();
 
     @Data
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
     public static class Formation {
         private String id;
         private String kind;
@@ -26,7 +28,6 @@ public class JointDefenseState {
         private int military;
         private int defense;
         private Map<String, Integer> skills = new LinkedHashMap<>();
-        private Map<String, Integer> equipment = new LinkedHashMap<>();
         private Map<String, Integer> initial = new LinkedHashMap<>();
         private Map<String, Double> damage = new LinkedHashMap<>();
         private Map<String, Double> wallDamage = new LinkedHashMap<>();
@@ -84,11 +85,11 @@ public class JointDefenseState {
         formations.values().forEach(f -> {
             Map<String, Integer> alive = "attack".equals(f.id) ? attackers : defenders;
             f.initial.forEach((unit, count) -> {
-                if (!com.wargame.model.constants.GameData.UNITS.containsKey(com.wargame.model.constants.UnitEquipmentEffects.base(unit))) return;
+                if (!com.wargame.model.constants.GameData.UNITS.containsKey(com.wargame.model.constants.BattleUnitIds.base(unit))) return;
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("formationId", publicId(f));
                 row.put("formation", f.title()); row.put("kind", f.kind);
-                row.put("unit", com.wargame.model.constants.UnitEquipmentEffects.base(unit));
+                row.put("unit", com.wargame.model.constants.BattleUnitIds.base(unit));
                 row.put("initial", count); row.put("survivors", alive.getOrDefault(unit, 0));
                 row.put("losses", Math.max(0, count - alive.getOrDefault(unit, 0)));
                 row.put("damage", f.damage.getOrDefault(unit, 0.0)); row.put("wounded", f.wounded.getOrDefault(unit, 0));

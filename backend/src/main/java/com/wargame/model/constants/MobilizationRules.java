@@ -25,15 +25,6 @@ public final class MobilizationRules {
                 .mapToInt(entry -> ItemDef.MOBILIZATION_BONUS_PERCENT.get(entry.getKey())).max().orElse(0);
     }
 
-    /** 配置标识跨续期不变，整轮动员结束后失效，防止过期草稿覆盖默认编队。 */
-    public static String formationKey(Player player, long now) {
-        return bonus(player, now) > 0 ? "mobilization:" + player.getMobilizationCycle() : "default";
-    }
-
-    public static String sortieArmy(Player player, long now) {
-        return bonus(player, now) > 0 ? player.getMobilizationSortieArmy() : player.getSortieArmy();
-    }
-
     public static int apply(int ordinaryCap, int bonus) {
         return (int) Math.min(Integer.MAX_VALUE, (long) ordinaryCap * (100 + bonus) / 100);
     }

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup() {
   const state = { world: {}, items: { recruit_military_weapon: 2, expBook: 1, emptySpeed: 0 } };
@@ -34,8 +34,8 @@ test('仓库默认显示军官装备分类并生成横向 tabs', () => {
   assert.match(html, /class="depot-tab active"[^>]*>军官装备<\/button>/);
   assert.match(html, /列兵军刀/);
   assert.doesNotMatch(html, /📘 经验书/);
-  assert.equal((html.match(/role="tab"/g) || []).length, 5);
-  assert.match(html, />兵种装备<\/button>/);
+  assert.equal((html.match(/role="tab"/g) || []).length, 4);
+  assert.doesNotMatch(html, />兵种装备<\/button>/);
   assert.doesNotMatch(html, /zone-head/);
   assert.doesNotMatch(html, /===\s*军官装备\s*===/);
   assert.doesNotMatch(html, /- 仓库 -/);

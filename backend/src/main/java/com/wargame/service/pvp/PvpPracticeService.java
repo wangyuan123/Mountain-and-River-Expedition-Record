@@ -340,6 +340,12 @@ public class PvpPracticeService {
         out.put("myArmy", isA ? d.getArmyA() : d.getArmyB()); out.put("enemyArmy", isA ? d.getArmyB() : d.getArmyA());
         out.put("myPositions", mirror(isA ? d.getPositionsA() : d.getPositionsB(), !isA, d.getDistance()));
         out.put("enemyPositions", mirror(isA ? d.getPositionsB() : d.getPositionsA(), !isA, d.getDistance()));
+        var engine = new BattleService(s.getSeed());
+        var a = snapshot(s.getSnapshotA()); var b = snapshot(s.getSnapshotB());
+        Map<String, Object> statsA = new LinkedHashMap<>(), statsB = new LinkedHashMap<>();
+        d.getArmyA().keySet().forEach(id -> statsA.put(id, engine.tacticalStats(id, a.context().withMemory(d.getSkillState().getAttacker()), s.getRoundNo(), d.getFirstCombatRound())));
+        d.getArmyB().keySet().forEach(id -> statsB.put(id, engine.tacticalStats(id, b.context().withMemory(d.getSkillState().getDefender()), s.getRoundNo(), d.getFirstCombatRound())));
+        out.put("attackerStats", isA ? statsA : statsB); out.put("defenderStats", isA ? statsB : statsA);
         out.put("firstCombatRound", d.getFirstCombatRound()); out.put("auto", isA ? d.isAutoA() : d.isAutoB());
         out.put("pendingTakeover", isA ? d.isPendingTakeoverA() : d.isPendingTakeoverB());
         out.put("loaded", isA ? s.isLoadedA() : s.isLoadedB()); out.put("enemyLoaded", isA ? s.isLoadedB() : s.isLoadedA());
@@ -447,7 +453,7 @@ public class PvpPracticeService {
         var aa = actual(a, ao, d.getArmyA()); var ba = actual(b, bo, d.getArmyB());
         long seed = roundSeed(s.getSeed(), s.getRoundNo()); BattleService engine = new BattleService(seed);
         String before = PvpJson.write(d);
-        var r = engine.resolvePracticeRound(d.getArmyA(), d.getArmyB(), d.getPositionsA(), d.getPositionsB(), d.getDistance(), a.context(), b.context(), s.getRoundNo(), d.getFirstCombatRound(), aa, ba);
+        var r = engine.resolvePracticeRound(d.getArmyA(), d.getArmyB(), d.getPositionsA(), d.getPositionsB(), d.getDistance(), a.context().withMemory(d.getSkillState().getAttacker()), b.context().withMemory(d.getSkillState().getDefender()), s.getRoundNo(), d.getFirstCombatRound(), aa, ba);
         d.setArmyA(r.attackerArmy()); d.setArmyB(r.defenderArmy()); d.setPositionsA(r.attackerPositions()); d.setPositionsB(r.defenderPositions()); d.setFirstCombatRound(r.firstCombatRound());
         d.setLossA(frozenLoss(a, d.getArmyA())); d.setLossB(frozenLoss(b, d.getArmyB())); s.setBattleData(PvpJson.write(d));
         PvpRoundResult record = new PvpRoundResult(); record.setId(uuid()); record.setSessionId(s.getId()); record.setRoundNo(s.getRoundNo()); record.setSeed(seed);

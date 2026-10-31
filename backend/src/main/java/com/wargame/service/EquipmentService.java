@@ -11,12 +11,13 @@ import java.util.*;
 /** 十二部位穿卸与四维计算的唯一入口，详情、战斗和内政均读取相同结果。 */
 @Service
 public class EquipmentService {
+    @org.springframework.beans.factory.annotation.Autowired private InventoryService inventory;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
     @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
     private final OfficerRepository officerRepository;
     private final OfficerEquipmentRepository equipmentRepository;
     private final PlayerItemRepository playerItemRepository;
     @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService progress;
-    @org.springframework.beans.factory.annotation.Autowired private ResourcesRepository resources;
     @org.springframework.beans.factory.annotation.Autowired private MarchRepository marches;
 
     public EquipmentService(OfficerRepository officers, OfficerEquipmentRepository equipment, PlayerItemRepository items) {
@@ -32,6 +33,7 @@ public class EquipmentService {
     @Transactional
     public Map<String, Object> equip(Long playerId, Long officerId, String itemKey) {
         progress.lockPlayer(playerId);
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         var o = officer(playerId, officerId); var def = OfficerEquipmentDef.ITEMS.get(itemKey == null ? "" : itemKey);
         if (o == null) return error("军官不存在");
@@ -58,6 +60,7 @@ public class EquipmentService {
     @Transactional
     public Map<String, Object> equipLoadout(Long playerId, Long officerId, List<String> keys) {
         progress.lockPlayer(playerId);
+        economy.settleEconomyBeforeChange(playerId);
         if (garrisonFood != null) garrisonFood.beforeChange(playerId);
         var o = officer(playerId, officerId);
         if (o == null) return error("军官不存在");
@@ -93,6 +96,7 @@ public class EquipmentService {
     @Transactional
     public Map<String, Object> unequip(Long player, Long id, String slotOrItem) {
         progress.lockPlayer(player);
+        economy.settleEconomyBeforeChange(player);
         if (garrisonFood != null) garrisonFood.beforeChange(player);
         var o = officer(player, id);
         if (o == null) return error("军官不存在");
@@ -104,29 +108,33 @@ public class EquipmentService {
         equipmentRepository.flush(); return success("已卸下装备并返还仓库");
     }
 
-    /** 预期等级防止双击/网络重试连续升两级；军官部位培养与主城黄金、零件原子提交。 */
-    @Transactional
+    /** 兼容旧客户端：整备已取消，拒绝请求且不扣除任何道具或黄金。 */
     public Map<String, Object> prepare(Long player, Long id, String slot, int expectedLevel) {
-        progress.lockPlayer(player);
-        if (garrisonFood != null) garrisonFood.beforeChange(player);
-        var o = officer(player, id);
-        if (o == null) return error("军官不存在");
-        if (!OfficerEquipmentDef.SLOTS.contains(slot)) return error("无效部位");
-        if (marching(player, o)) return error("军官正在行军，无法整备");
-        int level = progress.preparation(player, id).getOrDefault(slot, 0);
-        if (level != expectedLevel || level >= 5) return error("整备等级已变化或已达+5，请刷新");
-        var step = OfficerEquipmentDef.CONFIG.path("preparation").path("steps").get(level);
-        if (Math.max(1, value(o.getLevel())) < step.path("required_officer_level").asInt()) return error("军官等级不足，需要 Lv." + step.path("required_officer_level").asInt());
-        int parts = step.path("parts").asInt(), gold = step.path("gold").asInt();
-        if (count(player, OfficerEquipmentProgressService.PARTS) < parts) return error("军备零件不足");
-        var wallet = resources.findCityForTreatment(player, 0).orElse(null);
-        if (wallet == null || wallet.getGold() < gold) return error("主城黄金不足");
-        // 原子库存扣减会 detach 钱包，扣减后重新持有最新钱包再写入黄金。
-        if (playerItemRepository.tryConsume(player, OfficerEquipmentProgressService.PARTS, parts, GameClock.now()) == 0) throw new IllegalStateException("军备零件发生变化");
-        wallet = resources.findCityForTreatment(player, 0).orElseThrow(); wallet.setGold(wallet.getGold() - gold); resources.save(wallet);
-        progress.setPreparation(player, id, slot, level + 1);
-        progress.synchronize(player);
-        return success("部位整备成功：+" + (level + 1));
+        return error("装备整备已取消，装备仅提供固定属性加成");
+    }
+
+    /** 换装预览复用战斗与内政的属性计算器，按部位去重，不改库存或当前穿戴。 */
+    public Map<String, Object> preview(Long playerId, Long officerId, List<String> keys) {
+        Officer officer = officer(playerId, officerId);
+        if (officer == null) throw new IllegalArgumentException("军官不存在");
+        if (keys == null || keys.size() > OfficerEquipmentDef.SLOTS.size()) throw new IllegalArgumentException("装备方案无效");
+        var chosen = new ArrayList<OfficerEquipment>();
+        var slots = new HashSet<String>();
+        boolean allowed = !marching(playerId, officer);
+        for (String key : keys) {
+            var d = OfficerEquipmentDef.ITEMS.get(key);
+            if (d == null || !slots.add(d.slot())) throw new IllegalArgumentException("装备方案含无效或重复部位");
+            var e = new OfficerEquipment();
+            e.setItemKey(key); e.setSlot(d.slot()); e.setMilitaryBonus(d.military()); e.setDefenseBonus(d.defense());
+            e.setLogisticsBonus(d.logistics()); e.setKnowledgeBonus(d.knowledge()); chosen.add(e);
+            allowed &= Objects.requireNonNullElse(officer.getLevel(), 1) >= d.requiredLevel();
+        }
+        var current = attributes(officer); var next = calculateAttributes(officer, chosen);
+        var zero = new Officer(); var bonus = calculateAttributes(zero, chosen);
+        return Map.of("bonus", Map.of("military", bonus.military(), "defense", bonus.defense(), "logistics", bonus.logistics(), "knowledge", bonus.knowledge()),
+                "net", Map.of("military", next.military() - current.military(), "defense", next.defense() - current.defense(),
+                        "logistics", next.logistics() - current.logistics(), "knowledge", next.knowledge() - current.knowledge()),
+                "allowed", allowed, "setBonuses", next.bonuses());
     }
 
     public Attributes attributes(Officer officer) {
@@ -134,12 +142,11 @@ public class EquipmentService {
         int[] a = {value(officer.getMilitary()), value(officer.getDefense()), value(officer.getLogistics()), value(officer.getKnowledge())};
         if (officer.getPlayerId() == null || officer.getId() == null || officer.getId() < 0) return new Attributes(a[0], a[1], a[2], a[3], List.of(), List.of());
         var equipped = equipmentRepository.findByPlayerIdAndOfficerId(officer.getPlayerId(), officer.getId());
-        var prep = progress.preparation(officer.getPlayerId(), officer.getId());
-        return calculateAttributes(officer, equipped, prep);
+        return calculateAttributes(officer, equipped);
     }
 
-    /** 批量估值与战斗共用整备、十二部位去重和套装共鸣规则，不额外查询数据库。 */
-    public static Attributes calculateAttributes(Officer officer, List<OfficerEquipment> equipped, Map<String, Integer> prep) {
+    /** 批量估值与战斗共用固定属性、十二部位去重和套装共鸣；历史整备记录不再读取。 */
+    public static Attributes calculateAttributes(Officer officer, List<OfficerEquipment> equipped) {
         if (officer == null) return new Attributes(0, 0, 0, 0, List.of(), List.of());
         int[] a = {value(officer.getMilitary()), value(officer.getDefense()), value(officer.getLogistics()), value(officer.getKnowledge())};
         Set<String> used = new HashSet<>(); Map<String, Set<String>> sets = new LinkedHashMap<>();
@@ -148,7 +155,6 @@ public class EquipmentService {
             a[0] += value(e.getMilitaryBonus()); a[1] += value(e.getDefenseBonus()); a[2] += value(e.getLogisticsBonus()); a[3] += value(e.getKnowledgeBonus());
             var d = OfficerEquipmentDef.ITEMS.get(e.getItemKey());
             if (d == null || !d.slot().equals(e.getSlot())) continue;
-            a[OfficerEquipmentDef.BRANCHES.indexOf(d.branch())] += Math.min(prep.getOrDefault(d.slot(), 0), d.preparationCap());
             sets.computeIfAbsent(d.setKey(), k -> new HashSet<>()).add(d.slot());
         }
         List<Map<String, Object>> bonuses = new ArrayList<>();
@@ -168,20 +174,17 @@ public class EquipmentService {
         return new Attributes(a[0], a[1], a[2], a[3], equipped, bonuses);
     }
 
-    public Map<String, Object> equipmentView(OfficerEquipment e, Map<String, Integer> prep) {
+    public Map<String, Object> equipmentView(OfficerEquipment e) {
         Map<String, Object> v = new LinkedHashMap<>(); var d = OfficerEquipmentDef.ITEMS.get(e.getItemKey());
         v.put("id", e.getId()); v.put("itemId", e.getItemKey()); v.put("itemKey", e.getItemKey()); v.put("name", d == null ? e.getItemKey() : d.name());
         v.put("setType", e.getSetType()); v.put("slot", e.getSlot()); v.put("tier", e.getTier());
-        int stored = prep.getOrDefault(e.getSlot(), 0), effective = d == null ? 0 : Math.min(stored, d.preparationCap());
-        v.put("preparation", stored); v.put("effectivePreparation", effective);
         int[] a = {value(e.getMilitaryBonus()), value(e.getDefenseBonus()), value(e.getLogisticsBonus()), value(e.getKnowledgeBonus())};
-        if (d != null) a[OfficerEquipmentDef.BRANCHES.indexOf(d.branch())] += effective;
         for (int i = 0; i < 4; i++) v.put(OfficerEquipmentDef.BRANCHES.get(i), a[i]); return v;
     }
     private void addToInventory(Long player, String key) {
-        var item = playerItemRepository.findByPlayerIdAndItemKey(player, key).orElseGet(PlayerItem::new);
-        item.setPlayerId(player); item.setItemKey(key); item.setCount(value(item.getCount()) + 1); item.setUpdatedAt(GameClock.now()); playerItemRepository.save(item);
+        inventory.add(player, key, 1);
     }
+
     private static int value(Integer v) { return v == null ? 0 : v; }
     private static Map<String, Object> error(String m) { return new LinkedHashMap<>(Map.of("success", false, "message", m)); }
     private static Map<String, Object> success(String m) { return new LinkedHashMap<>(Map.of("success", true, "message", m)); }

@@ -7,7 +7,8 @@ public class PvpCalibrationTool {
         List<Map<String,Object>> evidence = new ArrayList<>();
         if (Files.exists(Path.of(args[0]))) evidence.addAll(PvpJson.read(Files.readString(Path.of(args[0])), new com.fasterxml.jackson.core.type.TypeReference<List<Map<String,Object>>>() {}));
         // 断点续算只保留当前规则的实测值，不能把旧系数换标签后跳过重新测量。
-        evidence.removeIf(row -> !PvpPowerModel.VERSION.equals(row.get("modelVersion")));
+        evidence.removeIf(row -> !PvpPowerModel.VERSION.equals(row.get("modelVersion"))
+                || !PvpJson.write(PvpPowerModel.CALIBRATION_SEEDS).equals(PvpJson.write(row.get("seeds"))));
         for (String field : List.of("LAND_AIR","SEA_AIR")) {
             for (String skill : new TreeSet<>(PvpPowerModel.COMBAT_SKILLS)) for (int level : new int[]{1,2,3,4,5}) {
                 if (evidence.stream().anyMatch(e -> field.equals(e.get("field")) && Map.of(skill,level).equals(e.get("skills")))) continue;

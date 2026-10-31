@@ -1505,10 +1505,11 @@
 
 .officer-attr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
 .officer-attr-row { min-width: 0; }
-.officer-attr-main { display: flex; align-items: baseline; min-height: 23px; gap: 4px; }
+.officer-attr-main { display: flex; flex-wrap: wrap; align-items: baseline; min-height: 23px; gap: 4px; }
 .officer-attr-main > span:first-child { margin-right: auto; color: var(--od-accent); font-weight: 700; }
 .officer-attr-main strong { color: var(--od-accent); font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; font-weight: 700; }
 .officer-attr-main small { color: var(--od-muted); font-size: 10px; }
+.officer-attr-main .officer-attr-equipment-bonus { color: var(--od-danger); }
 .officer-attr-add { width: 21px; height: 21px; margin-left: 2px; border: 1px solid var(--od-accent); border-radius: 3px; background: var(--od-accent); color: var(--od-action-ink); cursor: pointer; font: inherit; line-height: 1; }
 .officer-attr-add:hover { filter: brightness(1.12); }
 .officer-attr-editor:not(:empty) { display: block; margin-top: 6px; }

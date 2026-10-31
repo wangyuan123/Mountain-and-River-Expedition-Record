@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -14,6 +14,7 @@ function setup() {
     API: { getToken: () => 'token', getPrisoners: async () => ({ cityId: 11, cityName: '主城', campLevel: 2, educationLevel: 4, ratePermille: 4, total: 8, capacity: 4000, units: [{ unit: 'infantry', count: 8, goldPerUnit: 10, unavailableReason: '' }] }) }
   };
   const ctx = vm.createContext({ Game: G, window: { Game: G, localStorage: { getItem: () => null, setItem() {}, removeItem() {} } }, document: { activeElement: null, getElementById: id => nodes[id] }, setInterval: () => 1, clearInterval() {}, Date, Math });
+  require('./server-gameplay.cjs').install(ctx);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/prisoners.js'), 'utf8'), ctx);
   return { G, nodes };
 }

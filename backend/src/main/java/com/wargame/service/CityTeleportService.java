@@ -1,6 +1,7 @@
 package com.wargame.service;
 
 import com.wargame.util.GameClock;
+import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.ItemDef;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
@@ -21,6 +22,7 @@ public class CityTeleportService {
     public static final String NORMAL = "teleportNormal";
     public static final String ADVANCED = "teleportAdvanced";
     public static final Set<String> BATTLEFIELDS = Set.of("northwest", "northeast", "southwest", "southeast");
+    private static final String NAVAL_DESTINATION_REASON = "本城有海军、海军生产队列、军港或造船厂（含建设中），只能传送至沿海或海岛位置";
     private final AccountService accounts;
     private final PlayerRepository players;
     private final PlayerCityRepository cities;
@@ -32,6 +34,16 @@ public class CityTeleportService {
     private final WebSocketPushService push;
     private final EntityManager em;
 
+    /** 一次返回本城全部迁城阻塞项；与正式提交共用规则，读取不消耗传送道具。 */
+    @Transactional
+    public Map<String, Object> readiness(Long playerId) {
+        Placement placement = placement(playerId);
+        List<Map<String, Object>> checks = mobilityChecks(placement.city());
+        return Map.of("cityId", placement.city().getId(), "checks", checks,
+                "ready", checks.stream().allMatch(check -> Boolean.TRUE.equals(check.get("passed"))),
+                "requiresCoast", requiresNavalDestination(placement.city()));
+    }
+
     /** 高级传送预览不受建城名额限制；提交时仍重新检查占用及城市状态。 */
     @Transactional
     public Map<String, Object> preview(Long playerId, String battlefield, int x, int y) {
@@ -40,6 +52,8 @@ public class CityTeleportService {
         String reason = terrain.siteReason(placement.world().getId(), placement.mask(), x, y, null);
         if (reason.isEmpty() && !inBattlefield(battlefield, x, y)) reason = "传送坐标不属于所选战场，四格占地必须完整位于同一战场";
         if (reason.isEmpty()) reason = mobilityReason(placement.city());
+        if (reason.isEmpty() && requiresNavalDestination(placement.city()) && !navalDestination(placement, x, y))
+            reason = NAVAL_DESTINATION_REASON;
         return Map.of("cityId", placement.city().getId(), "x", x, "y", y, "span", 2,
                 "valid", reason.isEmpty(), "reason", reason, "battlefield", battlefield,
                 "maxCoordinate", WorldConfig.WORLD_SIZE - 2);
@@ -57,13 +71,16 @@ public class CityTeleportService {
         PlayerCity city = placement.city();
         String blocker = mobilityReason(city);
         if (!blocker.isEmpty()) throw new IllegalArgumentException(blocker);
+        boolean navalRequired = requiresNavalDestination(city);
         if (NORMAL.equals(itemId)) {
-            int[] target = randomDestination(placement.world().getId(), placement.mask(), battlefield);
+            int[] target = randomDestination(placement, battlefield, navalRequired);
             x = target[0]; y = target[1];
         }
         if (!inBattlefield(battlefield, x, y)) throw new IllegalArgumentException("传送坐标不属于所选战场，四格占地必须完整位于同一战场");
         String reason = terrain.siteReason(placement.world().getId(), placement.mask(), x, y, null);
         if (!reason.isEmpty()) throw new IllegalArgumentException(reason);
+        if (navalRequired && !navalDestination(placement, x, y))
+            throw new IllegalArgumentException(NAVAL_DESTINATION_REASON);
         long now = GameClock.now();
         if (items.tryConsume(playerId, itemId, 1, now) == 0)
             throw new IllegalArgumentException(ItemDef.ITEMS.get(itemId).name() + "数量不足");
@@ -93,44 +110,85 @@ public class CityTeleportService {
     private Placement placement(Long playerId) {
         accounts.lockPlayer(playerId);
         WorldMap world = terrain.lockWorld();
-        String mask = WorldTerrainService.playableMask(terrain.ensure());
+        String terrainMask = terrain.ensure();
+        String mask = WorldTerrainService.playableMask(terrainMask);
         PlayerCity selected = scope.selected(playerId).orElseThrow(() -> new IllegalArgumentException("城市不存在"));
         PlayerCity city = cities.findForUpdate(selected.getId()).orElseThrow();
         em.flush();
         em.refresh(city, LockModeType.PESSIMISTIC_WRITE);
         if (!playerId.equals(city.getOwnerId()) || city.getCitySlot() == null
                 || !world.getId().equals(city.getWorldId())) throw new IllegalArgumentException("城市不存在或不属于你");
-        return new Placement(world, mask, city);
+        return new Placement(world, mask, terrainMask, city);
+    }
+
+    /** 仅检查本城实际海军资产；地形和旧版海军标记本身不限制无海军资产城市迁城。 */
+    private boolean requiresNavalDestination(PlayerCity city) {
+        Set<String> navalTypes = new HashSet<>();
+        GameData.UNITS.forEach((type, unit) -> { if ("sea".equals(unit.branch())) navalTypes.add(type); });
+        Set<String> facilities = Set.of("port", "shipyard");
+        return hasCityAsset(ArmyUnit.class, city, "a.type in :types and a.count > 0", navalTypes)
+                // 包括已到完工时间但尚未结算的订单，避免迁城后才产出海军。
+                || hasCityAsset(ArmyProductionQueue.class, city, "a.unitType in :types and a.unitCount > 0", navalTypes)
+                || hasCityAsset(Building.class, city, "a.type in :types and a.level > 0", facilities)
+                || hasCityAsset(Construction.class, city, "a.buildingType in :types and a.targetLevel > 0", facilities);
+    }
+
+    /** 账号锁后使用数据库当前读，防止旧事务快照漏掉刚征召的舰队或刚提交的建设订单。 */
+    private boolean hasCityAsset(Class<?> type, PlayerCity city, String predicate, Set<String> types) {
+        return !em.createQuery("select a from " + type.getSimpleName()
+                        + " a where a.playerId = :owner and a.citySlot = :slot and " + predicate, type)
+                .setParameter("owner", city.getOwnerId()).setParameter("slot", city.getCitySlot())
+                .setParameter("types", types).setMaxResults(1).setLockMode(LockModeType.PESSIMISTIC_READ)
+                .getResultList().isEmpty();
+    }
+
+    /** 按目标真实地形判断港口资格，不沿用旧城的海军兼容标记；保留原始地形的海岛镜像判定。 */
+    private boolean navalDestination(Placement placement, int x, int y) {
+        return WorldTerrainService.isIsland(placement.terrainMask(), x, y)
+                || WorldTerrainService.coastal(placement.terrainMask(), x, y, 2);
     }
 
     /** 保留全部行军的来源和目标坐标，必须等相关部队返城或撤防后才能移动城市。 */
     private String mobilityReason(PlayerCity city) {
-        if (city.getReadyAt() > GameClock.now()) return "城市仍在建设中，不能传送";
-        if (city.isSurrenderFrozen(GameClock.now())) return "归降移交中的城市不能传送";
-        if (!marches.findCityTeleportDepartures(city.getOwnerId(), city.getCitySlot()).isEmpty())
-            return "本城仍有外派、采集、驻防或返程部队，请等待部队返城后传送";
-        if (!marches.findCityTeleportArrivals(city.getId().toString()).isEmpty())
-            return "本城仍有来袭、运输、调遣或驻防部队，不能传送";
-        if (!battles.findActivePlayerCityBattles(city.getId().toString()).isEmpty()) return "城市正在交战，不能传送";
-        if (city.getCitySlot() == 0 && !em.createQuery("select m from IncomingMarch m where m.targetPlayerId = :id", IncomingMarch.class)
-                .setParameter("id", city.getOwnerId()).setLockMode(LockModeType.PESSIMISTIC_READ).getResultList().isEmpty())
-            return "本城仍有日寇来袭，不能传送";
-        return "";
+        return mobilityChecks(city).stream().filter(check -> !Boolean.TRUE.equals(check.get("passed")))
+                .map(check -> (String) check.get("message")).findFirst().orElse("");
     }
 
-    /** 蓄水池抽样使每个合法左上角坐标等概率；全图无落点时明确失败，不反复随机碰运气。 */
-    private int[] randomDestination(Long worldId, String mask, String battlefield) {
-        Set<String> used = terrain.occupiedCoordinates(worldId);
+    /** 全量检查与执行校验共用此处，避免前端通过清单却仍因未列出的城市状态被拒绝。 */
+    private List<Map<String, Object>> mobilityChecks(PlayerCity city) {
+        boolean incomingNpc = city.getCitySlot() == 0 && !em.createQuery("select m from IncomingMarch m where m.targetPlayerId = :id", IncomingMarch.class)
+                .setParameter("id", city.getOwnerId()).setLockMode(LockModeType.PESSIMISTIC_READ).getResultList().isEmpty();
+        return List.of(
+                check("construction", city.getReadyAt() <= GameClock.now(), "城市仍在建设中，不能传送", "home"),
+                check("surrender", !city.isSurrenderFrozen(GameClock.now()), "归降移交中的城市不能传送", "mail"),
+                check("departures", marches.findCityTeleportDepartures(city.getOwnerId(), city.getCitySlot()).isEmpty(),
+                        "本城仍有外派、采集、驻防或返程部队，请等待部队返城后传送", "alerts"),
+                check("arrivals", marches.findCityTeleportArrivals(city.getId().toString()).isEmpty(),
+                        "本城仍有来袭、运输、调遣或驻防部队，不能传送", "alerts"),
+                check("battle", battles.findActivePlayerCityBattles(city.getId().toString()).isEmpty(), "城市正在交战，不能传送", "alerts"),
+                check("npc", !incomingNpc, "本城仍有日寇来袭，不能传送", "alerts"));
+    }
+
+    private Map<String, Object> check(String key, boolean passed, String message, String route) {
+        return Map.of("key", key, "passed", passed, "message", message, "route", route);
+    }
+
+    /** 先按本城海军资产筛选落点再等概率抽样；无沿海/海岛落点时失败，不回退到内陆。 */
+    private int[] randomDestination(Placement placement, String battlefield, boolean navalRequired) {
+        Set<String> used = terrain.occupiedCoordinates(placement.world().getId());
         int count = 0;
         int[] target = null;
         int minX = battlefieldX(battlefield), minY = battlefieldY(battlefield);
         for (int y = minY; y < minY + WorldConfig.SIZE - 1; y++) {
             for (int x = minX; x < minX + WorldConfig.SIZE - 1; x++) {
-                if (WorldTerrainService.vacantFootprint(mask, WorldConfig.WORLD_SIZE, false, used, x, y, 2)
+                if (WorldTerrainService.vacantFootprint(placement.mask(), WorldConfig.WORLD_SIZE, false, used, x, y, 2)
+                        && (!navalRequired || navalDestination(placement, x, y))
                         && ThreadLocalRandom.current().nextInt(++count) == 0) target = new int[]{x, y};
             }
         }
-        if (target == null) throw new IllegalArgumentException("地图中没有满足四格建城条件的传送目的地");
+        if (target == null) throw new IllegalArgumentException(navalRequired
+                ? "所选战场没有满足四格空闲陆地条件的沿海或海岛传送目的地，请更换战场"
+                : "地图中没有满足四格建城条件的传送目的地");
         return target;
     }
 
@@ -147,5 +205,5 @@ public class CityTeleportService {
     private static int battlefieldX(String battlefield) { return battlefield.endsWith("east") ? WorldConfig.SIZE : 0; }
     private static int battlefieldY(String battlefield) { return battlefield.startsWith("south") ? WorldConfig.SIZE : 0; }
 
-    private record Placement(WorldMap world, String mask, PlayerCity city) {}
+    private record Placement(WorldMap world, String mask, String terrainMask, PlayerCity city) {}
 }

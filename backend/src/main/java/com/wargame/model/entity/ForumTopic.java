@@ -77,7 +77,7 @@ public class ForumTopic {
     private Integer tipCount = 0;
 
     @Column(name = "tip_total_gold", nullable = false)
-    private Integer tipTotalGold = 0;
+    private Long tipTotalGold = 0L;
 
     @Column(name = "is_pinned", nullable = false)
     private Boolean isPinned = false;

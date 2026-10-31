@@ -23,8 +23,9 @@ import java.util.*;
  */
 @Service
 public class TechService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodTimeline timeline;
     @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private GarrisonFoodService garrisonFood;
-    @org.springframework.beans.factory.annotation.Autowired private OfficerEquipmentProgressService equipmentProgress;
 
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -82,6 +83,8 @@ public class TechService {
 
     @Transactional
     public Map<String, Object> upgrade(Long playerId, String techType) {
+        if (!GameData.TECHS.containsKey(techType)) return Map.of("success", false, "message", "无效的科技类型: " + techType);
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         return startResearch(playerId, techType);
     }
 
@@ -193,6 +196,7 @@ public class TechService {
 
     @Transactional
     public Map<String, Object> cancelResearch(Long playerId, Long queueId) {
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Map<String, Object> result = new LinkedHashMap<>();
         TechResearchQueue q = null;
         if (queueId != null) {
@@ -302,6 +306,8 @@ public class TechService {
 
     @Transactional
     public List<String> settleCompletedResearch(Long playerId, long now) {
+        if (timeline != null && timeline.eventTime() == null)
+            return timeline.advance(playerId, now, null).research().values().stream().flatMap(List::stream).toList();
         List<TechResearchQueue> completed = techResearchQueueRepository
                 .findByPlayerIdAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, now);
         return settleCompletedRows(playerId, now, completed);
@@ -310,6 +316,8 @@ public class TechService {
     /** 只结算指定城市的科研队列，避免其他城市的 tick 越过冻结边界。 */
     @Transactional
     public List<String> settleCompletedResearchForCity(Long playerId, Integer citySlot, long now) {
+        if (timeline != null && timeline.eventTime() == null)
+            return timeline.advance(playerId, now, null).researchFor(citySlot);
         if (isCityFrozen(playerId, citySlot, now)) return Collections.emptyList();
         List<TechResearchQueue> completed = techResearchQueueRepository
                 .findByPlayerIdAndCitySlotAndFinishesAtLessThanEqualOrderByFinishesAtAscIdAsc(playerId, citySlot, now);
@@ -351,7 +359,6 @@ public class TechService {
                 }
             }
 
-            equipmentProgress.event(playerId, "develop", "tech-" + q.getId(), 1);
             techResearchQueueRepository.delete(q);
             // 研究成果在结算时留存，暂停或跳过引导后完成研究也能领取探索奖励。
             if (onboarding != null) onboarding.onEvent(playerId, "TECH_LEVEL", techType, 1);
@@ -389,6 +396,7 @@ public class TechService {
         m.put("targetLevel", q.getTargetLevel());
         m.put("startedAt", q.getStartedAt());
         m.put("finishesAt", q.getFinishesAt());
+            m.put("speedUpCounts", speedUpSupport.suggestedCounts(playerId, q.getFinishesAt()));
         m.put("durationSeconds", q.getDurationSeconds());
         m.put("remainingSeconds", rem);
         m.put("citySlot", q.getCitySlot());
@@ -410,6 +418,7 @@ public class TechService {
             m.put("targetLevel", q.getTargetLevel());
             m.put("startedAt", q.getStartedAt());
             m.put("finishesAt", q.getFinishesAt());
+            m.put("speedUpCounts", speedUpSupport.suggestedCounts(playerId, q.getFinishesAt()));
             m.put("durationSeconds", q.getDurationSeconds());
             m.put("remainingSeconds", rem);
             m.put("citySlot", q.getCitySlot());
@@ -448,17 +457,37 @@ public class TechService {
 
     /** 开工时锁定工期：市长有效学识与格物技能倍率相乘；labLevel保留调用兼容，只控制准入、不参与提速。 */
     public int calcTechDuration(Long playerId, String techType, int currentLevel, int labLevel) {
-        // 按目标等级查表；旧任务沿用已保存的工期与完成时间。
-        double base = TechnologyRules.baseDuration(techType, currentLevel + 1);
+        return researchDuration(techType, currentLevel, researchSpeed(playerId));
+    }
+
+    /** 科研预览与开工共用速度和取整规则；一次快照只查询一次市长装备。 */
+    private double researchSpeed(Long playerId) {
         Officer mayor = getResearchMayor(playerId);
-        // 与前端状态采用同一份装备、套装后的有效学识，且只读取开工城市的市长。
         int knowledge = mayor == null ? 0 : equipmentService == null
                 ? Objects.requireNonNullElse(mayor.getKnowledge(), 0) : equipmentService.attributes(mayor).knowledge();
-        double knowledgeSpeed = 1.0 + TechnologyRules.RESEARCH_KNOWLEDGE_SPEED_PER_POINT * Math.max(0, knowledge);
-        int researchLv = getMayorResearchLevel(mayor);
-        double mayorSpeed = 1.0 + 0.04 * researchLv;
-        int duration = (int) Math.round(base / (knowledgeSpeed * mayorSpeed));
-        return Math.max(5, duration);
+        return (1 + TechnologyRules.RESEARCH_KNOWLEDGE_SPEED_PER_POINT * Math.max(0, knowledge))
+                * (1 + .04 * getMayorResearchLevel(mayor));
+    }
+
+    private int researchDuration(String type, int level, double speed) {
+        return Math.max(5, (int) Math.round(TechnologyRules.baseDuration(type, level + 1) / speed));
+    }
+
+    /** 全部等级报价由服务端统一产生，前端不再保存成长曲线。 */
+    public Map<String, Object> previewLevels(Long playerId) {
+        double speed = researchSpeed(playerId);
+        Map<String, Object> result = new LinkedHashMap<>();
+        GameData.TECHS.forEach((id, definition) -> {
+            List<Map<String, Object>> levels = new ArrayList<>();
+            for (int level = 0; level <= definition.maxLevel(); level++) {
+                levels.add(Map.of("cost", calcTechCost(id, level),
+                        "duration", researchDuration(id, level, speed),
+                        "requiredLabLevel", Math.max(definition.labReq(), level + 1),
+                        "effect", TechnologyPresentation.effect(definition, level)));
+            }
+            result.put(id, Map.of("levels", levels));
+        });
+        return result;
     }
 
     public int calcTechDuration(String techType, int currentLevel, int labLevel) {

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(document = { getElementById() { return null; } }) {
   const context = { document };
@@ -15,6 +15,8 @@ function setup(document = { getElementById() { return null; } }) {
     buildings: { wall: 5 },
     forts: { bunker: 10, howitzer: 20, antitank: 0, flak: 5 }
   };
+  context.Game.Core.state.gameplay.fortCap = 150;
+  context.Game.Core.state.gameplay.wall = { maxHp:1250000, defense:100 };
   return context.Game;
 }
 
@@ -93,6 +95,7 @@ test('首页城防总览展示四类工事、共享容量和墙体属性', () =>
   assert.match(home.innerHTML, /<span class="zone-head-actions"><button[^>]*class="army-summary-expand"[^>]*>.*?<\/button><span class="army-dispatch-go zone-head-action"[^>]*>去出征 &gt;<\/span><\/span>/s);
   assert.doesNotMatch(home.innerHTML, /class="fort-go"/);
   G.Core.state.tech = { wall_reinforcement: 10 };
+  G.Core.state.gameplay.wall = {maxHp:1875000,defense:150};
   G.Core.views.home(home);
   assert.match(home.innerHTML, /墙体 <b>1875000<\/b> 生命 · <b>150<\/b> 防御/);
   assert.match(home.innerHTML, /工事 35\/150/);

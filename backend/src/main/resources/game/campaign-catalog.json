@@ -1,0 +1,383 @@
+{
+  "normandy": {
+    "name": "诺曼底战役",
+    "desc": "滩头登陆,撕开大西洋壁垒。",
+    "unlock": null,
+    "stages": [
+      {
+        "id": "no_1",
+        "name": "奥马哈滩头",
+        "enemy": {
+          "infantry": 40
+        },
+        "reward": {
+          "food": 200,
+          "steel": 300,
+          "oil": 150,
+          "rare": 30,
+          "gold": 50,
+          "exp": 30
+        }
+      },
+      {
+        "id": "no_2",
+        "name": "滨海小镇",
+        "enemy": {
+          "infantry": 60
+        },
+        "reward": {
+          "food": 240,
+          "steel": 360,
+          "oil": 180,
+          "rare": 40,
+          "gold": 60,
+          "exp": 50
+        }
+      },
+      {
+        "id": "no_3",
+        "name": "桥头堡",
+        "enemy": {
+          "armored": 10,
+          "ltank": 6
+        },
+        "reward": {
+          "food": 300,
+          "steel": 460,
+          "oil": 240,
+          "rare": 60,
+          "gold": 80,
+          "exp": 80
+        }
+      },
+      {
+        "id": "no_4",
+        "name": "敌军反扑",
+        "enemy": {
+          "ltank": 14,
+          "assault": 6,
+          "fighter": 8
+        },
+        "reward": {
+          "food": 380,
+          "steel": 580,
+          "oil": 320,
+          "rare": 90,
+          "gold": 110,
+          "exp": 120
+        }
+      },
+      {
+        "id": "no_5",
+        "name": "司令部突袭",
+        "enemy": {
+          "htank": 8,
+          "assault": 10,
+          "bomber": 6,
+          "destroyer": 4
+        },
+        "reward": {
+          "food": 500,
+          "steel": 800,
+          "oil": 460,
+          "rare": 140,
+          "gold": 160,
+          "exp": 180
+        }
+      }
+    ]
+  },
+  "africa": {
+    "name": "北非战场",
+    "desc": "黄沙漫天,坦克洪流对决。",
+    "unlock": {
+      "zone": "normandy",
+      "stage": 3
+    },
+    "stages": [
+      {
+        "id": "af_1",
+        "name": "沙漠哨所",
+        "enemy": {
+          "ltank": 10
+        },
+        "reward": {
+          "food": 360,
+          "steel": 560,
+          "oil": 320,
+          "rare": 80,
+          "gold": 90,
+          "exp": 100
+        }
+      },
+      {
+        "id": "af_2",
+        "name": "补给线截击",
+        "enemy": {
+          "ltank": 16,
+          "assault": 8
+        },
+        "reward": {
+          "food": 440,
+          "steel": 680,
+          "oil": 400,
+          "rare": 100,
+          "gold": 120,
+          "exp": 140
+        }
+      },
+      {
+        "id": "af_3",
+        "name": "装甲对决",
+        "enemy": {
+          "htank": 10,
+          "assault": 10,
+          "fighter": 10
+        },
+        "reward": {
+          "food": 540,
+          "steel": 820,
+          "oil": 500,
+          "rare": 130,
+          "gold": 160,
+          "exp": 180
+        }
+      },
+      {
+        "id": "af_4",
+        "name": "海岸炮台",
+        "enemy": {
+          "assault": 12,
+          "battleship": 3,
+          "destroyer": 6
+        },
+        "reward": {
+          "food": 660,
+          "steel": 1000,
+          "oil": 620,
+          "rare": 170,
+          "gold": 210,
+          "exp": 230
+        }
+      },
+      {
+        "id": "af_5",
+        "name": "隆美尔之影",
+        "enemy": {
+          "htank": 16,
+          "rocket": 8,
+          "bomber": 10,
+          "sub": 4
+        },
+        "reward": {
+          "food": 880,
+          "steel": 1320,
+          "oil": 820,
+          "rare": 230,
+          "gold": 300,
+          "exp": 320
+        }
+      }
+    ]
+  },
+  "eastern": {
+    "name": "东线战场",
+    "desc": "凛冬将至,钢铁洪流碰撞。",
+    "unlock": {
+      "zone": "africa",
+      "stage": 3
+    },
+    "stages": [
+      {
+        "id": "es_1",
+        "name": "边境遭遇",
+        "enemy": {
+          "infantry": 100,
+          "ltank": 20
+        },
+        "reward": {
+          "food": 600,
+          "steel": 900,
+          "oil": 560,
+          "rare": 140,
+          "gold": 160,
+          "exp": 180
+        }
+      },
+      {
+        "id": "es_2",
+        "name": "钢铁洪流",
+        "enemy": {
+          "htank": 20,
+          "assault": 12
+        },
+        "reward": {
+          "food": 720,
+          "steel": 1080,
+          "oil": 680,
+          "rare": 180,
+          "gold": 200,
+          "exp": 230
+        }
+      },
+      {
+        "id": "es_3",
+        "name": "库尔斯克",
+        "enemy": {
+          "htank": 28,
+          "rocket": 10,
+          "fighter": 16,
+          "bomber": 8
+        },
+        "reward": {
+          "food": 880,
+          "steel": 1320,
+          "oil": 840,
+          "rare": 230,
+          "gold": 260,
+          "exp": 300
+        }
+      },
+      {
+        "id": "es_4",
+        "name": "城市巷战",
+        "enemy": {
+          "infantry": 200,
+          "assault": 16,
+          "special": 12
+        },
+        "reward": {
+          "food": 1040,
+          "steel": 1560,
+          "oil": 1000,
+          "rare": 290,
+          "gold": 330,
+          "exp": 380
+        }
+      },
+      {
+        "id": "es_5",
+        "name": "柏林外围",
+        "enemy": {
+          "htank": 36,
+          "rocket": 16,
+          "fighter": 20,
+          "bomber": 12,
+          "battleship": 4,
+          "special": 20
+        },
+        "reward": {
+          "food": 1400,
+          "steel": 2100,
+          "oil": 1340,
+          "rare": 400,
+          "gold": 480,
+          "exp": 520
+        }
+      }
+    ]
+  },
+  "pacific": {
+    "name": "太平洋战场",
+    "desc": "海天之间,谁主沉浮。",
+    "unlock": {
+      "zone": "eastern",
+      "stage": 3
+    },
+    "stages": [
+      {
+        "id": "pa_1",
+        "name": "环礁侦察",
+        "enemy": {
+          "scout": 10,
+          "special": 8,
+          "fighter": 16,
+          "sub": 4
+        },
+        "reward": {
+          "food": 800,
+          "steel": 1200,
+          "oil": 800,
+          "rare": 200,
+          "gold": 220,
+          "exp": 220
+        }
+      },
+      {
+        "id": "pa_2",
+        "name": "航母编队",
+        "enemy": {
+          "fighter": 24,
+          "bomber": 12,
+          "carrier": 1,
+          "destroyer": 6,
+          "special": 12
+        },
+        "reward": {
+          "food": 1000,
+          "steel": 1500,
+          "oil": 1000,
+          "rare": 260,
+          "gold": 300,
+          "exp": 300
+        }
+      },
+      {
+        "id": "pa_3",
+        "name": "夜袭港口",
+        "enemy": {
+          "sub": 12,
+          "battleship": 4,
+          "destroyer": 8,
+          "special": 16
+        },
+        "reward": {
+          "food": 1200,
+          "steel": 1800,
+          "oil": 1200,
+          "rare": 320,
+          "gold": 380,
+          "exp": 380
+        }
+      },
+      {
+        "id": "pa_4",
+        "name": "决战中途",
+        "enemy": {
+          "carrier": 3,
+          "fighter": 40,
+          "bomber": 20,
+          "battleship": 6,
+          "special": 24
+        },
+        "reward": {
+          "food": 1500,
+          "steel": 2250,
+          "oil": 1500,
+          "rare": 420,
+          "gold": 500,
+          "exp": 480
+        }
+      },
+      {
+        "id": "pa_5",
+        "name": "东京湾",
+        "enemy": {
+          "carrier": 6,
+          "battleship": 10,
+          "fighter": 60,
+          "bomber": 30,
+          "special": 40
+        },
+        "reward": {
+          "food": 2200,
+          "steel": 3300,
+          "oil": 2200,
+          "rare": 640,
+          "gold": 800,
+          "exp": 700
+        }
+      }
+    ]
+  }
+}

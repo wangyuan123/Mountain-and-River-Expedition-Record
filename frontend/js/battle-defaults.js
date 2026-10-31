@@ -16,17 +16,12 @@ window.Game = window.Game || {};
   var actionChoices = [['ADVANCE', '前进'], ['HOLD', '待命'], ['RETREAT', '后退']];
   var lockedMessage = '战斗或进攻行军期间无法修改默认战术';
 
-  /** 服务端锁定状态覆盖所有城市；本地军情用于页面打开期间及时禁用编辑。 */
+  /** 状态推送提供账号级锁定资格，不根据客户端行军列表重建业务限制。 */
   function isLocked() {
     if (!defaults) return false;
-    var world = Core.state && Core.state.world || {};
-    var attacking = (world.marches || []).some(function (march) {
-      return !march.returning && !march.gathering &&
-        (march.action === 'conquer' || march.action === 'plunder' ||
-          march.action == null || String(march.action).indexOf('tactical') === 0);
-    });
-    var defending = (world.incoming || []).some(function (march) { return march.inBattle; });
-    return !!defaults.locked || attacking || defending;
+    var gameplay = Core.state && Core.state.gameplay;
+    return gameplay && typeof gameplay.battleDefaultsLocked === 'boolean'
+      ? gameplay.battleDefaultsLocked : !!defaults.locked;
   }
 
   /** 菜单始终锚定在页面内的选项框，避免横屏或缩放时原生弹层使用不同坐标系。 */
@@ -126,11 +121,7 @@ window.Game = window.Game || {};
     function accept(saved) {
       if (currentRequest !== requestId) return;
       if (playerId !== (Core.state && Core.state.player && Core.state.player.id)) return;
-      if (G.Mobilization && saved.formationKey !== undefined && saved.formationKey !== G.Mobilization.info().key) {
-        throw new Error('动员状态已变化，请重试加载防守编队');
-      }
       defaults = saved;
-      if (defaults.sortieArmy === undefined) defaults.sortieArmy = null;
       message = '';
       loading = false;
       if (Core.route === 'battleDefaults') Core.render();
@@ -138,13 +129,6 @@ window.Game = window.Game || {};
     G.API.getBattleDefaults().then(function (saved) {
       if (currentRequest !== requestId) return;
       if (playerId !== (Core.state && Core.state.player && Core.state.player.id)) return;
-      // 跨设备启用或到期时，战术响应可能先于账号状态更新；校准后重读一次，避免渲染中丢弃响应而永久停在加载页。
-      if (G.Mobilization && saved.formationKey !== undefined && saved.formationKey !== G.Mobilization.info().key && G.API.getGameState) {
-        return G.API.getGameState(true).then(function () {
-          if (currentRequest !== requestId || playerId !== (Core.state && Core.state.player && Core.state.player.id)) return;
-          return G.API.getBattleDefaults().then(accept);
-        });
-      }
       accept(saved);
     }).catch(function (error) {
       if (currentRequest !== requestId) return;
@@ -161,161 +145,25 @@ window.Game = window.Game || {};
     updateMessage('有未保存的修改');
   }
 
-  function sortieCap() {
-    return typeof Core.sortieCap === 'function' ? Core.sortieCap() : Number(defaults && defaults.sortieCap) || 0;
-  }
-
-  function sortieTotal() {
-    return Object.keys(defaults.sortieArmy || {}).reduce(function (total, unitId) {
-      return total + defaults.sortieArmy[unitId];
-    }, 0);
-  }
-
-  function sortieAvailable(unitId) {
-    return Math.max(0, Number(Core.state && Core.state.army && Core.state.army[unitId]) || 0);
-  }
-
-  /** 单兵种最多使用其驻军及扣除其他已选兵种后的剩余迎战额度。 */
-  function sortieUnitMax(unitId) {
-    var configured = defaults.sortieArmy && defaults.sortieArmy[unitId] || 0;
-    return Math.min(sortieAvailable(unitId), Math.max(0, sortieCap() - sortieTotal() + configured));
-  }
-
-  /** 换城或驻军、加成变化后，仅调整本地草稿；与服务端选兵一致，先截驻军再按比例限额。 */
-  function fitSortieArmy() {
-    if (!defaults || defaults.sortieArmy == null) return false;
-    var units = Object.keys(defaults.sortieArmy).sort();
-    var changed = false;
-    units.forEach(function (unitId) {
-      var count = Math.min(defaults.sortieArmy[unitId], sortieAvailable(unitId));
-      if (count !== defaults.sortieArmy[unitId]) changed = true;
-      defaults.sortieArmy[unitId] = count;
-    });
-    var total = sortieTotal();
-    var cap = sortieCap();
-    if (total > cap) {
-      var selected = {};
-      units.forEach(function (unitId) {
-        selected[unitId] = defaults.sortieArmy[unitId];
-        defaults.sortieArmy[unitId] = Math.floor(defaults.sortieArmy[unitId] * cap / total);
-      });
-      var remaining = cap - sortieTotal();
-      // 按兵种 ID 分配整数余数，零兵种保持不出战，且不超过对应驻军。
-      units.forEach(function (unitId) {
-        if (remaining > 0 && defaults.sortieArmy[unitId] < selected[unitId]) {
-          defaults.sortieArmy[unitId]++;
-          remaining--;
-        }
-      });
-      changed = true;
-    }
-    return changed;
-  }
-
-  /** 拖动时原位同步两种输入及其他兵种额度，避免整页渲染打断滑动操作。 */
-  function syncSortieControls() {
-    Object.keys(G.DATA.units).forEach(function (unitId) {
-      var maximum = sortieUnitMax(unitId);
-      ['range', 'number'].forEach(function (type) {
-        var input = document.getElementById('battle-defaults-sortie-' + type + '-' + unitId);
-        if (!input) return;
-        input.max = String(maximum);
-        input.value = String(defaults.sortieArmy[unitId] || 0);
-        input.disabled = type === 'range' && maximum === 0;
-        // 复用军队页滑动条样式，额度变化时同时更新已选比例的填充进度。
-        if (type === 'range') input.style.setProperty('--p', (maximum > 0 ? Number(input.value) / maximum * 100 : 0).toFixed(1) + '%');
-      });
-      var limit = document.getElementById('battle-defaults-sortie-limit-' + unitId);
-      if (limit) limit.textContent = String(maximum);
-    });
-    var total = document.getElementById('battle-defaults-sortie-total');
-    if (total) total.textContent = String(sortieTotal());
-    var remaining = document.getElementById('battle-defaults-sortie-remaining');
-    if (remaining) remaining.textContent = String(Math.max(0, sortieCap() - sortieTotal()));
-    var cap = document.getElementById('battle-defaults-sortie-cap');
-    if (cap) cap.textContent = String(sortieCap());
-  }
-
-  /** 空配置表示自动迎战，手动配置的 0 明确表示该兵种不出城。 */
-  function setAutomaticSortie(automatic) {
-    if (isLocked()) return;
-    if (!defaults) return;
-    defaults.sortieArmy = automatic ? null : {};
-    updateMessage('有未保存的修改');
-    Core.render();
-  }
-
-  function sortieError() {
-    if (!defaults || defaults.sortieArmy == null) return '';
-    var invalid = Object.keys(defaults.sortieArmy).some(function (unitId) {
-      var count = defaults.sortieArmy[unitId];
-      return !Number.isSafeInteger(count) || count < 0;
-    });
-    if (invalid) return '迎战兵力必须为非负整数';
-    if (sortieTotal() > sortieCap()) return '迎战兵力超过出城迎战上限 ' + sortieCap();
-    return '';
-  }
-
-  /** 滑动条和数字输入共用上限；超额截断，非法数字恢复上一有效值。 */
-  function setSortieCount(unitId, value) {
-    if (isLocked()) return;
-    if (!defaults || defaults.sortieArmy == null || !G.DATA.units[unitId]) return;
-    var adjusted = fitSortieArmy();
-    var count = Number(value);
-    if (!Number.isSafeInteger(count) || count < 0) {
-      syncSortieControls();
-      updateMessage('迎战兵力必须为非负整数，已恢复有效数量' + (adjusted ? '；编队已按当前驻军及上限调整，请保存' : ''));
-      return;
-    }
-    var maximum = sortieUnitMax(unitId);
-    defaults.sortieArmy[unitId] = Math.min(count, maximum);
-    syncSortieControls();
-    updateMessage(count > maximum ? '已限制到该兵种可选上限 ' + maximum + '，有未保存的修改' :
-      adjusted ? '已按当前驻军和迎战上限调整编队，有未保存的修改' : '有未保存的修改');
-  }
-
-  /** 增益启停时重新加载对应配置；绝不把动员草稿缩减后当作默认编队保存。 */
+  /** 出征容量变化只更新说明，不重置与动员无关的攻守行动草稿。 */
   function refreshMobilization() {
-    if (!defaults || !G.Mobilization || defaults.formationKey === undefined) return false;
-    if (defaults.formationKey !== G.Mobilization.info().key) {
-      requestId++;
-      loading = false;
-      saving = false;
-      defaults = null;
-      closeActionMenu();
-      if (Core.route === 'battleDefaults') Core.render();
-      return true;
-    }
-    if (Core.route === 'battleDefaults') {
-      var adjusted = fitSortieArmy();
-      if (adjusted) {
-        Core.render();
-        updateMessage('已按当前动员上限调整编队，请保存生效');
-      } else {
-        var cap = document.getElementById('battle-defaults-sortie-cap');
-        if (cap) cap.textContent = String(sortieCap());
-      }
-    }
+    var cap = document.getElementById('battle-defaults-dispatch-cap');
+    if (cap && defaults) cap.textContent = String(dispatchCap());
     return false;
   }
 
+  function dispatchCap() {
+    return typeof Core.armyCap === 'function' ? Core.armyCap() : Number(defaults && defaults.sortieCap) || 0;
+  }
+
   function currentPreferences() {
-    var result = { outgoing: defaults.outgoing, defending: defaults.defending, sortieArmy: defaults.sortieArmy };
-    if (defaults.formationKey !== undefined) result.formationKey = defaults.formationKey;
-    return result;
+    return { outgoing: defaults.outgoing, defending: defaults.defending };
   }
 
   /** 保存攻守两套完整配置，后端按当前登录账号校验并持久化。 */
   function save() {
     if (!defaults || saving) return;
-    if (refreshMobilization()) return;
     if (isLocked()) { updateMessage(lockedMessage); return; }
-    // 保存前按最新驻军和迎战额度同步表单，再一次性提交当前可见的三项配置。
-    if (fitSortieArmy()) {
-      syncSortieControls();
-    }
-    var error = sortieError();
-    if (error) { updateMessage(error); return; }
     saving = true;
     var savingRequest = requestId;
     var button = document.getElementById('battle-defaults-save');
@@ -326,14 +174,6 @@ window.Game = window.Game || {};
       updateMessage(JSON.stringify(currentPreferences()) === JSON.stringify(snapshot) ? '已保存，后续迎战和离线战斗将按此配置执行' : '已保存；仍有未保存的修改');
     }).catch(function (error) {
       if (savingRequest !== requestId) return;
-      if (error.message && error.message.indexOf('动员状态已变化') >= 0) {
-        requestId++;
-        loading = false;
-        saving = false;
-        defaults = null;
-        if (Core.route === 'battleDefaults') Core.render();
-        return;
-      }
       updateMessage(error.message || '保存失败，请重试');
       if (error.message && error.message.indexOf('行军期间无法修改') >= 0) {
         defaults.locked = true;
@@ -342,7 +182,7 @@ window.Game = window.Game || {};
     }).finally(function () {
       if (savingRequest !== requestId) return;
       saving = false;
-      // 编辑自动选兵会重新渲染按钮，保存结束后必须恢复当前 DOM 中的按钮。
+      // 页面刷新可能重新渲染按钮，保存结束后必须恢复当前 DOM 中的按钮。
       var currentButton = document.getElementById('battle-defaults-save');
       if (currentButton) currentButton.disabled = isLocked();
     });
@@ -361,14 +201,8 @@ window.Game = window.Game || {};
       defaults = null;
       message = '';
     }
-    if (defaults && G.Mobilization && defaults.formationKey !== undefined && defaults.formationKey !== G.Mobilization.info().key) {
-      requestId++;
-      loading = false;
-      saving = false;
-      defaults = null;
-    }
     var html = '<div class="title">- 默认战术 -</div>' +
-      '<div class="desc">按兵种统一设置迎战数量与攻守默认行动，保存后用于后续迎战及离线战斗。</div>';
+      '<div class="desc">按兵种设置出征与守城的默认行动，保存后用于后续战斗及离线结算。</div>';
     if (!defaults) {
       v.innerHTML = html + '<div class="panel"><div class="desc">正在加载默认战术…</div>' +
         '<div id="battle-defaults-message" role="status">' + G.escapeHtml(message) + '</div>' +
@@ -377,48 +211,28 @@ window.Game = window.Game || {};
       return;
     }
     var locked = isLocked();
-    if (!locked && fitSortieArmy()) message = '已按当前驻军和迎战上限调整编队，请保存生效';
-    var automaticSortie = defaults.sortieArmy == null;
-    var mobilized = defaults.formationKey && defaults.formationKey.indexOf('mobilization:') === 0;
-    html += (G.Mobilization ? G.Mobilization.widget() : '') +
-      '<div class="desc">当前编辑：' + (mobilized ? '动员防守编队。动员全部结束后自动恢复默认防守编队。' : '默认防守编队。') +
-      '攻守默认行动由两套编队共用。</div>';
-    html += '<div class="panel battle-defaults-panel"><h3>出城迎战兵力与默认行动</h3>' +
+    html += '<div class="panel battle-defaults-panel"><h3>出征与守城默认行动</h3>' +
       (locked ? '<div class="desc" role="status">' + lockedMessage + '。<button type="button" class="btn sm" onclick="Game.BattleDefaults.retry()">刷新状态</button></div>' : '') +
-      '<div class="desc">当前城市迎战上限 <strong id="battle-defaults-sortie-cap">' + sortieCap() + '</strong>。</div>' +
-      '<details class="battle-defaults-help"><summary>迎战规则与战斗说明</summary>' +
-      '<div class="desc">迎战与出征上限一致，按军衔、三军统帅技能与账号动员加成计算。动员期间单独保存迎战数量，全部到期后恢复原默认编队。</div>' +
-      '<div class="desc">此编队用于敌军来袭时迎战，使用守城战斗的默认行动；主动攻击仍在出征页面选兵。' +
-      '配置全账号共用，实际按被攻击城市的驻军及加成计算；兵力不足按实际数量出战，超限按比例缩减。工事不占名额，未选驻军不参战。</div>' +
-      '<div class="desc">关闭自动选兵后，可拖动滑动条或输入数量；各兵种合计不能超过迎战上限。切换城市或驻军、上限变化时会调整本地编队，保存后生效。</div>' +
-      '<div class="desc">战斗规则：离线战斗时，兵种优先攻击射程内的敌方同类型兵种；同类型兵种不在射程内或不存在时，攻击射程内最近的敌方兵种。在线指挥时，可指定攻击射程内的任意敌方兵种。战斗中手动指令只覆盖当前回合。</div></details>' +
-      '<label class="battle-defaults-sortie-mode"><input type="checkbox"' + (automaticSortie ? ' checked' : '') + (locked ? ' disabled' : '') +
-      ' onchange="Game.BattleDefaults.setAutomaticSortie(this.checked)"> 按驻军比例自动选兵（不超过迎战上限）</label>';
-    html += '<div class="desc battle-defaults-summary">' + (automaticSortie ? '自动迎战：开战时按驻军比例选兵。例如：城内有步兵6万、坦克4万，迎战上限5万时，会派步兵3万、坦克2万，其余留城；驻军未超过上限时全部迎战。' :
-      '已配置 <strong id="battle-defaults-sortie-total">' + sortieTotal() + '</strong>；剩余额度 <strong id="battle-defaults-sortie-remaining">' +
-      Math.max(0, sortieCap() - sortieTotal()) + '</strong>；全部设为 0 时，仅工事参与防守。') + '</div>';
-    html += '<div class="battle-defaults-head"><span>兵种 / 驻军</span><span>迎战数量</span><span>出城战斗</span><span>守城战斗</span></div>';
-    // 每个兵种只渲染一行，迎战数量和两套行动共用同一份草稿及保存入口。
+      '<div class="desc"><strong>守城：不受带兵上限限制。</strong>开战时，本城全部可战部队与已抵达的有效援军参战，无需设置迎战数量。</div>' +
+      '<div class="desc"><strong>出征：受带兵上限限制。</strong>当前城市每支出征队伍上限 <strong id="battle-defaults-dispatch-cap">' + dispatchCap() +
+      '</strong>，由军衔、三军统帅技能与动员加成决定；在出征页面选择兵力。</div>' +
+      '<details class="battle-defaults-help"><summary>参战范围与战斗说明</summary>' +
+      '<div class="desc">参战名单在开战时锁定：战斗期间新造、返城或新抵达的部队，从下一场战斗开始参战。伤兵、在途部队不加入本场；城内卡车、运输机等后勤部队同样参战并承担战损，工事按现有规则参战。</div>' +
+      '<div class="desc">各支援军全部参战，独立计算自己的军官、技能与装备加成；公共战斗科技沿用守城城市配置。同兵种的行动与集火指令由城主统一下达。</div>' +
+      '<div class="desc">城市发生战斗后，禁止从该城市发起任何新出征（包括侦查、采集、运输、调遣和驻防），战斗结束后解除锁定。</div>' +
+      '<div class="desc">默认行动全账号共用，动员只提高出征上限，不改变守城人数或切换默认行动。战斗或进攻行军期间无法修改默认战术。</div>' +
+      '<div class="desc">战斗规则：离线战斗时，兵种优先攻击射程内的敌方同类型兵种；同类型兵种不在射程内或不存在时，攻击射程内最近的敌方兵种。在线指挥时，可指定攻击射程内的任意敌方兵种。战斗中已提交的手动指令在本场后续回合持续生效，直到再次修改，不改写账号默认战术。</div></details>';
+    html += '<div class="battle-defaults-head"><span>兵种 / 城内兵力</span><span>守城参战</span><span>出征战斗</span><span>守城战斗</span></div>';
+    // 保留原有列布局，将数量输入替换为只读参战范围，避免出现仍可筛选守军的误导。
     Object.keys(G.DATA.units).forEach(function (unitId) {
       var unit = G.DATA.units[unitId];
-      var available = sortieAvailable(unitId);
-      var configured = automaticSortie ? '' : (defaults.sortieArmy[unitId] || 0);
-      var maximum = sortieUnitMax(unitId);
-      var progress = (maximum > 0 ? Number(configured || 0) / maximum * 100 : 0).toFixed(1) + '%';
+      var available = Math.max(0, Number(Core.state && Core.state.army && Core.state.army[unitId]) || 0);
       html += '<div class="battle-defaults-row" data-unit-id="' + unitId + '"><span class="battle-defaults-name" title="' + G.escapeHtml(unit.name) + '">' +
         G.escapeHtml(G.unitDisplayName ? G.unitDisplayName(unit.name) : unit.name) +
-        '<small>当前驻军 ' + available + ' · 可选上限 <span id="battle-defaults-sortie-limit-' + unitId + '">' + maximum + '</span></small></span>' +
-        '<div class="battle-defaults-sortie-cell"><span class="battle-defaults-mobile-label">迎战数量</span>' +
-        '<div class="battle-defaults-sortie-controls"><div class="recruit-slider-wrap"><input type="range" class="recruit-slider" style="--p:' + progress + '" id="battle-defaults-sortie-range-' + unitId + '" min="0" step="1" max="' + maximum +
-        '" value="' + (configured || 0) + '" aria-label="' + G.escapeHtml(unit.name + '迎战数量滑动条') + '"' +
-        (automaticSortie || maximum === 0 || locked ? ' disabled' : '') +
-        ' oninput="Game.BattleDefaults.setSortieCount(\'' + unitId + '\',this.value)"></div>' +
-        '<input type="number" id="battle-defaults-sortie-number-' + unitId + '" min="0" step="1" max="' + maximum +
-        '" value="' + configured + '" aria-label="' + G.escapeHtml(unit.name + '迎战数量') + '"' +
-        (automaticSortie || locked ? ' disabled' : '') + (automaticSortie ? ' placeholder="自动"' : '') +
-        ' oninput="Game.BattleDefaults.setSortieCount(\'' + unitId + '\',this.value)"></div></div>';
+        '<small>当前城内 ' + available + '</small></span>' +
+        '<div><span class="battle-defaults-mobile-label">守城参战</span>全部参战</div>';
       ['outgoing', 'defending'].forEach(function (side) {
-        var label = side === 'outgoing' ? '出城战斗' : '守城战斗';
+        var label = side === 'outgoing' ? '出征战斗' : '守城战斗';
         var selected = defaults[side] && defaults[side][unitId];
         var selectedChoice = actionChoices.find(function (choice) { return choice[0] === selected; }) || actionChoices[0];
         var menuId = 'battle-defaults-' + side + '-' + unitId;
@@ -449,8 +263,6 @@ window.Game = window.Game || {};
     handleActionKey: handleActionKey,
     leaveActionMenu: leaveActionMenu,
     setAction: setAction,
-    setAutomaticSortie: setAutomaticSortie,
-    setSortieCount: setSortieCount,
     save: save,
     retry: function () { loading = false; load(); }
   };

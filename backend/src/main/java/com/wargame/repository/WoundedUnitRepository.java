@@ -15,7 +15,9 @@ public interface WoundedUnitRepository extends JpaRepository<WoundedUnit, Long> 
     Optional<WoundedUnit> findForTreatment(@Param("playerId") Long playerId, @Param("id") Long id);
 
     @Modifying
-    @Query("delete from WoundedUnit w where w.expiresAt <= :now")
+    @Query("delete from WoundedUnit w where w.expiresAt <= :now and not exists " +
+            "(select c.id from PlayerCity c where c.ownerId = w.playerId and c.citySlot = w.citySlot " +
+            "and c.surrenderOfferId is not null and c.surrenderFrozenAt <= :now and w.expiresAt > c.surrenderFrozenAt)")
     int deleteExpired(@Param("now") long now);
 
     void deleteByPlayerId(Long playerId);

@@ -3,6 +3,7 @@ package com.wargame.service.quest;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.HistoricalOfficers;
 import com.wargame.model.constants.TechDef;
+import com.wargame.model.constants.GameConstants;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import org.slf4j.Logger;
@@ -21,9 +22,16 @@ import com.wargame.util.GameClock;
  */
 @Service
 public class QuestService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private com.wargame.service.TickService resourceEconomy;
 
     /** 每日签到与 VIP 军饷共用游戏时钟的北京时间自然日，停服或服务器时区变化不改变刷新口径。 */
     private static final ZoneId GAME_ZONE = ZoneId.of("Asia/Shanghai");
+
+    /** 存量指标读取实际状态；仅侦察、战斗等次数目标累计事件，不能混用增量。 */
+    private static final Set<String> SNAPSHOT_EVENTS = Set.of(
+            "BUILD_UPGRADE_DONE", "BUILD_ALL_MAX", "ARMY_TOTAL", "ARMY_NAVY_TOTAL", "ARMY_AIR_TOTAL", "ARMY_ARMOR_TOTAL",
+            "TECH_LEVEL", "TECH_LEVEL_COUNT", "TECH_MAX_COUNT", "TECH_ALL_MAX", "PRESTIGE_VALUE", "MILITARY_RANK_TIER",
+            "CITY_COUNT", "HISTORICAL_OFFICER", "DISPLAY_NAME_CHANGE", "CITY_NAME_CHANGE", "OFFICER_RENAME", "FORUM_POST");
 
     /** 军政签到五类资源各1万，预览与实际发放共用配置；道具另行保留。 */
     private static final Map<String, Integer> DAILY_CHECKIN_RESOURCES = Map.of(
@@ -33,7 +41,13 @@ public class QuestService {
     private com.wargame.service.CityScope cityScope;
 
     @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.InventoryService inventory;
+
+    @org.springframework.beans.factory.annotation.Autowired
     private OnboardingService onboarding;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.wargame.service.WorldTerrainService terrain;
 
     private static final Logger log = LoggerFactory.getLogger(QuestService.class);
 
@@ -80,6 +94,7 @@ public class QuestService {
     @Transactional
     public void onEvent(Long playerId, String eventType, String targetKey, int delta) {
         if (playerId == null || eventType == null) return;
+        playerRepository.lockById(playerId).orElseThrow();
         if (delta <= 0) delta = 1;
         onboarding.onEvent(playerId, eventType, targetKey, delta);
 
@@ -87,13 +102,15 @@ public class QuestService {
             for (QuestCatalog.Quest q : chapter.quests()) {
                 if (!q.eventType().equals(eventType)) continue;
                 if (q.targetKey() != null && !q.targetKey().equals(targetKey)) continue;
-                handleEventForQuest(playerId, q, delta);
+                if (SNAPSHOT_EVENTS.contains(eventType)) updateProgress(playerId, q, computeCurrent(playerId, q));
+                else handleEventForQuest(playerId, q, delta);
             }
         }
     }
 
     @Transactional
     public void onEvent(Long playerId, String eventType) {
+        playerRepository.lockById(playerId).orElseThrow();
         for (QuestCatalog.Chapter chapter : QuestCatalog.CHAPTERS) {
             for (QuestCatalog.Quest q : chapter.quests()) {
                 if (q.eventType().equals(eventType)) {
@@ -136,19 +153,25 @@ public class QuestService {
             }
             case "BUILD_UPGRADE_DONE" -> {
                 if (q.targetKey() != null) {
-                    List<Building> bs = buildingRepository.findByPlayerIdAndType(playerId, q.targetKey());
+                    // 市政厅目标明确要求主城；其余单建筑等级仍允许任一自有城市达成。
+                    List<Building> bs = "command".equals(q.targetKey())
+                            ? buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, q.targetKey())
+                            : buildingRepository.findByPlayerIdAndType(playerId, q.targetKey());
                     yield bs.stream().mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0).max().orElse(0);
                 }
                 yield 0;
             }
             case "BUILD_ALL_MAX" -> {
-                // 检查主城核心建筑是否均已达到 20 级满级
+                // 按主城和当前建筑上限判定，分城建筑不能拼凑成主城满级。
                 List<String> coreKeys = List.of("command", "house", "farm", "refinery", "oilfield", "raremine", "factory", "airport", "port", "lab", "wall");
                 boolean allMax = true;
                 for (String bk : coreKeys) {
-                    int maxLv = buildingRepository.findByPlayerIdAndType(playerId, bk).stream()
+                    // 内陆主城不能新建军港；不得把只能在沿海分城完成的建筑变成主城硬门槛。
+                    if ("port".equals(bk) && buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, bk).isEmpty()
+                            && playerCityRepository.findByOwnerIdAndCitySlot(playerId, 0).filter(c -> !terrain.canUsePort(c)).isPresent()) continue;
+                    int maxLv = buildingRepository.findByPlayerIdAndCitySlotAndType(playerId, 0, bk).stream()
                             .mapToInt(b -> b.getLevel() != null ? b.getLevel() : 0).max().orElse(0);
-                    if (maxLv < 20) {
+                    if (maxLv < GameConstants.BUILDING_MAX_LEVEL) {
                         allMax = false;
                         break;
                     }
@@ -244,22 +267,28 @@ public class QuestService {
         checkAndRefreshStageStatus(playerId, q.chapterId());
     }
 
+    /** 未领取的状态目标以真实快照纠正旧的累计错误；已领取记录及奖励始终保留。 */
     private void updateProgress(Long playerId, QuestCatalog.Quest q, int currentValue) {
         PlayerQuest pq = ensureRow(playerId, q);
         if ("claimed".equals(pq.getStatus())) return;
+        // 兵力、名将等已经达成的历史成果不因战损回退；仅建筑旧累计错误需要重新核实。
+        if ("completed".equals(pq.getStatus()) && !isBuildingSnapshot(q)) return;
         int target = q.targetValue();
         pq.setProgress(Math.min(currentValue, target));
         if (currentValue >= target && !"completed".equals(pq.getStatus())) {
             pq.setStatus("completed");
             pq.setCompletedAt(System.currentTimeMillis());
             log.info("Quest completed by snapshot: player={} quest={}", playerId, q.id());
+        } else if (currentValue < target) {
+            pq.setStatus("in_progress");
+            pq.setCompletedAt(null);
         }
         playerQuestRepository.save(pq);
         checkAndRefreshStageStatus(playerId, q.chapterId());
     }
 
     private PlayerQuest ensureRow(Long playerId, QuestCatalog.Quest q) {
-        return playerQuestRepository.findByPlayerIdAndQuestId(playerId, q.id())
+        PlayerQuest row = playerQuestRepository.findByPlayerIdAndQuestId(playerId, q.id())
                 .orElseGet(() -> {
                     PlayerQuest pq = new PlayerQuest();
                     pq.setPlayerId(playerId);
@@ -269,6 +298,12 @@ public class QuestService {
                     pq.setTargetValue(q.targetValue());
                     return playerQuestRepository.save(pq);
                 });
+        // 查询、事件及领奖都会同步存量目标，保留任务 ID 和已发奖励，避免需要批量重建任务。
+        if (!"claimed".equals(row.getStatus()) && !Objects.equals(row.getTargetValue(), q.targetValue())) {
+            row.setTargetValue(q.targetValue());
+            playerQuestRepository.save(row);
+        }
+        return row;
     }
 
     private PlayerQuestStage ensureStageRow(Long playerId, String stageId) {
@@ -289,6 +324,7 @@ public class QuestService {
         if (ch == null) return;
         PlayerQuestStage stageRow = ensureStageRow(playerId, stageId);
         if ("claimed".equals(stageRow.getStatus())) return;
+        if (!isChapterUnlocked(playerId, stageId)) return;
 
         boolean allDone = true;
         for (QuestCatalog.Quest q : ch.quests()) {
@@ -303,7 +339,38 @@ public class QuestService {
             stageRow.setCompletedAt(System.currentTimeMillis());
             playerQuestStageRepository.save(stageRow);
             log.info("Quest stage completed: player={} stage={}", playerId, stageId);
+        } else if (!allDone && "completed".equals(stageRow.getStatus()) && hasInvalidBuildingProgress(playerId, ch)) {
+            stageRow.setStatus("in_progress");
+            stageRow.setCompletedAt(null);
+            playerQuestStageRepository.save(stageRow);
         }
+    }
+
+    /** 章节必须按顺序领取前章礼包才能解锁，不能信任提前写入的 completed 状态。 */
+    private boolean isChapterUnlocked(Long playerId, String stageId) {
+        for (QuestCatalog.Chapter chapter : QuestCatalog.CHAPTERS) {
+            if (chapter.id().equals(stageId)) return true;
+            PlayerQuestStage previous = playerQuestStageRepository.findByPlayerIdAndStageId(playerId, chapter.id()).orElse(null);
+            if (previous == null || !"claimed".equals(previous.getStatus())) return false;
+        }
+        return false;
+    }
+
+    private PlayerQuest refreshForClaim(Long playerId, QuestCatalog.Quest q) {
+        if (SNAPSHOT_EVENTS.contains(q.eventType())) updateProgress(playerId, q, computeCurrent(playerId, q));
+        return ensureRow(playerId, q);
+    }
+
+    private boolean isBuildingSnapshot(QuestCatalog.Quest q) {
+        return "BUILD_UPGRADE_DONE".equals(q.eventType()) || "BUILD_ALL_MAX".equals(q.eventType());
+    }
+
+    /** 已完成章节保留历史资格，只有未领取的建筑旧累计错误需要纠正。 */
+    private boolean hasInvalidBuildingProgress(Long playerId, QuestCatalog.Chapter chapter) {
+        return chapter.quests().stream().filter(this::isBuildingSnapshot).anyMatch(q -> {
+            PlayerQuest row = playerQuestRepository.findByPlayerIdAndQuestId(playerId, q.id()).orElse(null);
+            return (row == null || !"claimed".equals(row.getStatus())) && computeCurrent(playerId, q) < q.targetValue();
+        });
     }
 
     // ====================================================================
@@ -312,6 +379,8 @@ public class QuestService {
 
     @Transactional
     public Map<String, Object> claim(Long playerId, String questId) {
+        // 与章节礼包和进度事件共用账号锁，重复并发领奖不能重复发放资源。
+        playerRepository.lockById(playerId).orElseThrow();
         Map<String, Object> result = new LinkedHashMap<>();
         QuestCatalog.Quest q = QuestCatalog.findQuest(questId);
         if (q == null) {
@@ -319,7 +388,8 @@ public class QuestService {
             result.put("message", "任务不存在: " + questId);
             return result;
         }
-        PlayerQuest pq = playerQuestRepository.findByPlayerIdAndQuestId(playerId, questId).orElse(null);
+        if (!isChapterUnlocked(playerId, q.chapterId())) return Map.of("success", false, "message", "请先领取前序阶段礼包，解锁本阶段");
+        PlayerQuest pq = refreshForClaim(playerId, q);
         if (pq == null) {
             result.put("success", false);
             result.put("message", "请先接取该任务");
@@ -336,6 +406,13 @@ public class QuestService {
             return result;
         }
 
+        if (q.hasRequirement()) {
+            QuestCatalog.Quest prerequisite = QuestCatalog.findQuest(q.requires());
+            PlayerQuest previous = prerequisite == null ? null : refreshForClaim(playerId, prerequisite);
+            if (previous == null || (!"completed".equals(previous.getStatus()) && !"claimed".equals(previous.getStatus()))) {
+                return Map.of("success", false, "message", "请先完成前置任务");
+            }
+        }
         grantReward(playerId, q.reward());
 
         pq.setStatus("claimed");
@@ -363,6 +440,7 @@ public class QuestService {
             return result;
         }
 
+        if (!isChapterUnlocked(playerId, stageId)) return Map.of("success", false, "message", "请先领取前序阶段礼包，解锁本阶段");
         PlayerQuestStage stageRow = ensureStageRow(playerId, stageId);
         if ("claimed".equals(stageRow.getStatus())) {
             result.put("success", false);
@@ -370,9 +448,10 @@ public class QuestService {
             return result;
         }
 
-        // 已完成章节是历史成果，迁入新任务不能撤销旧的领奖资格。
-        for (QuestCatalog.Quest q : "completed".equals(stageRow.getStatus()) ? List.<QuestCatalog.Quest>of() : chapter.quests()) {
-            PlayerQuest pq = playerQuestRepository.findByPlayerIdAndQuestId(playerId, q.id()).orElse(null);
+        // 历史完成章节不因迁入任务撤销资格；建筑旧累计漏洞和锁章资格仍必须复核。
+        boolean historicCompletion = "completed".equals(stageRow.getStatus());
+        for (QuestCatalog.Quest q : historicCompletion ? chapter.quests().stream().filter(this::isBuildingSnapshot).toList() : chapter.quests()) {
+            PlayerQuest pq = refreshForClaim(playerId, q);
             if (pq == null || (!"completed".equals(pq.getStatus()) && !"claimed".equals(pq.getStatus()))) {
                 result.put("success", false);
                 result.put("message", "请先完成本阶段的所有任务再领取阶段大礼包");
@@ -415,6 +494,7 @@ public class QuestService {
 
     private void grantReward(Long playerId, QuestCatalog.Reward r) {
         if (r == null) return;
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
             res.addResource("food", r.food());
@@ -435,22 +515,8 @@ public class QuestService {
         }
     }
 
-    private void addItem(Long playerId, String itemKey, int count) {
-        if (count <= 0) return;
-        PlayerItem existing = playerItemRepository.findByPlayerIdAndItemKey(playerId, itemKey).orElse(null);
-        if (existing == null) {
-            PlayerItem pi = new PlayerItem();
-            pi.setPlayerId(playerId);
-            pi.setItemKey(itemKey);
-            pi.setCount(count);
-            pi.setUpdatedAt(System.currentTimeMillis());
-            playerItemRepository.save(pi);
-        } else {
-            existing.setCount((existing.getCount() != null ? existing.getCount() : 0) + count);
-            existing.setUpdatedAt(System.currentTimeMillis());
-            playerItemRepository.save(existing);
-        }
-    }
+    /** 任务、签到与通用道具共用入库校验；失败时领取资格与整组奖励一并回滚。 */
+    private void addItem(Long playerId, String itemKey, int count) { inventory.add(playerId, itemKey, count); }
 
     private static int parseInt(String s, int def) {
         try { return Integer.parseInt(s.trim()); } catch (Exception e) { return def; }
@@ -462,6 +528,7 @@ public class QuestService {
 
     @Transactional
     public List<Map<String, Object>> getPlayerQuests(Long playerId) {
+        playerRepository.lockById(playerId).orElseThrow();
         // 确保阶段1已初始化
         ensureStageRow(playerId, "stage1");
 
@@ -493,7 +560,7 @@ public class QuestService {
             String stageStatus = stageRow.getStatus();
 
             // 若前序阶段未 claimed，当前阶段为 locked
-            if (!previousStageClaimed && !"claimed".equals(stageStatus) && !"completed".equals(stageStatus)) {
+            if (!previousStageClaimed && !"claimed".equals(stageStatus)) {
                 stageStatus = "locked";
             }
 
@@ -514,7 +581,12 @@ public class QuestService {
                 // 若非 locked 且未 claimed，执行快照同步检测
                 if (!"locked".equals(stageStatus) && !"claimed".equals(pq.getStatus())) {
                     int snapshotVal = computeCurrent(playerId, q);
-                    if (snapshotVal > pq.getProgress()) {
+                    if (isBuildingSnapshot(q)) {
+                        pq.setProgress(Math.min(snapshotVal, q.targetValue()));
+                        if (snapshotVal < q.targetValue()) {
+                            pq.setStatus("in_progress"); pq.setCompletedAt(null);
+                        }
+                    } else if (snapshotVal > pq.getProgress()) {
                         pq.setProgress(Math.min(snapshotVal, q.targetValue()));
                     }
                     if (pq.getProgress() >= q.targetValue() && !"completed".equals(pq.getStatus())) {
@@ -555,8 +627,10 @@ public class QuestService {
                         stageRow.setCompletedAt(System.currentTimeMillis());
                         playerQuestStageRepository.save(stageRow);
                     }
-                } else if (!"completed".equals(stageRow.getStatus())) {
+                } else if (!"completed".equals(stageRow.getStatus()) || hasInvalidBuildingProgress(playerId, chapter)) {
                     stageStatus = "in_progress";
+                    stageRow.setStatus("in_progress"); stageRow.setCompletedAt(null);
+                    playerQuestStageRepository.save(stageRow);
                 }
             }
 
@@ -568,7 +642,7 @@ public class QuestService {
             chMap.put("quests", quests);
             out.add(chMap);
 
-            previousStageClaimed = "claimed".equals(stageStatus);
+            previousStageClaimed = previousStageClaimed && "claimed".equals(stageStatus);
         }
 
         return out;
@@ -619,6 +693,7 @@ public class QuestService {
         addItem(playerId, "speedUp10m", 1);
 
         // 发放常备资源至活动城池
+        resourceEconomy.beforeResourceChange(playerId, cityScope.slot(playerId));
         Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, cityScope.slot(playerId)).orElse(null);
         if (res != null) {
             DAILY_CHECKIN_RESOURCES.forEach(res::addResource);

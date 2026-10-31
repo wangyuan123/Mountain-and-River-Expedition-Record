@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(initialBuildings = {}) {
   const state = {
@@ -125,6 +125,7 @@ test('撤销挂单经主题确认弹窗，确认后才发送下架请求', async
 test('未建造交易所时 renderView 提示尚未建造', () => {
   const { G } = setup({ exchange: 0 });
   const viewEl = { innerHTML: '' };
+  G.Market.overview = {usedSlots:0, slotCap:6, exchangeRate:.62, taxRate:.085};
   G.Market.renderView(viewEl);
   assert.match(viewEl.innerHTML, /当前城池尚未建造交易所，无法使用交易功能/);
 });
@@ -132,6 +133,7 @@ test('未建造交易所时 renderView 提示尚未建造', () => {
 test('已建造交易所时 renderView 渲染市场Tab与统计信息', () => {
   const { G } = setup({ exchange: 3 });
   const viewEl = { innerHTML: '' };
+  G.Market.overview = {usedSlots:0, slotCap:6, exchangeRate:.62, taxRate:.085};
   G.Market.renderView(viewEl);
   assert.match(viewEl.innerHTML, /交易所 Lv\.3/);
   assert.match(viewEl.innerHTML, /市场大厅/);
@@ -152,12 +154,14 @@ test('build.js 中 SPECIAL_ROUTES 包含 exchange: exchange', () => {
 test('挂单槽位上限完全由交易所等级决定(2 + 等级)，与军需仓库解耦', () => {
   const { G } = setup({ exchange: 4, depot: [5, 5] });
   const viewEl = { innerHTML: '' };
+  G.Market.overview = {usedSlots:0, slotCap:6, exchangeRate:.62, taxRate:.085};
   G.Market.renderView(viewEl);
   // exchange Lv.4 -> slotCap = 2 + 4 = 6 (不受仓库等级影响)
   assert.match(viewEl.innerHTML, /挂单槽位 <b>0\/6<\/b>/);
   assert.match(viewEl.innerHTML, /我的货架 \(0\/6\)/);
 
   G.Market.setTab('my');
+  G.Market.overview = {usedSlots:0, slotCap:6, exchangeRate:.62, taxRate:.085};
   G.Market.renderView(viewEl);
   assert.match(viewEl.innerHTML, /基础2槽位 \+ 交易所等级/);
   assert.doesNotMatch(viewEl.innerHTML, /仓库/);

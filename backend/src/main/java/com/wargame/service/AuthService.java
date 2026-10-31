@@ -30,6 +30,7 @@ public class AuthService {
     private final GameStateService gameStateService;
     private final RateLimiter rateLimiter;
     private final AccountService accountService;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.security.ClientIpResolver clientIps;
 
     @Value("${game.auth.register-per-ip-per-hour:5}")
     private int registerPerHour;
@@ -74,9 +75,10 @@ public class AuthService {
         }
         AccountCredentialService.validatePassword(password);
         if (username.length() < 3 || username.length() > 32) throw new IllegalArgumentException("用户名需为 3—32 个字符");
-        String ip = clientIp(req);
+        String ip = clientIps.resolve(req);
         if (!rateLimiter.allow("REG:" + ip, registerPerHour, 3600_000L)) {
-            throw new IllegalStateException("注册过于频繁，请稍后再试");
+            throw new com.wargame.security.AccountException("RATE_LIMITED", "注册过于频繁，请稍后再试",
+                    Math.max(1, rateLimiter.retryAfterSeconds("REG:" + ip, 3600_000L)));
         }
         if (playerRepository.existsByUsername(username)) {
             throw new IllegalArgumentException("用户名已存在");
@@ -133,10 +135,13 @@ public class AuthService {
     }
 
     private Player verifyCredentials(String username, String password, HttpServletRequest req) {
-        accountService.limit("LOGIN_IP:" + clientIp(req), loginFailGlobalPerMinute, 60_000L);
+        accountService.limit("LOGIN_IP:" + clientIps.resolve(req), loginFailGlobalPerMinute, 60_000L);
         if (username == null || username.isBlank() || password == null || password.isBlank())
             throw new IllegalArgumentException("用户名或密码错误");
-        accountService.limit("LOGIN_ACCOUNT:" + username, loginFailPerAccountPerHour, 3_600_000L);
+        if (username.length() > 32 || password.length() > 64
+                || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
+            throw new IllegalArgumentException("用户名或密码错误");
+        accountService.limit("LOGIN_ACCOUNT:" + username.toLowerCase(java.util.Locale.ROOT), loginFailPerAccountPerHour, 3_600_000L);
         Player found = playerRepository.findByUsername(username).orElse(null);
         if (found == null) throw new IllegalArgumentException("用户名或密码错误");
         Player player = accountService.lockPlayer(found.getId());
@@ -147,9 +152,10 @@ public class AuthService {
 
     public AuthResult createGuest(HttpServletRequest req) {
         if (protection.enabled()) throw new com.wargame.security.GameAccessException("REAL_NAME_REQUIRED", "游客模式已关闭，请注册并完成实名认证");
-        String ip = clientIp(req);
+        String ip = clientIps.resolve(req);
         if (!rateLimiter.allow("GUEST:" + ip, registerPerHour, 3600_000L)) {
-            throw new IllegalStateException("游客注册过于频繁，请稍后再试");
+            throw new com.wargame.security.AccountException("RATE_LIMITED", "游客注册过于频繁，请稍后再试",
+                    Math.max(1, rateLimiter.retryAfterSeconds("GUEST:" + ip, 3600_000L)));
         }
         String username = "游客_" + ThreadLocalRandom.current().nextInt(100000, 1000000);
         Player player = new Player();
@@ -180,16 +186,6 @@ public class AuthService {
         if (!player.accountActive() || player.getAuthVersion() != userPrincipal.getAuthVersion())
             throw new com.wargame.security.AccountException("ACCOUNT_UNAVAILABLE", "登录状态已失效，请重新登录");
         return player;
-    }
-
-    private static String clientIp(HttpServletRequest req) {
-        if (req == null) return "unknown";
-        String xff = req.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            int comma = xff.indexOf(',');
-            return (comma > 0 ? xff.substring(0, comma) : xff).trim();
-        }
-        return req.getRemoteAddr() == null ? "unknown" : req.getRemoteAddr();
     }
 
     public record AuthResult(String token, String username, Long playerId) {}

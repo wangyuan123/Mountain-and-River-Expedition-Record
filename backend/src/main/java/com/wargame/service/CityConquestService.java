@@ -17,13 +17,14 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class CityConquestService {
+    @org.springframework.beans.factory.annotation.Autowired private CityCapacityService capacity;
+    @org.springframework.beans.factory.annotation.Autowired private CityFreezeService freeze;
     @org.springframework.beans.factory.annotation.Autowired private ArmyPopulationService populationCosts;
     private final EntityManager em;
     private final PlayerRepository players;
     private final PlayerCityRepository cities;
     private final OfficerRepository officers;
     private final OfficerEquipmentRepository equipment;
-    private final OfficerEquipmentProgressService equipmentProgress;
     private final ResourcesRepository resources;
     private final MarketOrderRepository marketOrders;
     private final WildTileRepository wilds;
@@ -35,7 +36,7 @@ public class CityConquestService {
     private static final List<Class<? extends CityOwnedEntity>> CITY_ROWS = List.of(
             Building.class, Resources.class, Construction.class, ArmyUnit.class, Fortification.class,
             Officer.class, Academy.class, ArmyProductionQueue.class, WoundedUnit.class, PrisonerUnit.class,
-            CityState.class, March.class, UnitEquipmentOrder.class, TechResearchQueue.class);
+            CityState.class, March.class, TechResearchQueue.class);
 
     /** 在结算后的民心与当前军衔名额上判断接管资格；建设中的城市也占名额。 */
     public String unavailableReason(Long attackerId, PlayerCity city) {
@@ -44,8 +45,7 @@ public class CityConquestService {
         if (city.getCitySlot() == null) return "目标不是可接管的玩家城市";
         CityEconomy economy = city.getCitySlot() == 0 ? players.findById(city.getOwnerId()).orElseThrow() : city;
         if (!Integer.valueOf(0).equals(economy.getMorale())) return "敌方城市民心尚未降至0";
-        if (cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(attackerId).size()
-                >= MilitaryRankDef.getCityCap(attacker.getMilitaryRank())) return "城市数量已达当前军衔上限";
+        if (!capacity.hasRoom(attackerId, null)) return "城市数量（含待移交预留）已达当前军衔上限";
         return "";
     }
 
@@ -56,7 +56,6 @@ public class CityConquestService {
         if (!Integer.valueOf(0).equals(commander.getLoyalty())) return null;
         List<OfficerEquipment> worn = equipment.findByPlayerIdAndOfficerId(defenderId, commander.getId());
         for (OfficerEquipment item : worn) item.setPlayerId(attackerId);
-        equipmentProgress.transferPreparation(defenderId, attackerId, commander.getId());
         commander.setPlayerId(attackerId);
         commander.setCitySlot(destinationSlot);
         // 进入参谋部待命，不能覆盖我方现任指挥官；忠诚仍为0，可通过赏赐培养。
@@ -79,8 +78,8 @@ public class CityConquestService {
         marchService.settleSupportFood(city, now);
         int oldSlot = city.getCitySlot();
         Player defender = players.findById(defenderId).orElseThrow();
-        int newSlot = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(attackerId).stream()
-                .mapToInt(PlayerCity::getCitySlot).max().orElse(0) + 1;
+        int newSlot = cities.findCurrentSlotsForUpdate(attackerId).stream()
+                .mapToInt(Integer::intValue).max().orElse(0) + 1;
         Resources stock = resources.findByPlayerIdAndCitySlot(defenderId, oldSlot).orElseThrow();
         // 钻石是账号共享钱包，不随主城失守转移；普通资源留在接管城内，不再重复装入行军。
         int diamonds = oldSlot == 0 ? Objects.requireNonNullElse(stock.getDiamond(), 0) : 0;
@@ -153,8 +152,8 @@ public class CityConquestService {
         Player formerOwner = players.findById(formerOwnerId).orElseThrow();
         Player recipient = players.findById(recipientId).orElseThrow();
         int oldSlot = city.getCitySlot();
-        int newSlot = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(recipientId).stream()
-                .mapToInt(PlayerCity::getCitySlot).max().orElse(0) + 1;
+        int newSlot = cities.findCurrentSlotsForUpdate(recipientId).stream()
+                .mapToInt(Integer::intValue).max().orElse(0) + 1;
 
         Resources stock = resources.findByPlayerIdAndCitySlot(formerOwnerId, oldSlot).orElseThrow();
         int diamonds = oldSlot == 0 ? Objects.requireNonNullElse(stock.getDiamond(), 0) : 0;
@@ -163,7 +162,7 @@ public class CityConquestService {
         if (oldSlot == 0) copyEconomy(formerOwner, city);
 
         // 冻结期间城市时钟不推进；变更归属前按实际冻结时长顺延全部定时队列。
-        shiftFrozenQueues(formerOwnerId, oldSlot, Math.max(0L, now - Objects.requireNonNullElse(city.getSurrenderFrozenAt(), now)));
+        freeze.resume(city, now);
 
         // Equipment is keyed by officer ID rather than city slot. Capture the old
         // officer rows before changing their owner, then move their worn items with them.
@@ -171,7 +170,6 @@ public class CityConquestService {
         for (Officer officer : transferredOfficers) {
             equipment.findByPlayerIdAndOfficerId(formerOwnerId, officer.getId())
                     .forEach(item -> item.setPlayerId(recipientId));
-            equipmentProgress.transferPreparation(formerOwnerId, recipientId, officer.getId());
         }
 
         // 和战斗接管一样随城转交领地；撤军先创建原城市返程，再随城迁移该城编队。
@@ -227,27 +225,6 @@ public class CityConquestService {
         }
     }
 
-    /** 将冻结期间未结算的城市队列整体顺延，避免移交后补算冻结收益。 */
-    private void shiftFrozenQueues(Long playerId, int slot, long pausedMs) {
-        if (pausedMs <= 0) return;
-        for (Construction q : rows(Construction.class, playerId, slot)) {
-            q.setStartAt(shift(q.getStartAt(), pausedMs)); q.setFinishAt(shift(q.getFinishAt(), pausedMs));
-        }
-        for (ArmyProductionQueue q : rows(ArmyProductionQueue.class, playerId, slot)) {
-            q.setStartedAt(shift(q.getStartedAt(), pausedMs)); q.setFinishesAt(shift(q.getFinishesAt(), pausedMs));
-        }
-        for (TechResearchQueue q : rows(TechResearchQueue.class, playerId, slot)) {
-            q.setStartedAt(shift(q.getStartedAt(), pausedMs)); q.setFinishesAt(shift(q.getFinishesAt(), pausedMs));
-        }
-        for (UnitEquipmentOrder q : rows(UnitEquipmentOrder.class, playerId, slot)) {
-            q.setStartAt(shift(q.getStartAt(), pausedMs)); q.setEndAt(shift(q.getEndAt(), pausedMs));
-        }
-    }
-
-    private Long shift(Long timestamp, long pausedMs) {
-        return timestamp == null ? null : timestamp + pausedMs;
-    }
-
     /** 主城失守时优先提升现有分城；无城玩家只获得基础城，不重置账号、科技或道具。 */
     private void restoreMainCity(Player defender, int diamonds, long now) {
         Long playerId = defender.getId();
@@ -296,6 +273,7 @@ public class CityConquestService {
     /** 主城经济存于Player，分城经济存于PlayerCity，迁移时须双向同步全部经济字段。 */
     private void copyEconomy(CityEconomy from, CityEconomy to) {
         to.setTax(from.getTax()); to.setMorale(from.getMorale()); to.setResentment(from.getResentment());
+        to.setMoraleAccrual(from.getMoraleAccrual()); to.setResentmentAccrual(from.getResentmentAccrual());
         to.setLastAppeaseAt(from.getLastAppeaseAt()); to.setCivilianPopulation(from.getCivilianPopulation());
         to.setPopulationGrowthRemainder(from.getPopulationGrowthRemainder()); to.setLastTick(from.getLastTick());
         to.setCityName(from.getCityName()); to.setCityNameRenamedAt(from.getCityNameRenamedAt());

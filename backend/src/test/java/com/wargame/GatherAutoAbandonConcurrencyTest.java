@@ -85,9 +85,16 @@ class GatherAutoAbandonConcurrencyTest extends BaseServiceTest {
             tile.setOccupiedBy(playerId);
             wildTileRepository.saveAndFlush(tile);
             createArmyUnit(playerId, "truck", 10);
-            March march = marchService.createDispatch(playerId, new DispatchRequest("wild_gather", tile.getId(), "gather",
+            March march = marchService.createDispatch(playerId, new DispatchRequest("wild", tile.getId(), "station",
                     Map.of("truck", 1), null, null));
-            marchService.processMarches(playerId, march.getArriveAt());
+            // 模拟升级前已经开始的采集存档，保留手动收获及并发结算的兼容性验证。
+            march.setTargetKind("wild_gather");
+            march.setAction("gather");
+            march.setGathering(true);
+            march.setGatherAmount(500);
+            march.setGatherRes("food");
+            march.setGatherOccupationVersion(tile.getOccupationVersion());
+            march.setGatherOwnerCitySlot(tile.getOccupiedCitySlot());
             march.setGatherStartAt(System.currentTimeMillis() - 120_000L);
             march.setGatherEndAt(System.currentTimeMillis() - 60_000L);
             march.setGatherMode("auto");

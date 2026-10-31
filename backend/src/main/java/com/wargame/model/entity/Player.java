@@ -158,6 +158,10 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "prestige")
     private Integer prestige = 0;
 
+    /** 首次达到世界频道门槛后永久保留，声望下降不再关闭发言权限。 */
+    @Column(name = "world_chat_unlocked", nullable = false)
+    private boolean worldChatUnlocked = false;
+
     @Column(name = "level")
     private Integer level = 1;
 
@@ -322,7 +326,7 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "defending_battle_actions", columnDefinition = "text")
     private String defendingBattleActions;
 
-    /** 账号级迎战编队；null 为按驻军比例自动选兵，空对象为不派野战部队。 */
+    /** 历史迎战数量预设，仅保留数据库兼容；全员守城规则不再读取或保存。 */
     @Column(name = "sortie_army", columnDefinition = "text")
     private String sortieArmy;
 
@@ -330,7 +334,7 @@ public class Player extends VersionedEntity implements CityEconomy {
     @Column(name = "mobilization_expiries", columnDefinition = "text")
     private String mobilizationExpiries;
 
-    /** 每轮连续动员独立保存迎战编队；所有效果结束后读取原 sortieArmy。 */
+    /** 历史动员迎战数量预设，仅保留数据库兼容，不再参与选兵。 */
     @Column(name = "mobilization_sortie_army", columnDefinition = "text")
     private String mobilizationSortieArmy;
 
@@ -347,11 +351,14 @@ public class Player extends VersionedEntity implements CityEconomy {
         return militaryRank != null ? militaryRank : 1;
     }
 
-    /** 所有声望写入统一记录新手毕业，先检查旧值以防通过降声望重新开盾。 */
+    /** 所有声望写入统一记录新手毕业；降声望不恢复保护，达到聊天门槛后永久解锁发言。 */
     public void setPrestige(Integer prestige) {
         long now = com.wargame.util.GameClock.now();
         com.wargame.model.constants.NewbieProtection.finishForPrestige(this, now);
         this.prestige = prestige;
+        if (prestige != null && prestige >= com.wargame.model.constants.GameConstants.WORLD_CHAT_PRESTIGE_THRESHOLD) {
+            this.worldChatUnlocked = true;
+        }
         com.wargame.model.constants.NewbieProtection.finishForPrestige(this, now);
     }
 
@@ -366,4 +373,13 @@ public class Player extends VersionedEntity implements CityEconomy {
     public boolean getVipBadgeVisible() {
         return vipBadgeVisible;
     }
+    @Column(name = "morale_accrual", nullable = false)
+    private double moraleAccrual;
+    @Column(name = "resentment_accrual", nullable = false)
+    private double resentmentAccrual;
+
+    /** 主动安抚、税率变更与移交写入整值时，清除旧的小数尾差。 */
+    public void setMorale(Integer value) { morale = value; moraleAccrual = 0; }
+    public void setResentment(Integer value) { resentment = value; resentmentAccrual = 0; }
+
 }

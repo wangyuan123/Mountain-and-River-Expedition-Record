@@ -1,7 +1,6 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.GameData;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.constants.TechnologyRules;
 import com.wargame.model.entity.*;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,7 @@ import static com.wargame.service.WorldTerrainService.*;
 @Service
 @RequiredArgsConstructor
 public class MarchRouteService {
-    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
+    @org.springframework.beans.factory.annotation.Autowired private MarchTargetService targets;
     private final WorldTerrainService terrain;
     private final CityScope scope;
     private final com.wargame.repository.BuildingRepository buildings;
@@ -27,11 +26,11 @@ public class MarchRouteService {
     /** 地面侦查只检查连通陆路，不能通过普通陆军的跨海空运回退规则。 */
     @Transactional
     public Route plan(Long playerId,Object target,Map<String,Integer> army,boolean transfer,String action) {
-        return plan(playerId, target, army, transfer, action, unitEquipment == null ? Map.of() : unitEquipment.actionSnapshot(playerId));
+        return plan(playerId, target, army, transfer, action, targets == null ? Map.of() : TechnologyRules.actionSnapshot(targets.getCombatTechMap(playerId)));
     }
 
-    /** 预览与派遣共用同一冻结配装，运兵后剩余运力才可用于货物。 */
-    public Route plan(Long playerId,Object target,Map<String,Integer> army,boolean transfer,String action,Map<String,Integer> equipment) {
+    /** 预览与派遣共用同一冻结负重科技，运兵后剩余运力才可用于货物。 */
+    public Route plan(Long playerId,Object target,Map<String,Integer> army,boolean transfer,String action,Map<String,Integer> snapshot) {
         String mask=playableMask(terrain.ensure());
         int size=(int)Math.sqrt(mask.length());
         CityEconomy economy=scope.economy(playerId);
@@ -44,7 +43,7 @@ public class MarchRouteService {
         else throw new IllegalArgumentException("无效行军目标");
         if(!inside(sx,sy)||!inside(tx,ty))throw new IllegalArgumentException("出征坐标超出地图");
         // 跨海运兵容量与运输机兵种载重共用同一数值，避免路线校验沿用旧上限。
-        boolean navy=false,land=false;long population=0,capacity=(long)Math.floor((double)army.getOrDefault("transport",0)*GameData.UNITS.get("transport").load()*UnitEquipmentEffects.mul(equipment,"transport","load")*TechnologyRules.loadMultiplier(equipment));
+        boolean navy=false,land=false;long population=0,capacity=(long)Math.floor((double)army.getOrDefault("transport",0)*GameData.UNITS.get("transport").load()*TechnologyRules.loadMultiplier(snapshot));
         for(var entry:army.entrySet()){
             var u=GameData.UNITS.get(entry.getKey());if(u==null||entry.getValue()<=0)continue;
             if("sea".equals(u.branch()))navy=true;

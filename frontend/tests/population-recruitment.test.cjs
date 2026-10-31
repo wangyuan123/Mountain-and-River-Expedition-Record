@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const flush = () => new Promise(setImmediate);
 
 function setup(items = {}) {
@@ -49,10 +49,12 @@ function setup(items = {}) {
       const pop = G.Core.state.population;
       pop.civilian += Math.min(id === 'emergencyPopulationOrder' ? Math.floor(pop.capacity * 0.3) : 500, pop.capacity - pop.civilian);
       items[id]--;
+      if(pop.civilian===24000) G.Core.state.gameplay.economy.emergencyPopulationOrderAdded=0;
       return Promise.resolve({ success: true });
     },
     shopBuy(id) { calls.push(['buy', id]); return Promise.resolve({ success: true }); }
   };
+  G.Core.state.gameplay.economy = {populationOrderAdded:500,emergencyPopulationOrderAdded:7200};
   G.MainView.showPopulationDetailModal();
   return { G, context, body, modal: body.children[0], calls, routes, toasts };
 }
@@ -101,6 +103,7 @@ test('紧急召集预览使用总容量30%，请求期间阻止重复召集，�
 test('临近满员只增加空位，满员不发请求也不消耗道具', async () => {
   const f = setup({ emergencyPopulationOrder: 2 });
   f.G.Core.state.population.civilian = 23950;
+  f.G.Core.state.gameplay.economy.emergencyPopulationOrderAdded=50;
   f.context.__refreshPopDetailModal();
   const btn = f.modal.querySelector('#popEmergencyRecruitBtn');
   assert.equal(btn.textContent, '紧急召集 (+50)');

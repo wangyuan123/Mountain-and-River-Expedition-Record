@@ -94,6 +94,36 @@ public class PrerequisiteService {
         return missing;
     }
 
+    /** 每种依赖只读一次当前有效等级；等级卡片和执行校验使用相同的可用建筑口径。 */
+    public Map<String, Object> evaluated(Long playerId, int citySlot) {
+        Map<String, Integer> actuals = new java.util.HashMap<>();
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        for (String kind : List.of("buildings", "technologies")) {
+            Map<String, Object> definitions = new java.util.LinkedHashMap<>();
+            rules.path(kind).fields().forEachRemaining(entry -> {
+                List<Map<String, Object>> levels = new ArrayList<>();
+                for (JsonNode level : entry.getValue().path("levels")) {
+                    List<Map<String, Object>> requirements = new ArrayList<>();
+                    for (JsonNode r : level.path("requires")) {
+                        String building = r.path("building").asText(), scope = r.path("scope").asText("city");
+                        int actual = actuals.computeIfAbsent(scope + ":" + building, ignored ->
+                                "owned_coastal_city".equals(scope) ? highestCoastalLevel(playerId, building)
+                                        : highestAvailableLevel(playerId, citySlot, building, null, null));
+                        requirements.add(Map.of("id", building, "building", building,
+                                "name", BuildingDef.BUILDINGS.get(building).name(), "scope", scope,
+                                "required", r.path("level").asInt(), "actual", actual, "current", actual,
+                                "met", actual >= r.path("level").asInt()));
+                    }
+                    levels.add(Map.of("requirements", requirements, "missing", requirements.stream()
+                            .filter(r -> !Boolean.TRUE.equals(r.get("met"))).toList()));
+                }
+                definitions.put(entry.getKey(), levels);
+            });
+            result.put(kind, definitions);
+        }
+        return result;
+    }
+
     public String message(List<Map<String, Object>> missing) {
         return UnitUnlockService.message(missing);
     }

@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** 覆盖完整 JSON 表单到控制器、持久化再回读，防止新增迎战字段被旧接口字段白名单拒绝。 */
+/** 覆盖攻守行动完整 JSON 的保存回读与旧迎战数量字段兼容。 */
 class BattleDefaultsControllerTest {
     private final ObjectMapper json = new ObjectMapper();
     private MockMvc mvc;
@@ -64,7 +64,7 @@ class BattleDefaultsControllerTest {
     }
 
     @Test
-    void savesCurrentActionsAndManualCountsTogetherAndReloadsThem() throws Exception {
+    void savesActionsButIgnoresLegacyManualCounts() throws Exception {
         ObjectNode form = readForm();
         ((ObjectNode) form.get("outgoing")).put("infantry", "RETREAT");
         ((ObjectNode) form.get("defending")).put("infantry", "HOLD");
@@ -72,23 +72,25 @@ class BattleDefaultsControllerTest {
         ObjectNode saved = saveForm(form);
         assertEquals(form.get("outgoing"), saved.get("outgoing"));
         assertEquals(form.get("defending"), saved.get("defending"));
-        assertEquals(form.get("sortieArmy"), saved.get("sortieArmy"));
+        assertTrue(saved.get("sortieArmy").isNull());
         assertEquals(saved, readForm());
     }
 
     @Test
-    void savesAutomaticAndZeroArmyAsDistinctConfigurations() throws Exception {
+    void legacyZeroArmyCannotOptOutOfFullDefense() throws Exception {
         ObjectNode form = readForm();
         form.putObject("sortieArmy").put("infantry", 0);
-        assertEquals(0, saveForm(form).get("sortieArmy").get("infantry").intValue());
+        assertTrue(saveForm(form).get("sortieArmy").isNull());
         form.putNull("sortieArmy");
         assertTrue(saveForm(form).get("sortieArmy").isNull());
         assertTrue(readForm().get("sortieArmy").isNull());
     }
 
     @Test
-    void acceptsUnchangedFormWithoutEditingEveryUnit() throws Exception {
+    void acceptsNewActionOnlyFormWithoutLegacyDefenseFields() throws Exception {
         ObjectNode form = readForm();
+        form.remove("sortieArmy");
+        form.remove("formationKey");
         ObjectNode saved = saveForm(form);
         assertEquals(form.get("outgoing"), saved.get("outgoing"));
         assertEquals(form.get("defending"), saved.get("defending"));

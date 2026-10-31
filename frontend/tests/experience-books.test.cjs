@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(level = 1) {
   const nodes = {};
@@ -50,6 +50,8 @@ function setup(level = 1) {
   for (const file of ['constants.js', 'data.js', 'save.js', 'shop.js', 'officer.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'), context);
   }
+  const quotes = { expBookMax: {1:{level:100,upgraded:99,points:99},50:{level:100,upgraded:50,points:50},99:{level:100,upgraded:1,points:1}}, expBookAdv:{1:{gain:100000,level:17,upgraded:16,remainingExp:0},3:{gain:300000,level:25,upgraded:24,remainingExp:0}}, expBookRapid:{1:{gain:500000,level:30,upgraded:29,remainingExp:0},3:{gain:1500000,level:42,upgraded:41,remainingExp:0}} };
+  context.Game.ServerRules.preview = async intent => intent.id==='expBookMax' ? quotes.expBookMax[level] : quotes[intent.id][intent.count];
   return { game: context.Game, nodes, calls };
 }
 
@@ -62,9 +64,11 @@ test('shop and depot descriptions state direct max-level and 100000 experience p
 });
 
 for (const level of [1, 50, 99]) {
-  test(`max-level book previews the correct attribute points at level ${level} and submits one book`, () => {
+  test(`max-level book previews the correct attribute points at level ${level} and submits one book`, async () => {
     const { game, nodes, calls } = setup(level);
     game.Officer.openExpBookModal(1, 'expBookMax');
+  await new Promise(setImmediate);
+    await new Promise(setImmediate);
     assert.match(nodes['#expBookSummary'].innerHTML, new RegExp(`Lv\\.${level} → Lv\\.100`));
     assert.ok(nodes['#expBookSummary'].innerHTML.includes(`+${100 - level} 点可分配属性`));
     assert.equal(nodes['#expBookSliderRow'].style.display, 'none');
@@ -75,13 +79,15 @@ for (const level of [1, 50, 99]) {
   });
 }
 
-test('advanced book preview and submission use 100000 experience per book', () => {
+test('advanced book preview and submission use 100000 experience per book', async () => {
   const { game, nodes, calls } = setup();
   game.Officer.openExpBookModal(1, 'expBookAdv');
+  await new Promise(setImmediate);
   assert.match(nodes['#expBookCards'].innerHTML, /\+100000 经验\/本/);
   assert.match(nodes['#expBookSummary'].innerHTML, /\+100000 经验/);
   nodes['#expBookQtyInput'].value = '3';
   nodes['#expBookQtyInput'].oninput();
+  await new Promise(setImmediate);
   assert.match(nodes['#expBookSummary'].innerHTML, /\+300000 经验/);
   nodes['#expBookConfirmBtn'].onclick();
   assert.deepEqual(calls, [[1, 'expBookAdv', 3]]);
@@ -103,24 +109,27 @@ test('four book prices follow the whole-book max-level discount formula', () => 
   assert.equal(Math.ceil(experience / 500000) * prices.expBookRapid * 0.8, prices.expBookMax);
 });
 
-test('rapid book previews and submits 500000 experience per book in batches', () => {
+test('rapid book previews and submits 500000 experience per book in batches', async () => {
   const { game, nodes, calls } = setup();
   game.Core.state.items.expBookRapid = 3;
   game.Officer.openExpBookModal(1, 'expBookRapid');
+  await new Promise(setImmediate);
   assert.match(nodes['#expBookCards'].innerHTML, /极速经验书/);
   assert.match(nodes['#expBookCards'].innerHTML, /\+500000 经验\/本/);
   assert.match(nodes['#expBookSummary'].innerHTML, /\+500000 经验/);
   nodes['#expBookQtyInput'].value = '3';
   nodes['#expBookQtyInput'].oninput();
+  await new Promise(setImmediate);
   assert.match(nodes['#expBookSummary'].innerHTML, /\+1500000 经验/);
   nodes['#expBookConfirmBtn'].onclick();
   assert.deepEqual(calls, [[1, 'expBookRapid', 3]]);
 });
 
-test('rapid-only inventory opens the book dialog and is selected automatically', () => {
+test('rapid-only inventory opens the book dialog and is selected automatically', async () => {
   const { game, nodes, calls } = setup();
   game.Core.state.items = { expBookRapid: 1 };
   game.Officer.openExpBookModal(1);
+  await new Promise(setImmediate);
   assert.match(nodes['#expBookSummary'].innerHTML, /\+500000 经验/);
   nodes['#expBookConfirmBtn'].onclick();
   assert.deepEqual(calls, [[1, 'expBookRapid', 1]]);

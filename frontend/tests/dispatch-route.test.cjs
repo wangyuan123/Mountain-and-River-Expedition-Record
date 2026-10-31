@@ -1,7 +1,7 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const vm=require('node:vm');
+const vm=require('./server-gameplay.cjs').vm;
 const path=require('node:path');
 function setup(extra={}) {
   const c=vm.createContext({console,Promise,Math,Game:{DATA:{},Core:{state:{},views:{}}},...extra});c.window=c;
@@ -51,33 +51,21 @@ test('preview colors depend on the action and decimal distance is formatted only
     assert.equal(route.distance,Math.sqrt(13));
   }
 });
-test('quantity changes keep the existing preview; unit changes reject stale previews',async()=>{
-  const timers=[],requests=[];let onChange,resolveTerrain;
+test('每次数量变化都重新报价，旧配置和已关闭页面的响应不能覆盖当前路线',async()=>{
+  const timers=[],requests=[]; let onChange;
   const c=setup({setTimeout:fn=>(timers.push(fn),timers.length),clearTimeout(){}});
-  c.Game.DispatchRoute.loadTerrain=()=>new Promise(resolve=>resolveTerrain=resolve);
-  const rendered=[];c.Game.DispatchRoute.render=(hint,route)=>rendered.push(route.distance);
+  c.Game.DispatchRoute.loadTerrain=()=>Promise.resolve(null);
+  const rendered=[]; c.Game.DispatchRoute.render=(hint,route)=>rendered.push(route.distance);
   c.Game.API={client:{post:()=>new Promise((resolve,reject)=>requests.push({resolve,reject}))}};
-  const hint={isConnected:true,innerHTML:'',textContent:'',setAttribute(){},querySelector(){return null;}};
+  const hint={isConnected:true,setAttribute(){},querySelector(){}};
   let army={scout:1};
-  c.Game.World.bindRoutePreview({addEventListener:(type,fn)=>{if(type==='change')onChange=fn;}},hint,()=>({army}),{start:'起点',end:'终点'});
-  timers.pop()();
-  army={scout:2};onChange();
-  assert.equal(timers.length,0);
-  assert.deepEqual(rendered,[]);
-  army={scout:2,infantry:1};onChange();timers.pop()();
-  resolveTerrain({sea(){return false;}});await new Promise(setImmediate);
-  requests[1].resolve({distance:22});await new Promise(setImmediate);
-  requests[0].resolve({distance:11});await new Promise(setImmediate);
-  assert.deepEqual(rendered,[22]);
-  army={scout:3,infantry:1};onChange();
-  assert.equal(timers.length,0);
-  assert.deepEqual(rendered,[22]);
-  army={scout:2,infantry:1,transport:1};onChange();timers.pop()();
-  requests[2].reject(Error('所需运力不足'));await new Promise(setImmediate);
-  assert.match(hint.textContent,/所需运力不足/);
-  army={scout:2,infantry:1,transport:2};onChange();timers.pop()();hint.isConnected=false;
-  requests[3].resolve({distance:33});await new Promise(setImmediate);
-  assert.deepEqual(rendered,[22]);
+  c.Game.World.bindRoutePreview({addEventListener:(type,fn)=>{if(type==='change')onChange=fn;}},hint,()=>({army}),{});
+  timers.pop()(); army={scout:2}; onChange(); assert.equal(timers.length,1); timers.pop()();
+  requests[1].resolve({distance:22,cargoLimit:200}); await new Promise(setImmediate);
+  requests[0].resolve({distance:11,cargoLimit:100}); await new Promise(setImmediate);
+  assert.deepEqual(rendered,[22]); assert.equal(c.Game.World._currentRoute.cargoLimit,200);
+  army={scout:3}; onChange(); timers.pop()(); hint.isConnected=false;
+  requests[2].resolve({distance:33}); await new Promise(setImmediate); assert.deepEqual(rendered,[22]);
 });
 
 test('empty dispatch selections do not request an invalid route preview', () => {

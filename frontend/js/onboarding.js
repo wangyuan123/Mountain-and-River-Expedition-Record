@@ -654,15 +654,11 @@
       } else {
         defaultArmy.infantry = sArmy.infantry != null ? Math.min(Number(sArmy.infantry) || 0, 50) : 50;
       }
-      world._dispatchTarget = { kind: action === 'gather' ? 'wild_gather' : 'wild', idx: idx, target: target,
-        action: action === 'scout' ? 'scout' : action === 'gather' ? 'gather' : 'campaign',
+      // 采集推荐只预填普通派遣；到达后仍由玩家在野地手动启动采集。
+      world._dispatchTarget = { kind: 'wild', idx: idx, target: target,
+        action: action === 'scout' ? 'scout' : action === 'gather' ? 'station' : 'campaign',
         occupyTarget: true, battleMode: 'auto',
         defaultArmy: defaultArmy };
-      // 采集统一手动收获和回城，新手推荐也不绕过玩家操作。
-      if (action === 'gather') {
-        world._dispatchTarget.gatherMode = 'manual';
-        world._dispatchTarget.gatherAfterAction = 'retain';
-      }
       state.snoozedFor = state.data && state.data.current ? state.data.current.id : 'supplies';
       state.guidedAction = null; state.actionNote = '';
       closeModal();
@@ -713,7 +709,6 @@
       }
       else {
         go(task.route, task.building);
-        if (taskId === 'equipment' && G.UnitEquipment) G.UnitEquipment.open('infantry');
         graduationSpotlightTimer = setTimeout(clearSpotlight, 5000);
       }
       if (data.showHint) showTaskNotice(task);

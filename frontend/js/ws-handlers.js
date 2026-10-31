@@ -25,10 +25,6 @@ window.Game = window.Game || {};
       if (G.Mail.isComposing && G.Mail.isComposing()) return true;
       if (G.Mail.isReplying && G.Mail.isReplying()) return true;
     }
-    // 4) 装备配置抽屉打开中 (避免后台全量刷新干扰正文与草稿)
-    if (document.querySelector && document.querySelector('.unit-equipment-overlay')) {
-      return true;
-    }
     return false;
   }
 
@@ -68,19 +64,25 @@ window.Game = window.Game || {};
   G.WS.on('regionalRadar', function (data) { if (G.Radar) G.Radar.apply(data, true); });
   G.WS.on('tick', function (data) {
     if (!G.state) return;
+    var cityBattleLockChanged = Object.prototype.hasOwnProperty.call(data, 'cityBattleLocked') &&
+      !!G.state.cityBattleLocked !== !!data.cityBattleLocked;
+    if (Object.prototype.hasOwnProperty.call(data, 'cityBattleLocked')) G.state.cityBattleLocked = !!data.cityBattleLocked;
     // Ensure Core.state references the same object
     if (G.Core && G.Core.state !== G.state) G.Core.state = G.state;
     if (data.resources) {
       Object.assign(G.state.resources, data.resources);
     }
+    if (data.gameplay) {
+      var catalog = G.state.gameplay && G.state.gameplay.catalog;
+      G.state.gameplay = Object.assign({}, G.state.gameplay, data.gameplay, { catalog: catalog });
+      if (G.ServerRules) G.ServerRules.invalidate();
+    }
+    if (data.resourceRates) G.state.resourceRates = data.resourceRates;
     if (data.population) {
       G.state.population = data.population;
     }
     if (data.items) G.state.items = data.items;
     if (data.unitUnlocks) G.state.unitUnlocks = data.unitUnlocks;
-    if (data.unitEquipment) {
-      G.state.unitEquipment = data.unitEquipment;
-    }
     if (data.constructions) {
       var previousConstructions = G.state.constructions || [];
       var previousBySlot = {};
@@ -138,14 +140,10 @@ window.Game = window.Game || {};
       if (G.Core && G.Core.state) G.Core.state.research = data.research;
       if (G.state) G.state.research = data.research;
     }
+    var rulesChanged = data.tech && JSON.stringify(data.tech) !== JSON.stringify(G.state.tech);
     if (data.tech) {
       if (G.Core && G.Core.state) G.Core.state.tech = data.tech;
       if (G.state) G.state.tech = data.tech;
-    }
-    // 同一推送中的科技、设施与兵种资格全部落定后再刷新，避免用旧科技渲染制备按钮。
-    // 单独到达的资格快照也需更新，抽屉刷新会保留未保存的配装草稿。
-    if ((data.unitEquipment || data.unitUnlocks || data.tech) && G.UnitEquipment) {
-      G.UnitEquipment.refresh();
     }
     if (data.completedResearch && data.completedResearch.length > 0) {
       for (var ri = 0; ri < data.completedResearch.length; ri++) {
@@ -170,11 +168,16 @@ window.Game = window.Game || {};
     if (data.completedBuilds && data.completedBuilds.length && G.Onboarding && G.Onboarding.refresh) {
       G.Onboarding.refresh();
     }
+    // 等级、前置和任命报价仅在结构变化时刷新，周期资源推送不重传目录。
+    if (rulesChanged || data.completedBuilds && data.completedBuilds.length) refreshState();
     // Re-render affected areas using silent/zero-flash update for seamless experience
     // Skip content refresh if user is editing (mail compose / reply / profile edit / focused input)
     if (G.Core) {
       G.Core.refreshTop();
-      if (!isUserEditing()) {
+      // 战斗锁变化必须更新已打开的出征表单，不能因输入焦点保留可提交的旧界面。
+      if (cityBattleLockChanged && G.Core.route === 'dispatch') {
+        G.Core.refreshContent();
+      } else if (!isUserEditing()) {
         if (G.Core.silentUpdate) {
           G.Core.silentUpdate(data);
         } else if (G.Core.route) {

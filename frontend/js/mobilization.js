@@ -14,16 +14,9 @@ window.Game = window.Game || {};
   function esc(value) { return G.escapeHtml ? G.escapeHtml(String(value)) : String(value); }
   function fmt(value) { return G.fmt ? G.fmt(value) : String(value); }
 
-  /** 各档独立到期，同一时刻只使用最高档；保留被覆盖档位供玩家查看。 */
+  /** 生效档位完全读取服务器快照，客户端只显示截止时间与被覆盖状态。 */
   function info() {
-    var time = now();
-    var expiries = player().mobilizationExpiries || {};
-    var active = tiers.map(function (tier) {
-      return { id: tier.id, name: tier.name, percent: tier.percent, until: Number(expiries[tier.id]) || 0 };
-    }).filter(function (tier) { return tier.until > time; });
-    var current = active.length ? active[active.length - 1] : null;
-    return { active: active, current: current, percent: current ? current.percent : 0,
-      key: current ? 'mobilization:' + (player().mobilizationCycle || 0) : 'default' };
+    return G.ServerRules.value('mobilization', { active: [], current: null, percent: 0, key: 'default' });
   }
 
   function countdown(until) {
@@ -45,7 +38,7 @@ window.Game = window.Game || {};
     var state = info();
     if (!state.current) return '<p>动员未启用</p>';
     var current = state.current;
-    var html = '<p><strong>' + esc(current.name) + '生效中 · 带兵上限＋' + current.percent + '%</strong><br>剩余：' +
+    var html = '<p><strong>' + esc(current.name) + '生效中 · 出征带兵上限＋' + current.percent + '%</strong><br>剩余：' +
       countdown(current.until) + '<br>结束：' + esc(endTime(current.until)) + '</p>';
     if (state.active.length > 1) {
       html += '<details><summary>查看其他档位剩余时间</summary>';
@@ -91,7 +84,7 @@ window.Game = window.Game || {};
     }
   }
 
-  /** 重新显示页面时校准服务端时钟和跨设备状态；本地到期判断始终不依赖轮询成功。 */
+  /** 重新显示页面时同步账号和城市状态；不能在浏览器选择新的生效档位。 */
   function refresh() {
     tick();
     if (refreshPending || !player().id || !G.API || !G.API.getGameState) return;
@@ -121,13 +114,13 @@ window.Game = window.Game || {};
     mask.className = 'modal-mask';
     mask.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="mobilizationUseTitle">' +
       '<div class="modal-title" id="mobilizationUseTitle">使用' + esc(tier.name) + '</div><div class="modal-body">' +
-      '<p>带兵上限＋' + tier.percent + '%；每张持续24小时。</p>' +
+      '<p>出征带兵上限＋' + tier.percent + '%；每张持续24小时。</p>' +
       '<label for="mobilizationUseCount">使用数量（库存 ' + stock + '）</label> ' +
       '<input type="number" id="mobilizationUseCount" min="1" max="' + Math.min(stock, 10000) + '" step="1" value="1">' +
       '<div id="mobilizationUsePreview"></div>' +
-      '<p>范围：本账号所有城市的新出征行军（含侦查、采集、运输、调遣、驻防）与本城防守出战。各城市按自身军衔与统帅技能计算。</p>' +
+      '<p>范围：本账号所有城市的新出征行军（含侦查、采集、运输、调遣、驻防）。各城市按自身军衔与统帅技能计算。</p>' +
       '<p>同档累加时长，异档分别计时、只取最高加成。离线正常计时；已出征队伍与已开始战斗不受后续到期影响。</p>' +
-      '<p>首次启用复制默认防守编队；动员期间单独保存，全部到期后恢复默认编队。</p>' +
+      '<p>守城全员参战，不受带兵上限限制；动员不改变守城人数及攻守默认行动。</p>' +
       '<p id="mobilizationUseMessage" role="status"></p></div><div class="modal-foot">' +
       '<button type="button" class="btn" id="mobilizationUseCancel">取消</button>' +
       '<button type="button" class="btn ok" id="mobilizationUseConfirm">确认使用</button></div></div>';
@@ -152,17 +145,14 @@ window.Game = window.Game || {};
       var valid = Number.isInteger(count) && count >= 1 && count <= Math.min(stock, 10000);
       submit.disabled = pending || !valid;
       if (!valid) { preview.textContent = '请输入库存范围内的整数数量。'; return; }
-      var time = now();
-      var until = Number((player().mobilizationExpiries || {})[itemId]) || 0;
-      var end = Math.max(time, until) + count * day;
-      var ordinary = G.Core.ordinaryArmyCap ? G.Core.ordinaryArmyCap() : G.Core.armyCap();
-      var current = info();
-      var percent = Math.max(tier.percent, current.percent);
-      preview.innerHTML = '<p>本档当前剩余：' + (until > time ? countdown(until) : '未启用') +
-        '<br>新增：' + count * 24 + '小时<br>使用后本档剩余：' + countdown(end) +
-        '<br>预计结束：' + esc(endTime(end)) + '<br>当前城市带兵上限：' + fmt(G.Core.armyCap()) + ' → ' +
-        fmt(Math.floor(ordinary * (100 + percent) / 100)) + '</p>' +
-        (current.percent > tier.percent ? '<p>提醒：本档暂被更高档动员覆盖，仍正常计时，不会提高当前加成。</p>' : '');
+      var current = info(), quote = G.ServerRules.cachedPreview({ action: 'mobilization', id: itemId, count: count }, function () {
+        if (document.getElementById('mobilizationUseMask') === mask) update();
+      });
+      submit.disabled = pending || !quote;
+      if (!quote) { preview.textContent = '正在获取动员预览…'; return; }
+      preview.innerHTML = '<p>新增：' + quote.addedHours + '小时<br>使用后本档剩余：' + countdown(quote.until) +
+        '<br>预计结束：' + esc(endTime(quote.until)) + '<br>当前城市出征带兵上限：' + fmt(G.Core.armyCap()) + ' → ' + fmt(quote.armyCap) + '</p>' +
+        (quote.currentPercent > tier.percent ? '<p>提醒：本档暂被更高档动员覆盖，仍正常计时，不会提高当前加成。</p>' : '');
       submit.textContent = '确认使用，消耗 ' + count + ' 张';
     }
     input.oninput = function () { id = requestId(); update(); };

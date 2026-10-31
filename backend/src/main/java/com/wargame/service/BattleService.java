@@ -7,8 +7,10 @@ import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.GameData;
 import com.wargame.model.constants.JapaneseUnitDef;
 import com.wargame.model.constants.UnitDef;
-import com.wargame.model.constants.UnitEquipmentEffects;
+import com.wargame.model.constants.BattleUnitIds;
+import com.wargame.model.constants.TechnologyRules;
 import com.wargame.model.dto.BattleRoundState;
+import com.wargame.model.dto.BattleSkillState;
 import com.wargame.model.dto.BattleResult;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.dto.ConquestWallState;
@@ -87,12 +89,24 @@ public class BattleService {
         UnitStats u = getStats(id);
         double firepower = actionFirepowerMultiplier(ctx.tech);
         double atk = atkMul(u.cat(), ctx.tech, 0) * (1 + ctx.commanderMil / 300.0) * ctx.commandBonus.attackMul() * firepower;
-        return Map.of("ground", u.atkGround() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "ground"))),
-                "air", u.atkAir() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "air"))),
-                "sea", u.atkSea() * atk * (1 + Math.min(.15, UnitEquipmentEffects.percent(ctx.tech, id, "sea"))),
+        return Map.of("ground", u.atkGround() * atk,
+                "air", u.atkAir() * atk,
+                "sea", u.atkSea() * atk,
                 "defense", effDef(id, ctx.tech, Map.of(), 0, false, false) * (1 + ctx.commanderDef / 300.0) * ctx.commandBonus.defenseMul(),
                 "hp", effHp(id, ctx.tech) * ctx.commandBonus.hpMul(), "speed", effSpd(id, ctx), "range", (double) effectiveRange(id, ctx),
                 "firepowerMultiplier", firepower);
+    }
+
+    /** 下一回合的射程、机动和周期状态直接复用结算内核，含烟幕与追击的持久状态。 */
+    public Map<String, Object> tacticalStats(String id, TechCtx context, int nextRound, int firstCombatRound) {
+        boolean active = isSkillRoundActive(nextRound, firstCombatRound);
+        double speed = effSpd(id, context, active) * movementMultiplier(context, id);
+        String window = firstCombatRound <= 0 ? "尚未接战；首次接战时开启本编队周期技能。"
+                : active ? "攻防属性生效，周期技能窗口开启；实际触发仍需满足技能条件。"
+                : "周期攻防属性与周期技能未生效，距下次窗口还有" + (3 - (nextRound - firstCombatRound) % 3) + "回合。";
+        return Map.of("range", effectiveRange(id, context), "speed", Math.round(speed * 10) / 10.0,
+                "movementDistance", Math.round(speed * 50), "skillWindow", active,
+                "windowText", "第" + nextRound + "回合：" + window);
     }
 
     /** 中立演习入口：终局只负责停止，由演习服务对称判胜/平。 */
@@ -102,7 +116,25 @@ public class BattleService {
         practiceEvents = tracePractice ? new ArrayList<>() : null;
         return resolveRound(a, b, ap, bp, distance, ac.tech, bc.tech, ac.skills, bc.skills,
                 ac.commanderMil, ac.commanderDef, bc.commanderMil, bc.commanderDef,
-                round, firstCombat, ao, bo, ac.commandBonus, bc.commandBonus, TerminalStrategy.PVP_PRACTICE, MAX_ROUND);
+                round, firstCombat, ao, bo, ac.commandBonus, bc.commandBonus, TerminalStrategy.PVP_PRACTICE, MAX_ROUND,
+                null, false, false, practiceMemory(ac, bc));
+    }
+
+    private static BattleSkillState practiceMemory(TechCtx a, TechCtx b) {
+        BattleSkillState memory = new BattleSkillState();
+        memory.setAttacker(a.memory); memory.setDefender(b.memory);
+        return memory;
+    }
+
+    /** 持久化世界回合入口：初始兵力和技能进度由会话快照提供。 */
+    public BattleRoundState resolveWorldRound(Map<String, Integer> a, Map<String, Integer> d,
+            Map<String, Integer> ap, Map<String, Integer> dp, int distance,
+            Map<String, Integer> at, Map<String, Integer> dt, Map<String, Integer> as, Map<String, Integer> ds,
+            int am, int ad, int dm, int dd, int round, int first, Map<String, UnitOrder> ao, Map<String, UnitOrder> orders,
+            CommandBonus ac, CommandBonus dc, String action, ConquestWallState wall, BattleSkillState memory) {
+        if (!"conquer".equals(action) && !"tactical_conquer".equals(action)) wall = null;
+        return resolveRound(a, d, ap, dp, distance, at, dt, as, ds, am, ad, dm, dd, round, first, ao, orders,
+                ac, dc, TerminalStrategy.WORLD, maxRoundForAction(action), wall, false, false, memory);
     }
 
     public BattleService() {
@@ -165,7 +197,7 @@ public class BattleService {
         if (ConquestWallState.TARGET.equals(id)) {
             return new UnitStats(id, "城墙", "fort", 0, 0, 0, 0, 0, 0, 0, 0, "", false);
         }
-        UnitDef u = GameData.UNITS.get(UnitEquipmentEffects.base(id));
+        UnitDef u = GameData.UNITS.get(BattleUnitIds.base(id));
         if (u != null) {
             return new UnitStats(u.key(), u.name(), u.cat(),
                     u.atkGround(), u.atkAir(), u.atkSea(), u.atkFort(), u.def(), u.hp(), u.spd(), u.range(),
@@ -186,7 +218,7 @@ public class BattleService {
      */
     private String unitName(String unitId, Side side, boolean defenderIsJapanese) {
         boolean isJapanese = (side == Side.ENEMY && defenderIsJapanese);
-        return JapaneseUnitDef.getUnitName(UnitEquipmentEffects.base(unitId), isJapanese) + (unitId.contains("~") ? "（援军配装组）" : "");
+        return JapaneseUnitDef.getUnitName(BattleUnitIds.base(unitId), isJapanese) + (unitId.contains("~") ? "（援军编队）" : "");
     }
 
     /**
@@ -543,13 +575,14 @@ public class BattleService {
         int firstCombatRound = 0;
         // 自动结算和逐回合指挥共用同一类型上限，最后一回合先交火再判定撤退。
         int maxRound = maxRoundForAction(action);
+        BattleSkillState skillState = new BattleSkillState();
         for (int round = 1; round <= maxRound; round++) {
             // 同步、手动及超时均调用同一回合内核，清军后仅共享同一份攻击额度溢出到墙体。
             BattleRoundState state = resolveRound(mine, enemy, minePos, enemyPos, initialDist,
                     aTech, dTech, aSkills, dSkills, attackerCommanderMil, attackerCommanderDef,
                     defenderCommanderMil, defenderCommanderDef, round, firstCombatRound,
                     attackerOrders, defenderOrders, attackerCommandBonus, defenderCommandBonus,
-                    TerminalStrategy.WORLD, maxRound, wall, !isPlayerBattle, ambush && round == 1);
+                    TerminalStrategy.WORLD, maxRound, wall, !isPlayerBattle, ambush && round == 1, skillState);
             mine = state.attackerArmy();
             enemy = state.defenderArmy();
             minePos = state.attackerPositions();
@@ -729,15 +762,33 @@ public class BattleService {
             int round, int firstCombatRound, Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
             CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, TerminalStrategy strategy, int maxRound,
             ConquestWallState wall, boolean defenderIsJapanese, boolean ambushFirstRound) {
+        return resolveRound(attackerArmy, defenderArmy, attackerPositions, defenderPositions, initialDistance,
+                attackerTech, defenderTech, attackerSkills, defenderSkills, attackerCommanderMil, attackerCommanderDef,
+                defenderCommanderMil, defenderCommanderDef, round, firstCombatRound, attackerOrders, defenderOrders,
+                attackerCommandBonus, defenderCommandBonus, strategy, maxRound, wall, defenderIsJapanese, ambushFirstRound,
+                new BattleSkillState());
+    }
+
+    /** 技能状态由会话持有并与兵力一起提交；不在共享服务上缓存校射、屏障或承伤。 */
+    private BattleRoundState resolveRound(Map<String, Integer> attackerArmy, Map<String, Integer> defenderArmy,
+            Map<String, Integer> attackerPositions, Map<String, Integer> defenderPositions, int initialDistance,
+            Map<String, Integer> attackerTech, Map<String, Integer> defenderTech,
+            Map<String, Integer> attackerSkills, Map<String, Integer> defenderSkills,
+            int attackerCommanderMil, int attackerCommanderDef, int defenderCommanderMil, int defenderCommanderDef,
+            int round, int firstCombatRound, Map<String, UnitOrder> attackerOrders, Map<String, UnitOrder> defenderOrders,
+            CommandBonus attackerCommandBonus, CommandBonus defenderCommandBonus, TerminalStrategy strategy, int maxRound,
+            ConquestWallState wall, boolean defenderIsJapanese, boolean ambushFirstRound, BattleSkillState skillState) {
+        BattleSkillEffects.begin(skillState.getAttacker(), round, attackerArmy, attackerArmy, Map.of());
+        BattleSkillEffects.begin(skillState.getDefender(), round, defenderArmy, defenderArmy, Map.of());
         Map<String, Integer> mine = snapshot(attackerArmy);
         Map<String, Integer> enemy = snapshot(defenderArmy);
         Map<String, Integer> minePos = new LinkedHashMap<>(attackerPositions);
         Map<String, Integer> enemyPos = new LinkedHashMap<>(defenderPositions);
         normalizeBattleFronts(mine, enemy, minePos, enemyPos, initialDistance);
         TechCtx attackerCtx = new TechCtx(attackerTech != null ? attackerTech : Collections.emptyMap(),
-                attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef, attackerCommandBonus);
+                attackerSkills != null ? attackerSkills : Collections.emptyMap(), attackerCommanderMil, attackerCommanderDef, attackerCommandBonus).withMemory(skillState.getAttacker());
         TechCtx defenderCtx = new TechCtx(defenderTech != null ? defenderTech : Collections.emptyMap(),
-                defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef, defenderCommandBonus);
+                defenderSkills != null ? defenderSkills : Collections.emptyMap(), defenderCommanderMil, defenderCommanderDef, defenderCommandBonus).withMemory(skillState.getDefender());
         boolean officerActive = isSkillRoundActive(round, firstCombatRound);
         StringBuilder report = new StringBuilder("-- 第").append(round).append("回合 --\n");
 
@@ -818,7 +869,7 @@ public class BattleService {
                 wall, terminalReason);
     }
 
-    /** 独立结构扣血：沿用攻方攻坚、配装、贴脸与周期技能，墙体不享受守方加成或反击。 */
+    /** 独立结构扣血：沿用攻方攻坚、贴脸与周期技能，墙体不享受守方加成或反击。 */
     private ConquestWallState attackWall(Map<String, Integer> mine, Map<String, Integer> positions,
             int wallPosition, TechCtx ctx, int round, int firstCombatRound, ConquestWallState wall,
             StringBuilder report, int movementReportStart) {
@@ -853,10 +904,9 @@ public class BattleService {
         double fortAttack = baseAttack(unitId, ConquestWallState.TARGET);
         if (!wall.standing() || remainingActions <= 0 || fortAttack <= 0 || distance > effectiveRange(unitId, ctx)) return wall;
         double attack = fortAttack * attackBonus(getStats(unitId).cat(), ctx.tech, ctx.skills,
-                ctx.commanderMil, officerActive, skillsActive) * ctx.commandBonus.attackMul()
-                * UnitEquipmentEffects.attack(ctx.tech, unitId, ConquestWallState.TARGET);
+                ctx.commanderMil, officerActive, skillsActive) * ctx.commandBonus.attackMul();
         double defense = wall.defense() * (1 - (skillsActive ? skillBonus(ctx.skills, "pierce") : 0));
-        double contact = distance == 0 ? POINT_BLANK_MULTIPLIERS.getOrDefault(UnitEquipmentEffects.base(unitId), 1.0) : 1.0;
+        double contact = distance == 0 ? POINT_BLANK_MULTIPLIERS.getOrDefault(BattleUnitIds.base(unitId), 1.0) : 1.0;
         double damage = attack * remainingActions * actionFirepowerMultiplier(ctx.tech) * contact
                 * 100 / (100 + 5 * Math.max(0, defense));
         var before = wall.hpRemaining();
@@ -906,7 +956,7 @@ public class BattleService {
         Map<String, UnitOrder> uniformOrders(Map<String, Integer> army, Map<String, UnitOrder> requested) {
             Map<String, UnitOrder> result = new LinkedHashMap<>();
             if (requested != null) army.keySet().forEach(id -> {
-                UnitOrder order = requested.getOrDefault(UnitEquipmentEffects.base(id), requested.get(id));
+                UnitOrder order = requested.getOrDefault(BattleUnitIds.base(id), requested.get(id));
                 if (order != null) result.put(id, order);
             });
             return result;
@@ -927,31 +977,30 @@ public class BattleService {
         TechCtx context(Side side, String id) {
             var f = source(side, id); TechCtx common = side == Side.MINE ? ac : dc;
             Map<String, Integer> tech = new LinkedHashMap<>(common.tech);
-            tech.keySet().removeIf(k -> k.startsWith(UnitEquipmentEffects.PREFIX));
-            tech.putAll(f.getEquipment());
-            return new TechCtx(tech, f.getSkills(), f.getMilitary(), f.getDefense(), common.commandBonus);
+            return new TechCtx(tech, f.getSkills(), f.getMilitary(), f.getDefense(), common.commandBonus)
+                    .withMemory(side == Side.MINE ? state.getSkillState().getAttacker() : state.getSkillState().getDefender());
         }
         UnitOrder order(Side side, String id) {
             Map<String, UnitOrder> all = side == Side.MINE ? ao : orders;
-            return all == null ? null : all.getOrDefault(UnitEquipmentEffects.base(id), all.get(id));
+            return all == null ? null : all.getOrDefault(BattleUnitIds.base(id), all.get(id));
         }
         String target(Side side, String id) {
             UnitOrder o = order(side, id); int range = effectiveRange(id, context(side, id));
-            String focus = o == null || o.focusTarget() == null ? null : UnitEquipmentEffects.base(o.focusTarget());
+            String focus = o == null || o.focusTarget() == null ? null : BattleUnitIds.base(o.focusTarget());
             Comparator<String> byDistance = Comparator.comparingInt((String t) -> getUnitDistToFoe(side, id, t, ap, dp, distance))
-                    .thenComparing(UnitEquipmentEffects::base).thenComparing(t -> t);
+                    .thenComparing(BattleUnitIds::base).thenComparing(t -> t);
             List<String> legal = foe(side).keySet().stream().filter(t -> foe(side).get(t) > 0 && baseAttack(id, t) > 0
                     && getUnitDistToFoe(side, id, t, ap, dp, distance) <= range).sorted(byDistance).toList();
-            if (focus != null) for (String t : legal) if (UnitEquipmentEffects.base(t).equals(focus)) return t;
-            for (String t : legal) if (UnitEquipmentEffects.base(t).equals(UnitEquipmentEffects.base(id))) return t;
+            if (focus != null) for (String t : legal) if (BattleUnitIds.base(t).equals(focus)) return t;
+            for (String t : legal) if (BattleUnitIds.base(t).equals(BattleUnitIds.base(id))) return t;
             return legal.isEmpty() ? null : legal.get(0);
         }
         String label(Side side, String id, int n) {
-            return source(side, id).title() + unitName(UnitEquipmentEffects.base(id), side, false) + " ×" + n;
+            return source(side, id).title() + unitName(BattleUnitIds.base(id), side, false) + " ×" + n;
         }
         String priority(ActionEntry e) {
             UnitOrder o = order(e.side, e.id);
-            return e.side + ":" + UnitEquipmentEffects.base(e.id) + ":" + e.range + ":" + e.spd + ":"
+            return e.side + ":" + BattleUnitIds.base(e.id) + ":" + e.range + ":" + e.spd + ":"
                     + (o == null ? defaultAction(e.id) : o.action()) + ":" + (o == null ? "" : o.focusTarget());
         }
         /** 机动仍读取双方回合开始坐标；每组仅注入本来源当前已开启的闪电窗口。 */
@@ -959,12 +1008,24 @@ public class BattleService {
             Map<String, TechCtx> groups = new LinkedHashMap<>();
             army(side).keySet().forEach(id -> {
                 TechCtx c = context(side, id);
-                groups.put(id, new TechCtx(c.tech, active(side, id) ? c.skills : Map.of(), c.commanderMil, c.commanderDef, c.commandBonus));
+                Map<String, Integer> movementSkills = new LinkedHashMap<>(c.skills);
+                if (!active(side, id)) movementSkills.remove("blitz");
+                groups.put(id, new TechCtx(c.tech, movementSkills, c.commanderMil, c.commanderDef, c.commandBonus).withMemory(c.memory));
             });
             TechCtx c = side == Side.MINE ? ac : dc;
-            return new TechCtx(c.tech, Map.of(), 0, 0, c.commandBonus, groups);
+            return new TechCtx(c.tech, Map.of(), 0, 0, c.commandBonus, groups)
+                    .withMemory(side == Side.MINE ? state.getSkillState().getAttacker() : state.getSkillState().getDefender());
         }
         BattleRoundState run() {
+            for (Side side : Side.values()) {
+                Map<String, Integer> initial = new LinkedHashMap<>();
+                Map<String, String> sources = new LinkedHashMap<>();
+                state.getFormations().values().stream().filter(f -> "attack".equals(f.getKind()) == (side == Side.MINE)).forEach(f -> {
+                    initial.putAll(f.getInitial()); f.getInitial().keySet().forEach(id -> sources.put(id, f.getId()));
+                });
+                BattleSkillEffects.begin(side == Side.MINE ? state.getSkillState().getAttacker() : state.getSkillState().getDefender(),
+                        round, army(side), initial, sources);
+            }
             log.append("-- 第").append(round).append("回合 --\n");
             int bonusStart = log.length();
             normalizeBattleFronts(a, d, ap, dp, distance);
@@ -984,7 +1045,7 @@ public class BattleService {
                         + (to == from ? to : Math.abs(to - from)) + "，坐标" + to;
                 movements.put(side + ":" + e.getKey(), "机动时×" + e.getValue() + " " + move);
                 state.getEvents().add(Map.of("type", "MOVEMENT", "round", round, "formation", source(side, e.getKey()).title(),
-                        "formationId", state.publicId(source(side, e.getKey())), "unit", UnitEquipmentEffects.base(e.getKey()), "countBefore", e.getValue(), "from", from, "to", to));
+                        "formationId", state.publicId(source(side, e.getKey())), "unit", BattleUnitIds.base(e.getKey()), "countBefore", e.getValue(), "from", from, "to", to));
                 log.append(label(side, e.getKey(), e.getValue())).append("\n").append(move).append("。\n");
             }
             aReferences = snapshot(a); dReferences = snapshot(d);
@@ -997,11 +1058,22 @@ public class BattleService {
             initiative.sort(Comparator.comparingInt(ActionEntry::range).reversed()
                     .thenComparing(Comparator.comparingDouble(ActionEntry::spd).reversed())
                     .thenComparingInt(e -> e.side == (round % 2 == 1 ? Side.MINE : Side.ENEMY) ? 0 : 1)
-                    .thenComparing(e -> UnitEquipmentEffects.base(e.id)).thenComparing(ActionEntry::id));
+                    .thenComparing(e -> BattleUnitIds.base(e.id)).thenComparing(ActionEntry::id));
             Map<String, List<ActionEntry>> batches = new LinkedHashMap<>();
             initiative.forEach(e -> batches.computeIfAbsent(priority(e), k -> new ArrayList<>()).add(e));
             for (var batch : batches.values()) fireBatch(batch);
             recordCommanderBonuses(bonusStart);
+            for (Side side : Side.values()) {
+                var memory = side == Side.MINE ? state.getSkillState().getAttacker() : state.getSkillState().getDefender();
+                log.append(BattleSkillEffects.log(memory, side == Side.MINE ? "我方" : "敌方"));
+                for (var effect : memory.getEvents()) {
+                    var entry = new LinkedHashMap<String, Object>(effect);
+                    var f = source(side, effect.get("unit").toString());
+                    entry.put("type", "SKILL_EFFECT"); entry.put("round", round);
+                    entry.put("formationId", state.publicId(f)); entry.put("formation", f.title());
+                    state.getEvents().add(entry);
+                }
+            }
             if (wall != null) wall = wall.afterRound(!allDead(d));
             boolean win = allDead(d) && !allDead(a) && (wall == null || !wall.standing());
             boolean end = win || allDead(a) || round >= maxRoundForAction(action);
@@ -1034,13 +1106,15 @@ public class BattleService {
             });
             log.insert(start, bonuses);
         }
-        record Hit(String attacker, String target, double actions, double damage) {}
+        record Hit(String attacker, String target, double actions, double damage, boolean primary, boolean extra) {
+            Hit(String attacker, String target, double actions, double damage) { this(attacker, target, actions, damage, false, false); }
+        }
         /** 合法同距离同基础兵种目标共同承伤；后排、不同领域与射程外不参与分摊。 */
         List<String> targets(Side side, String id, String chosen) {
             int range = effectiveRange(id, context(side, id));
             int dist = getUnitDistToFoe(side, id, chosen, ap, dp, distance);
             return foe(side).keySet().stream().filter(t -> foe(side).get(t) > 0
-                    && UnitEquipmentEffects.base(t).equals(UnitEquipmentEffects.base(chosen)) && baseAttack(id, t) > 0
+                    && BattleUnitIds.base(t).equals(BattleUnitIds.base(chosen)) && baseAttack(id, t) > 0
                     && getUnitDistToFoe(side, id, t, ap, dp, distance) == dist && dist <= range).sorted().toList();
         }
         void fireBatch(List<ActionEntry> batch) {
@@ -1069,21 +1143,41 @@ public class BattleService {
                             source(side, id).getDamage().merge(id, applied, Double::sum);
                             source(side, id).getWallDamage().merge(id, applied, Double::sum);
                             state.getEvents().add(Map.of("type", "WALL", "round", round, "formation", source(side, id).title(),
-                                    "formationId", state.publicId(source(side, id)), "unit", UnitEquipmentEffects.base(id), "damage", applied));
+                                    "formationId", state.publicId(source(side, id)), "unit", BattleUnitIds.base(id), "damage", applied));
                         }
                         if (!allDead(foe(side))) {
                             log.append(label(side, id, army(side).get(id))).append("\n无射程内合法目标，未开火。\n");
                             state.getEvents().add(Map.of("type", "NO_FIRE", "round", round, "formation", source(side, id).title(),
-                                    "formationId", state.publicId(source(side, id)), "unit", UnitEquipmentEffects.base(id), "reason", "NO_VALID_RANGE_TARGET"));
+                                    "formationId", state.publicId(source(side, id)), "unit", BattleUnitIds.base(id), "reason", "NO_VALID_RANGE_TARGET"));
                         }
                         budget.put(id, 0.0); continue;
                     }
                     List<String> targets = targets(side, id, chosen);
                     targets.forEach(t -> engage(other(side), t)); engage(side, id);
                     long total = targets.stream().mapToLong(t -> foe(side).get(t)).sum();
+                    TechCtx own = context(side, id), enemy = context(other(side), chosen);
+                    boolean primary = own.memory.unit(id).getAttackRound() != round;
+                    if (primary) BattleSkillEffects.aim(own.memory, id, enemy.memory, chosen, own.skills);
+                    double extra = primary ? BattleSkillEffects.reprisal(own.memory, id, chosen, own.skills,
+                            active(side, id), budget.get(id) * damagePerAction(side, id, chosen, false)) : 0;
                     for (String t : targets) {
                         double share = budget.get(id) * foe(side).get(t) / total;
-                        hits.add(new Hit(id, t, share, share * damagePerAction(side, id, t, false)));
+                        double damage = BattleSkillEffects.outgoing(own.memory, id, enemy.memory, t, foe(side), own.skills,
+                                primary, share * damagePerAction(side, id, t, false)) + extra * share / budget.get(id);
+                        hits.add(new Hit(id, t, share, damage, primary, false));
+                    }
+                    if (primary && active(side, id) && skillBonus(own.skills, "ricochet") > 0) {
+                        Map<String, Integer> positions = side == Side.MINE ? dp : ap;
+                        String second = foe(side).keySet().stream().filter(t -> !BattleSkillEffects.sameTarget(enemy.memory, t, chosen) && foe(side).get(t) > 0
+                                && BattleSkillEffects.troop(t) && baseAttack(id, t) > 0
+                                && getUnitDistToFoe(side, id, t, ap, dp, distance) <= effectiveRange(id, own))
+                                .min(Comparator.comparingInt((String t) -> Math.abs(positions.get(t) - positions.get(chosen))).thenComparing(t -> t)).orElse(null);
+                        if (second != null) {
+                            engage(other(side), second);
+                            double damage = budget.get(id) * skillBonus(own.skills, "ricochet") * damagePerAction(side, id, second, false);
+                            hits.add(new Hit(id, second, 0, damage, false, true));
+                            BattleSkillEffects.effect(own.memory, "ricochet", id, second, damage);
+                        }
                     }
                 }
                 if (hits.isEmpty()) break;
@@ -1093,7 +1187,9 @@ public class BattleService {
                 Map<String, Integer> before = snapshot(foe(side));
                 Map<String, Double> used = new HashMap<>();
                 hits.forEach(h -> {
-                    double hp = hp(other(side), h.target) * before.get(h.target);
+                    TechCtx defender = context(other(side), h.target);
+                    double hp = hp(other(side), h.target) * before.get(h.target)
+                            + BattleSkillEffects.shield(defender.memory, h.target, defender.skills, active(other(side), h.target), hp(other(side), h.target));
                     double ratio = totalDamage.get(h.target) > 0 ? Math.min(1, hp / totalDamage.get(h.target)) : 1;
                     used.merge(h.attacker, h.actions * ratio, Double::sum);
                 });
@@ -1111,7 +1207,7 @@ public class BattleService {
             Map<String, Integer> refs = side == Side.MINE ? dReferences : aReferences;
             double weighted = 0, total = 0;
             for (var e : refs.entrySet()) {
-                if (e.getValue() <= 0 || !UnitEquipmentEffects.base(e.getKey()).equals(UnitEquipmentEffects.base(unit))) continue;
+                if (e.getValue() <= 0 || !BattleUnitIds.base(e.getKey()).equals(BattleUnitIds.base(unit))) continue;
                 TechCtx c = context(other(side), e.getKey());
                 double value = defense ? getStats(unit).def() * defMul(c.tech)
                         : baseAttack(unit, target) * atkMul(getStats(unit).cat(), c.tech, c.commanderMil) * c.commandBonus.attackMul();
@@ -1124,41 +1220,44 @@ public class BattleService {
             TechCtx c = context(side, id), tc = context(other(side), t);
             boolean active = active(side, id), ta = active(other(side), t);
             double atk = baseAttack(id, t) * attackBonus(getStats(id).cat(), c.tech, c.skills, c.commanderMil, active, active)
-                    * c.commandBonus.attackMul() * UnitEquipmentEffects.attack(c.tech, id, t);
+                    * c.commandBonus.attackMul();
+            atk *= BattleSkillEffects.ownAttack(c.memory, id, c.skills);
             if (ta) atk *= 1 - skillBonus(tc.skills, "suppress");
             if (!counter && active) atk += reference(side, id, t, false) * Math.min(.30, skillBonus(c.skills, "learn"));
             double def = effDef(t, tc.tech, tc.skills, tc.commanderDef, ta, ta, false, null, Set.of(), tc.commandBonus);
-            if (ta && skillBonus(tc.skills, "bulwark") == 0)
+            if (ta)
                 def += reference(other(side), t, id, true) * Math.min(.30, skillBonus(tc.skills, "borrow_armor"));
             if (active) def *= 1 - skillBonus(c.skills, "pierce");
             double contact = !counter && getUnitDistToFoe(side, id, t, ap, dp, distance) == 0
-                    ? POINT_BLANK_MULTIPLIERS.getOrDefault(UnitEquipmentEffects.base(id), 1.0) : 1;
-            return Math.max(0, atk * counterMul(id, t) * 100 / (100 + 5 * Math.max(0, def))
-                    * UnitEquipmentEffects.damage(tc.tech, t, id) * actionFirepowerMultiplier(c.tech) * contact);
+                    ? POINT_BLANK_MULTIPLIERS.getOrDefault(BattleUnitIds.base(id), 1.0) : 1;
+            return Math.max(0, atk * counterMul(id, t) * 100 / (100 + 5 * Math.max(0, def)) * actionFirepowerMultiplier(c.tech) * contact);
         }
         List<Hit> counterHits(Side attackedBy, List<Hit> incoming) {
             Side side = other(attackedBy); List<Hit> result = new ArrayList<>();
             Map<String, List<String>> eligible = new TreeMap<>();
             incoming.stream().map(Hit::target).distinct().sorted().forEach(id -> {
-                var f = source(side, id); String quota = round + ":" + UnitEquipmentEffects.base(id);
+                var f = source(side, id); String quota = round + ":" + BattleUnitIds.base(id);
                 if (army(side).getOrDefault(id, 0) > 0 && active(side, id) && skillBonus(f.getSkills(), "counter") > 0 && !f.getCounterUsed().contains(quota))
                     eligible.computeIfAbsent(f.getId() + ":" + quota, k -> new ArrayList<>()).add(id);
             });
             eligible.values().forEach(group -> {
                 boolean fired = false;
                 for (String id : group) {
-                    List<Hit> legal = incoming.stream().filter(h -> h.target.equals(id) && foe(side).getOrDefault(h.attacker, 0) > 0
+                    List<Hit> legal = incoming.stream().filter(h -> !h.extra && h.target.equals(id) && foe(side).getOrDefault(h.attacker, 0) > 0
                             && baseAttack(id, h.attacker) > 0 && getUnitDistToFoe(side, id, h.attacker, ap, dp, distance) <= effectiveRange(id, context(side, id))).toList();
                     double total = legal.stream().mapToDouble(Hit::actions).sum();
                     if (total <= 0) continue;
                     double rate = skillBonus(context(side, id).skills, "counter");
                     for (Hit h : legal) {
                         double actions = army(side).get(id) * rate * h.actions / total;
-                        result.add(new Hit(id, h.attacker, actions, actions * damagePerAction(side, id, h.attacker, true)));
+                        TechCtx own = context(side, id), foe = context(other(side), h.attacker);
+                        double damage = BattleSkillEffects.outgoing(own.memory, id, foe.memory, h.attacker, army(other(side)), own.skills,
+                                false, actions * damagePerAction(side, id, h.attacker, true));
+                        result.add(new Hit(id, h.attacker, actions, damage));
                     }
                     fired = true;
                 }
-                if (fired) { var f = source(side, group.get(0)); f.getCounterUsed().add(round + ":" + UnitEquipmentEffects.base(group.get(0))); }
+                if (fired) { var f = source(side, group.get(0)); f.getCounterUsed().add(round + ":" + BattleUnitIds.base(group.get(0))); }
             });
             return result;
         }
@@ -1166,12 +1265,18 @@ public class BattleService {
         void apply(Side side, List<Hit> hits, boolean counter) {
             if (hits.isEmpty()) return;
             Map<String, Double> damage = new TreeMap<>(); hits.forEach(h -> damage.merge(h.target, h.damage, Double::sum));
+            Map<String, Double> rawDamage = new TreeMap<>(damage);
+            damage.replaceAll((target, value) -> {
+                TechCtx defender = context(other(side), target);
+                return BattleSkillEffects.receive(defender.memory, target, defender.skills, active(other(side), target),
+                        hp(other(side), target), foe(side).getOrDefault(target, 0), value);
+            });
             Map<String, List<String>> equivalents = new TreeMap<>();
             damage.keySet().forEach(t -> {
                 TechCtx c = context(other(side), t); var f = source(other(side), t);
-                // 等价键只含该目标有效属性，不含别名、来源 ID 或无关兵种配装。
-                String key = UnitEquipmentEffects.base(t) + ":" + (side == Side.MINE ? dp : ap).get(t) + ":" + hp(other(side), t)
-                        + ":" + f.getDefense() + ":" + active(other(side), t) + ":" + new TreeMap<>(c.skills) + ":" + new TreeMap<>(UnitEquipmentEffects.profile(c.tech, t));
+                // 等价键只含该目标有效属性，不含别名、来源 ID 或其他兵种。
+                String key = BattleUnitIds.base(t) + ":" + (side == Side.MINE ? dp : ap).get(t) + ":" + hp(other(side), t)
+                        + ":" + f.getDefense() + ":" + active(other(side), t) + ":" + new TreeMap<>(c.skills);
                 equivalents.computeIfAbsent(key, k -> new ArrayList<>()).add(t);
             });
             Map<String, Integer> kills = new HashMap<>();
@@ -1197,19 +1302,38 @@ public class BattleService {
                 // 战损事件每个受击组只记一次，不能在每条参攻伤害事件中重复记总击杀。
                 state.getEvents().add(Map.of("type", "LOSSES", "round", round, "batch", stage,
                         "formationId", state.publicId(source(other(side), t)), "formation", source(other(side), t).title(),
-                        "unit", UnitEquipmentEffects.base(t), "countBefore", before.get(t), "losses", n, "survivors", before.get(t) - n));
+                        "unit", BattleUnitIds.base(t), "countBefore", before.get(t), "losses", n, "survivors", before.get(t) - n));
             });
+            Map<Hit, Integer> attribution = new IdentityHashMap<>();
+            for (String target : kills.keySet()) {
+                List<Hit> aimed = hits.stream().filter(h -> h.target.equals(target)).toList();
+                int total = kills.get(target), assigned = 0;
+                double sum = aimed.stream().mapToDouble(h -> h.damage).sum();
+                for (Hit hit : aimed) {
+                    int share = sum <= 0 ? 0 : (int) Math.floor(total * hit.damage / sum);
+                    attribution.put(hit, share); assigned += share;
+                }
+                List<Hit> ordered = new ArrayList<>(aimed);
+                ordered.sort(Comparator.<Hit>comparingDouble(h -> sum <= 0 ? 0 : total * h.damage / sum - attribution.get(h)).reversed());
+                for (int i = 0; i < total - assigned && i < ordered.size(); i++) attribution.merge(ordered.get(i), 1, Integer::sum);
+            }
             for (Hit h : hits) {
                 double applied = Math.min(damage.get(h.target), hp(other(side), h.target) * before.get(h.target))
-                        * (damage.get(h.target) <= 0 ? 0 : h.damage / damage.get(h.target));
+                        * (rawDamage.get(h.target) <= 0 ? 0 : h.damage / rawDamage.get(h.target));
+                TechCtx own = context(side, h.attacker), enemy = context(other(side), h.target);
+                if (!h.extra && before.get(h.target) > 0 && foe(side).getOrDefault(h.target, 0) == 0 && applied > 0)
+                    BattleSkillEffects.defeated(own.memory, h.attacker, enemy.memory, h.target, own.skills);
+                if (h.primary && !counter && foe(side).getOrDefault(h.target, 0) > 0)
+                    BattleSkillEffects.smoke(own.memory, h.attacker, enemy.memory, h.target, own.skills, active(side, h.attacker));
                 source(side, h.attacker).getDamage().merge(h.attacker, applied, Double::sum);
-                if (GameData.FORTS.containsKey(UnitEquipmentEffects.base(h.target))) source(side, h.attacker).getFortDamage().merge(h.attacker, applied, Double::sum);
+                if (GameData.FORTS.containsKey(BattleUnitIds.base(h.target))) source(side, h.attacker).getFortDamage().merge(h.attacker, applied, Double::sum);
                 Map<String, Object> event = new LinkedHashMap<>();
-                event.put("type", counter ? "COUNTER" : "FIRE"); event.put("round", round); event.put("batch", stage);
-                event.put("formationId", state.publicId(source(side, h.attacker))); event.put("formation", source(side, h.attacker).title()); event.put("unit", UnitEquipmentEffects.base(h.attacker));
+                event.put("type", counter ? "COUNTER" : h.extra ? "RICOCHET" : "FIRE"); event.put("round", round); event.put("batch", stage);
+                event.put("formationId", state.publicId(source(side, h.attacker))); event.put("formation", source(side, h.attacker).title()); event.put("unit", BattleUnitIds.base(h.attacker));
                 event.put("countBefore", army(side).getOrDefault(h.attacker, 0)); event.put("target", source(other(side), h.target).title());
                 event.put("targetFormationId", state.publicId(source(other(side), h.target)));
-                event.put("targetUnit", UnitEquipmentEffects.base(h.target)); event.put("targetCountBefore", before.get(h.target));
+                event.put("targetUnit", BattleUnitIds.base(h.target)); event.put("targetCountBefore", before.get(h.target));
+                event.put("targetLosses", attribution.getOrDefault(h, 0));
                 event.put("rawDamage", h.damage); event.put("damage", applied); event.put("attackBudget", h.actions);
                 event.put("skillWindow", active(side, h.attacker)); event.put("distance", getUnitDistToFoe(side, h.attacker, h.target, ap, dp, distance));
                 state.getEvents().add(event);
@@ -1427,9 +1551,9 @@ public class BattleService {
             if (count <= 0) continue;
             UnitStats u = getStats(unitId);
             if (u == null) continue;
-            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(UnitEquipmentEffects.base(unitId))) : null;
+            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(BattleUnitIds.base(unitId))) : null;
             CommandAction action = order != null ? order.action() : defaultAction(unitId);
-            double spd = ctx != null ? effSpd(unitId, ctx, skillRoundActive) : u.spd();
+            double spd = ctx != null ? effSpd(unitId, ctx, skillRoundActive) * movementMultiplier(ctx, unitId) : u.spd();
             int rawStep = (int) (spd * 50);
             int curX = positions.getOrDefault(unitId, side == Side.MINE ? 0 : initialDist);
             if (action == CommandAction.ADVANCE) {
@@ -1486,11 +1610,11 @@ public class BattleService {
         for (var e : army.entrySet()) {
             String unitId = e.getKey();
             if (e.getValue() == null || e.getValue() <= 0 || getStats(unitId) == null) continue;
-            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(UnitEquipmentEffects.base(unitId))) : null;
+            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(BattleUnitIds.base(unitId))) : null;
             if ((order != null ? order.action() : defaultAction(unitId)) != CommandAction.ADVANCE) continue;
             int oldX = oldPositions.getOrDefault(unitId, side == Side.MINE ? 0 : initialDist);
             int curX = positions.getOrDefault(unitId, oldX);
-            int rawStep = (int) ((ctx != null ? effSpd(unitId, ctx, skillRoundActive) : getStats(unitId).spd()) * 50);
+            int rawStep = (int) ((ctx != null ? effSpd(unitId, ctx, skillRoundActive) * movementMultiplier(ctx, unitId) : getStats(unitId).spd()) * 50);
             int remainingStep = Math.max(0, rawStep - Math.abs(curX - oldX));
             int gap = nearestLivingFoeDistance(side, unitId, foeArmy, movedMinePos, movedEnemyPos, initialDist);
             if (gap == Integer.MAX_VALUE) continue;
@@ -1513,7 +1637,7 @@ public class BattleService {
             String unitId = e.getKey();
             int count = e.getValue() != null ? e.getValue() : 0;
             if (count <= 0 || getStats(unitId) == null) continue;
-            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(UnitEquipmentEffects.base(unitId))) : null;
+            UnitOrder order = orders != null ? orders.getOrDefault(unitId, orders.get(BattleUnitIds.base(unitId))) : null;
             CommandAction action = order != null ? order.action() : defaultAction(unitId);
             int oldX = oldPositions.getOrDefault(unitId, side == Side.MINE ? 0 : initialDist);
             int newX = positions.getOrDefault(unitId, oldX);
@@ -1544,7 +1668,7 @@ public class BattleService {
     // 按射程降序、速度降序依次开火；优先集火目标，支持边打边退
     // ========================================================================
 
-    /** 机动完成后首次出现可开火目标即记为交战；所有战斗技能在该回合及此后每隔两回合共同生效。 */
+    /** 机动完成后首次出现可开火目标即记为交战；周期技能在该回合及此后每隔两回合生效，条件技能按各自规则触发。 */
     private int executeCombatPhase(
             Map<String, Integer> mine,
             Map<String, Integer> enemy,
@@ -1621,7 +1745,7 @@ public class BattleService {
                 Map<String, Integer> foeArmy = entry.side == Side.MINE ? enemy : mine;
                 TechCtx ctx = entry.side == Side.MINE ? attackerCtx : defenderCtx;
                 Map<String, UnitOrder> orders = entry.side == Side.MINE ? attackerOrders : defenderOrders;
-                UnitOrder unitOrder = orders != null ? orders.getOrDefault(entry.id, orders.get(UnitEquipmentEffects.base(entry.id))) : null;
+                UnitOrder unitOrder = orders != null ? orders.getOrDefault(entry.id, orders.get(BattleUnitIds.base(entry.id))) : null;
                 if (pickCombatTarget(entry.id, entry.side, foeArmy, minePos, enemyPos, initialDist, ctx,
                         unitOrder != null ? unitOrder.focusTarget() : null) != null) {
                     firstCombatRound = round;
@@ -1638,7 +1762,8 @@ public class BattleService {
                 event("OFFICER_ATTRIBUTES", side, "", "", Map.of("active", officerActive,
                         "military", ctx.commanderMil, "defense", ctx.commanderDef,
                         "firstCombatRound", firstCombatRound, "cycle", "E/E+3/E+6"));
-                for (String skill : List.of("frenzy", "bulwark", "blitz", "suppress", "pierce", "counter", "learn", "borrow_armor")) {
+                for (String skill : com.wargame.model.constants.OfficerSkillDef.combatSkills()) {
+                    if (Set.of("ranging", "last_stand", "execution", "pursuit").contains(skill)) continue;
                     int level = ctx.skills.getOrDefault(skill, 0);
                     event("SKILL_WINDOW", side, "", "", Map.of("skill", skill, "level", level,
                             "firstCombatRound", firstCombatRound, "active", skillRoundActive && level > 0,
@@ -1683,8 +1808,8 @@ public class BattleService {
             Set<String> counterArmorSources = a.side == Side.MINE ? mineArmorSources : enemyArmorSources;
 
             UnitOrder uOrder = a.side == Side.MINE
-                    ? (attackerOrders != null ? attackerOrders.getOrDefault(a.id, attackerOrders.get(UnitEquipmentEffects.base(a.id))) : null)
-                    : (defenderOrders != null ? defenderOrders.getOrDefault(a.id, defenderOrders.get(UnitEquipmentEffects.base(a.id))) : null);
+                    ? (attackerOrders != null ? attackerOrders.getOrDefault(a.id, attackerOrders.get(BattleUnitIds.base(a.id))) : null)
+                    : (defenderOrders != null ? defenderOrders.getOrDefault(a.id, defenderOrders.get(BattleUnitIds.base(a.id))) : null);
             String focusTarget = uOrder != null ? uOrder.focusTarget() : null;
 
             fireUnitCombat(a.id, myA, foe, minePos, enemyPos, initialDist, report, a.side,
@@ -1693,7 +1818,54 @@ public class BattleService {
                     movementReportStart, defenderIsJapanese, wallCombat);
         }
         reorderMovementLogsByCombatOrder(report, movementReportStart, order, defenderIsJapanese);
+        appendTacticalEvents(report, attackerCtx, defenderCtx);
         return firstCombatRound;
+    }
+
+    private void appendTacticalEvents(StringBuilder report, TechCtx a, TechCtx b) {
+        for (Side side : Side.values()) {
+            TechCtx ctx = side == Side.MINE ? a : b;
+            if (ctx == null) continue;
+            report.append(BattleSkillEffects.log(ctx.memory, side == Side.MINE ? "我方" : "敌方"));
+            for (var effect : ctx.memory.getEvents()) event("SKILL_EFFECT", side,
+                    effect.get("unit").toString(), effect.get("target").toString(), effect);
+        }
+    }
+
+    /** 跳弹重新选择射程内第二目标，重新计算其领域、防御和克制；不递归产生任何追加攻击。 */
+    private void ricochet(String id, String primary, int count, Side side, Map<String, Integer> foe,
+            Map<String, Integer> ap, Map<String, Integer> dp, int distance, TechCtx own, TechCtx enemy,
+            boolean active, Set<String> learnSources, Set<String> armorSources, StringBuilder log) {
+        double rate = own == null || !active ? 0 : skillBonus(own.skills, "ricochet");
+        if (rate <= 0 || enemy == null) return;
+        Map<String, Integer> positions = side == Side.MINE ? dp : ap;
+        String second = foe.keySet().stream().filter(t -> !BattleSkillEffects.sameTarget(enemy.memory, t, primary) && foe.get(t) > 0
+                && BattleSkillEffects.troop(t) && baseAttack(id, t) > 0
+                && getUnitDistToFoe(side, id, t, ap, dp, distance) <= effectiveRange(id, own))
+                .min(Comparator.comparingInt((String t) -> Math.abs(positions.getOrDefault(t, 0) - positions.getOrDefault(primary, 0)))
+                        .thenComparing(t -> t)).orElse(null);
+        if (second == null) return;
+        double attack = baseAttack(id, second) * attackBonus(getStats(id).cat(), own.tech, own.skills,
+                own.commanderMil, active, active) * own.commandBonus.attackMul()
+                * BattleSkillEffects.ownAttack(own.memory, id, own.skills) * (1 - skillBonus(enemy.skills, "suppress"));
+        attack += learningBonus(id, second, own, enemy, active, learnSources, false);
+        double defense = effDef(second, enemy.tech, enemy.skills, enemy.commanderDef, active, active, active,
+                own, armorSources, enemy.commandBonus) * (1 - skillBonus(own.skills, "pierce"));
+        double contact = getUnitDistToFoe(side, id, second, ap, dp, distance) == 0 ? POINT_BLANK_MULTIPLIERS.getOrDefault(BattleUnitIds.base(id), 1.0) : 1;
+        double raw = count * rate * attack * counterMul(id, second) * 100 / (100 + 5 * Math.max(0, defense))
+                * actionFirepowerMultiplier(own.tech) * contact;
+        double hp = Math.max(1, effHp(second, enemy.tech) * enemy.commandBonus.hpMul());
+        int before = foe.get(second);
+        double net = BattleSkillEffects.receive(enemy.memory, second, enemy.skills, active, hp, before, raw);
+        double expected = Math.min(before, net / hp);
+        int kills = (int) Math.floor(expected);
+        if (expected - kills > 0 && random.getAsDouble() < expected - kills) kills++;
+        foe.put(second, before - kills);
+        BattleSkillEffects.effect(own.memory, "ricochet", id, second, Math.min(net, before * hp));
+        event("RICOCHET", side, id, second, Map.of("damage", Math.min(net, before * hp), "kills", kills));
+        log.append(side == Side.MINE ? "我方" : "敌方").append(unitName(id, side, false))
+                .append(" [跳弹射击] ").append(BattleUnitIds.base(second)).append("，伤害")
+                .append(Math.round(Math.min(net, before * hp))).append(" 击毁").append(kills).append("\n");
     }
 
     /** 指定射程内目标优先；未指定时先攻击同兵种，否则攻击最近目标。 */
@@ -1702,7 +1874,7 @@ public class BattleService {
                                     int initialDist, TechCtx ctx, String focusTarget) {
         if (focusTarget != null) {
             for (String candidate : foeArmy.keySet()) {
-                if (UnitEquipmentEffects.base(candidate).equals(UnitEquipmentEffects.base(focusTarget))
+                if (BattleUnitIds.base(candidate).equals(BattleUnitIds.base(focusTarget))
                         && foeArmy.getOrDefault(candidate, 0) > 0 && baseAttack(attackerId, candidate) > 0
                         && getUnitDistToFoe(side, attackerId, candidate, minePos, enemyPos, initialDist) <= effectiveRange(attackerId, ctx)) return candidate;
             }
@@ -1913,12 +2085,14 @@ public class BattleService {
         double attackBonus = actCtx == null ? 1
                 : attackBonus(u.cat(), actCtx.tech, actCtx.skills, actCtx.commanderMil,
                         officerActive, skillRoundActive) * actCtx.commandBonus.attackMul();
+        if (actCtx != null) attackBonus *= BattleSkillEffects.ownAttack(actCtx.memory, unitId, actCtx.skills);
         if (skillRoundActive && foeCtx != null) attackBonus *= 1 - skillBonus(foeCtx.skills, "suppress");
         double pierce = !skillRoundActive || actCtx == null ? 0 : skillBonus(actCtx.skills, "pierce");
         double firepower = actionFirepowerMultiplier(actCtx == null ? null : actCtx.tech);
         double totalActions = count;
         double remainingActions = totalActions;
         boolean firstTarget = true;
+        if (!isCounter && actCtx != null && foeCtx != null) BattleSkillEffects.aim(actCtx.memory, unitId, foeCtx.memory, target, actCtx.skills);
 
         while (target != null && remainingActions > 1e-9) {
             UnitStats tU = getStats(target);
@@ -1929,25 +2103,34 @@ public class BattleService {
                     actCtx, armorSources, foeCtx.commandBonus);
             def = Math.max(0, def * (1 - pierce));
             double cm = counterMul(unitId, target);
-            double targetAttack = baseAttack(unitId, target) * attackBonus * UnitEquipmentEffects.attack(actCtx == null ? null : actCtx.tech, unitId, target);
+            double targetAttack = baseAttack(unitId, target) * attackBonus;
             double learnedAttack = learningBonus(unitId, target, actCtx, foeCtx,
                     skillRoundActive, learningSources, isCounter);
             targetAttack += learnedAttack;
             // 余伤切换目标后重新检查距离，不能把前排的接触加成带给尚未接触的后排。
             double pointBlankMultiplier = getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist) == 0
-                    ? POINT_BLANK_MULTIPLIERS.getOrDefault(UnitEquipmentEffects.base(unitId), 1.0) : 1.0;
+                    ? POINT_BLANK_MULTIPLIERS.getOrDefault(BattleUnitIds.base(unitId), 1.0) : 1.0;
             double damagePerAction = targetAttack * cm * 100.0 / (100.0 + 5 * def)
-                    * pointBlankMultiplier * UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId) * firepower;
+                    * pointBlankMultiplier * firepower;
             // 每份攻击额度只乘一次火力密度；击毁消耗按增强后的伤害计算，余伤切换不重置额度。
             double hpPer = Math.max(1, foeCtx == null ? tU.hp() : effHp(target, foeCtx.tech) * foeCtx.commandBonus.hpMul());
             int beforeKill = foeArmy.getOrDefault(target, 0);
             double targetHp = hpPer * beforeKill;
             double damage = remainingActions * damagePerAction;
+            if (actCtx != null && foeCtx != null) {
+                double normal = damage;
+                damage = BattleSkillEffects.outgoing(actCtx.memory, unitId, foeCtx.memory, target, foeArmy, actCtx.skills,
+                        firstTarget && !isCounter, damage);
+                if (firstTarget && !isCounter) damage += BattleSkillEffects.reprisal(actCtx.memory, unitId, target, actCtx.skills, skillRoundActive, normal);
+            }
+            double barrier = foeCtx == null ? 0 : BattleSkillEffects.shield(foeCtx.memory, target, foeCtx.skills, skillRoundActive, hpPer);
+            double rawDamage = damage;
+            if (foeCtx != null) damage = BattleSkillEffects.receive(foeCtx.memory, target, foeCtx.skills, skillRoundActive, hpPer, beforeKill, damage);
             double appliedDamage = Math.min(damage, targetHp);
             int kills;
             if (damage + 1e-9 >= targetHp) {
                 kills = beforeKill;
-                remainingActions = Math.max(0, remainingActions - targetHp / damagePerAction);
+                remainingActions = rawDamage <= 0 ? 0 : remainingActions * Math.max(0, 1 - (targetHp + barrier) / rawDamage);
             } else {
                 kills = (int) Math.floor(appliedDamage / hpPer);
                 double fraction = appliedDamage / hpPer - kills;
@@ -1956,6 +2139,14 @@ public class BattleService {
             }
             int remainingTarget = beforeKill - kills;
             foeArmy.put(target, remainingTarget);
+            if (actCtx != null && foeCtx != null && !isCounter) {
+                if (firstTarget) {
+                    if (remainingTarget > 0) BattleSkillEffects.smoke(actCtx.memory, unitId, foeCtx.memory, target, actCtx.skills, skillRoundActive);
+                    ricochet(unitId, target, count, side, foeArmy, minePos, enemyPos, initialDist, actCtx, foeCtx,
+                            skillRoundActive, learningSources, armorSources, report);
+                }
+                if (remainingTarget == 0 && appliedDamage > 0) BattleSkillEffects.defeated(actCtx.memory, unitId, foeCtx.memory, target, actCtx.skills);
+            }
             Map<String, Object> effect = new LinkedHashMap<>();
             effect.put("damage", appliedDamage); effect.put("kills", kills); effect.put("attack", targetAttack);
             effect.put("firepowerMultiplier", firepower);
@@ -1967,8 +2158,8 @@ public class BattleService {
             effect.put("pierce", pierce); effect.put("learnedAttack", learnedAttack);
             effect.put("bulwarkMultiplier", 1 + (skillRoundActive && foeCtx != null ? skillBonus(foeCtx.skills, "bulwark") : 0));
             effect.put("borrowedDefense", foeCtx == null ? 0 : borrowedArmorBonus(target, foeCtx.skills, skillRoundActive, actCtx, armorSources));
-            effect.put("learnReason", actCtx == null || skillBonus(actCtx.skills, "learn") == 0 ? "NO_COMMANDER_OR_SKILL" : !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : learningSources.contains(UnitEquipmentEffects.base(unitId)) ? "APPLIED_IF_LEARNED" : "NO_SAME_UNIT_REFERENCE");
-            effect.put("armorReason", foeCtx == null || skillBonus(foeCtx.skills, "borrow_armor") == 0 ? "NO_COMMANDER_OR_SKILL" : !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : skillBonus(foeCtx.skills, "bulwark") > 0 ? "BULWARK_PRIORITY" : armorSources.contains(UnitEquipmentEffects.base(target)) ? "APPLIED_IF_LEARNED" : "NO_SAME_UNIT_REFERENCE");
+            effect.put("learnReason", actCtx == null || skillBonus(actCtx.skills, "learn") == 0 ? "NO_COMMANDER_OR_SKILL" : !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : learningSources.contains(BattleUnitIds.base(unitId)) ? "APPLIED_IF_LEARNED" : "NO_SAME_UNIT_REFERENCE");
+            effect.put("armorReason", foeCtx == null || skillBonus(foeCtx.skills, "borrow_armor") == 0 ? "NO_COMMANDER_OR_SKILL" : !skillRoundActive ? "OUTSIDE_SKILL_WINDOW" : armorSources.contains(BattleUnitIds.base(target)) ? "APPLIED_IF_LEARNED" : "NO_SAME_UNIT_REFERENCE");
             event("FIRE", side, unitId, target, effect);
             StringBuilder attackOutcome = new StringBuilder();
             attackOutcome.append(sidePrefix).append(uName).append("(").append(count).append(")")
@@ -1980,10 +2171,8 @@ public class BattleService {
             else if (cm < 0.9999) tags.add("倍率×" + cm + " 火力受限");
             if (pointBlankMultiplier > 1.0) tags.add("贴脸×" + pointBlankMultiplier);
             if (firepower > 1.0) tags.add("火力密度×" + firepower);
-            if ("htank".equals(UnitEquipmentEffects.base(target))) tags.add("前排承伤");
+            if ("htank".equals(BattleUnitIds.base(target))) tags.add("前排承伤");
             if (firstTarget && focusTarget != null && focusTarget.equals(target)) tags.add("指定集火");
-            double gearReduction = 1 - UnitEquipmentEffects.damage(foeCtx == null ? null : foeCtx.tech, target, unitId);
-            if (gearReduction > 0) tags.add("装备减伤" + percent(gearReduction) + "%");
             if (pierce > 0) tags.add("破甲" + percent(pierce) + "%");
             if (learnedAttack > 0) tags.add("师夷长技+" + Math.round(learnedAttack) + "攻击");
             if (!tags.isEmpty()) {
@@ -1993,7 +2182,7 @@ public class BattleService {
             if (firstTarget) attackOutcome.append(" 本次原始火力").append(Math.round(targetAttack * totalActions * firepower));
             attackOutcome.append(" 伤害").append(Math.round(appliedDamage)).append(" 击毁").append(kills)
                     .append(" 剩余攻击额度").append(Math.round(100 * remainingActions / totalActions)).append("%");
-            if ("rocket".equals(UnitEquipmentEffects.base(unitId))) {
+            if ("rocket".equals(BattleUnitIds.base(unitId))) {
                 attackOutcome.append(" 有效射程").append(effectiveRange(unitId, actCtx));
             }
             attackOutcome.append(" 目标距离").append(getUnitDistToFoe(side, unitId, target, minePos, enemyPos, initialDist));
@@ -2025,6 +2214,7 @@ public class BattleService {
                     if (dist <= targetRange) {
                         double cAtkBonus = attackBonus(tU.cat(), foeCtx.tech, foeCtx.skills, foeCtx.commanderMil,
                                 officerActive, skillRoundActive) * foeCtx.commandBonus.attackMul();
+                        cAtkBonus *= BattleSkillEffects.ownAttack(foeCtx.memory, target, foeCtx.skills);
                         if (actCtx != null) cAtkBonus *= 1 - skillBonus(actCtx.skills, "suppress");
                         double cPierce = skillBonus(foeCtx.skills, "pierce");
                         double cDef = actCtx == null ? u.def()
@@ -2032,13 +2222,17 @@ public class BattleService {
                                 foeCtx, counterArmorSources, actCtx.commandBonus);
                         cDef = Math.max(0, cDef * (1 - cPierce));
                         double cCm = counterMul(target, unitId);
-                        double cBaseAtk = baseAttack(target, unitId) * cAtkBonus * UnitEquipmentEffects.attack(foeCtx.tech, target, unitId);
+                        double cBaseAtk = baseAttack(target, unitId) * cAtkBonus;
                         // 反击使用反击方自己的火力科技，与反击比例独立相乘，不借用进攻方倍率或贴脸加成。
                         double cFirepower = actionFirepowerMultiplier(foeCtx.tech);
-                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef) * UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target) * cFirepower;
+                        double cDamagePerAction = cBaseAtk * cCm * 100.0 / (100.0 + 5 * cDef) * cFirepower;
                         double cHpPer = Math.max(1, actCtx == null ? u.hp() : effHp(unitId, actCtx.tech) * actCtx.commandBonus.hpMul());
                         int cBeforeKill = myArmy.getOrDefault(unitId, 0);
                         double cTotalDamage = remainingTarget * cDamagePerAction * counterRate;
+                        if (actCtx != null) {
+                            cTotalDamage = BattleSkillEffects.outgoing(foeCtx.memory, target, actCtx.memory, unitId, myArmy, foeCtx.skills, false, cTotalDamage);
+                            cTotalDamage = BattleSkillEffects.receive(actCtx.memory, unitId, actCtx.skills, skillRoundActive, cHpPer, cBeforeKill, cTotalDamage);
+                        }
                         double cAppliedDamage = Math.min(cTotalDamage, cHpPer * cBeforeKill);
                         int cKills;
                         if (cTotalDamage + 1e-9 >= cHpPer * cBeforeKill) {
@@ -2049,6 +2243,8 @@ public class BattleService {
                             if (cFrac > 0 && random.getAsDouble() < cFrac) cKills++;
                         }
                         myArmy.put(unitId, cBeforeKill - cKills);
+                        if (cBeforeKill == cKills && cAppliedDamage > 0 && actCtx != null)
+                            BattleSkillEffects.defeated(foeCtx.memory, target, actCtx.memory, unitId, foeCtx.skills);
                         event("COUNTER", foeSide, target, unitId, Map.of("skill", "counter", "damage", cAppliedDamage,
                                 "kills", cKills, "rate", counterRate, "distance", dist, "range", targetRange,
                                 "firepowerMultiplier", cFirepower, "rawFirepower", cBaseAtk * remainingTarget * counterRate * cFirepower));
@@ -2061,8 +2257,6 @@ public class BattleService {
                         if (cFirepower > 1.0) cTags.add("火力密度×" + cFirepower);
                         if (cCm > 1.0001) cTags.add("倍率×" + cCm + " 相克");
                         else if (cCm < 0.9999) cTags.add("倍率×" + cCm + " 火力受限");
-                        double cGearReduction = 1 - UnitEquipmentEffects.damage(actCtx == null ? null : actCtx.tech, unitId, target);
-                        if (cGearReduction > 0) cTags.add("装备减伤" + percent(cGearReduction) + "%");
                         if (cPierce > 0) cTags.add("破甲" + percent(cPierce) + "%");
                         if (!cTags.isEmpty()) {
                             report.append(" [").append(String.join(" ", cTags)).append("]");
@@ -2199,7 +2393,7 @@ public class BattleService {
     double learningBonus(String unitId, String targetId, TechCtx actCtx, TechCtx foeCtx,
                                  boolean learningActive, Set<String> learningSources, boolean isCounter) {
         if (!learningActive || isCounter || actCtx == null || foeCtx == null
-                || !learningSources.contains(UnitEquipmentEffects.base(unitId)) || !GameData.UNITS.containsKey(UnitEquipmentEffects.base(unitId))) {
+                || !learningSources.contains(BattleUnitIds.base(unitId)) || !GameData.UNITS.containsKey(BattleUnitIds.base(unitId))) {
             return 0;
         }
         UnitStats unit = getStats(unitId);
@@ -2221,8 +2415,8 @@ public class BattleService {
     private Set<String> snapshotLivingTroopIds(Map<String, Integer> army) {
         Set<String> troopIds = new HashSet<>();
         for (Map.Entry<String, Integer> entry : army.entrySet()) {
-            if (entry.getValue() != null && entry.getValue() > 0 && GameData.UNITS.containsKey(UnitEquipmentEffects.base(entry.getKey()))) {
-                troopIds.add(UnitEquipmentEffects.base(entry.getKey()));
+            if (entry.getValue() != null && entry.getValue() > 0 && GameData.UNITS.containsKey(BattleUnitIds.base(entry.getKey()))) {
+                troopIds.add(BattleUnitIds.base(entry.getKey()));
             }
         }
         return troopIds;
@@ -2246,7 +2440,7 @@ public class BattleService {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
         double multiplier = defMul(tech, commanderActive ? commanderDef : 0);
-        double defense = u.def() * UnitEquipmentEffects.mul(tech, unitId, "defense") * multiplier * commandBonus.defenseMul();
+        double defense = u.def() * multiplier * commandBonus.defenseMul();
         if (bulwarkActive) defense *= 1 + skillBonus(skills, "bulwark");
         return defense + borrowedArmorBonus(unitId, skills, armorLearningActive,
                 armorSourceCtx, armorSources);
@@ -2264,13 +2458,13 @@ public class BattleService {
      * 计算借甲御敌在当前回合提供的临时防御值。
      *
      * 参考对象必须是交火阶段开始时存活的同名敌军；仅复制其基础防御与防御科技，
-     * 不继承将领属性或临时技能。旧存档若同时拥有坚守阵地，则以坚守阵地优先。
+     * 不继承将领属性或临时技能。与坚守阵地同时拥有时独立追加，不放大借来的防御。
      */
     private double borrowedArmorBonus(String unitId, Map<String, Integer> skills,
                                       boolean armorLearningActive, TechCtx armorSourceCtx,
                                       Set<String> armorSources) {
-        if (!armorLearningActive || armorSourceCtx == null || !armorSources.contains(UnitEquipmentEffects.base(unitId))
-                || !GameData.UNITS.containsKey(UnitEquipmentEffects.base(unitId)) || skillBonus(skills, "bulwark") > 0) {
+        if (!armorLearningActive || armorSourceCtx == null || !armorSources.contains(BattleUnitIds.base(unitId))
+                || !GameData.UNITS.containsKey(BattleUnitIds.base(unitId))) {
             return 0;
         }
         UnitStats unit = getStats(unitId);
@@ -2291,10 +2485,16 @@ public class BattleService {
     double effHp(String unitId, Map<String, Integer> tech) {
         UnitStats u = getStats(unitId);
         if (u == null) return 1;
-        return u.hp() * UnitEquipmentEffects.mul(tech, unitId, "hp") * hpMul(u.cat(), tech);
+        return u.hp() * hpMul(u.cat(), tech);
     }
 
     /** 常驻学识加成进入实际机动、交火先手，不参与开局距离，工事零速度保持为零。 */
+    /** 来源编队可独立追击或受烟幕影响，外层聚合上下文不能吞掉该兵种的状态。 */
+    private double movementMultiplier(TechCtx ctx, String id) {
+        if (ctx.groups.containsKey(id)) return movementMultiplier(ctx.groups.get(id), id);
+        return BattleSkillEffects.movement(ctx.memory, id, ctx.skills);
+    }
+
     private double effSpd(String unitId, TechCtx ctx) {
         return effSpd(unitId, ctx, false);
     }
@@ -2316,7 +2516,7 @@ public class BattleService {
         if (u == null) return 0;
         // 全部陆军共用燃烧引擎，攻击、防御等仍按原类别计算。
         String speedCat = u.cat();
-        double base = u.spd() * UnitEquipmentEffects.speed(tech, unitId, true) * spdMul(speedCat, tech);
+        double base = u.spd() * spdMul(speedCat, tech);
         double blitz = skillRoundActive ? skillBonus(skills, "blitz") : 0;
         return base * (1 + blitz);
     }
@@ -2401,6 +2601,7 @@ public class BattleService {
         if (skills == null) return 0;
         int lv = skills.getOrDefault(skillId, 0);
         if (lv <= 0) return 0;
+        if (BattleSkillEffects.NEW_SKILLS.contains(skillId)) return BattleSkillEffects.rate(skills, skillId);
         double rate = SKILL_RATES.getOrDefault(skillId, 0.0);
         return rate * Math.min(5, lv);
     }
@@ -2422,9 +2623,7 @@ public class BattleService {
             appendSkillBonus(bonuses, ctx.skills, "frenzy", "全军冲锋", "+", "攻击");
             appendSkillBonus(bonuses, ctx.skills, "learn", "师夷长技", "+", "同名兵种攻击（本回合，上限敌方同名兵种攻击30%）");
             appendSkillBonus(bonuses, ctx.skills, "bulwark", "坚守阵地", "+", "防御");
-            if (skillBonus(ctx.skills, "bulwark") == 0) {
-                appendSkillBonus(bonuses, ctx.skills, "borrow_armor", "借甲御敌", "+", "同名兵种防御（本回合，上限敌方同名兵种防御30%）");
-            }
+            appendSkillBonus(bonuses, ctx.skills, "borrow_armor", "借甲御敌", "+", "同名兵种防御（本回合，上限敌方同名兵种防御30%）");
             appendSkillBonus(bonuses, ctx.skills, "counter", "绝境反击", "", "反击伤害（受击存活且可还击时）");
             appendSkillBonus(bonuses, ctx.skills, "suppress", "火力压制", "-", "敌方攻击");
             appendSkillBonus(bonuses, ctx.skills, "pierce", "破甲打击", "", "无视敌方防御");
@@ -2460,7 +2659,13 @@ public class BattleService {
 
     /** 科技/技能上下文 */
     public record TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int commanderMil, int commanderDef,
-                          CommandBonus commandBonus, Map<String, TechCtx> groups) {
+                          CommandBonus commandBonus, Map<String, TechCtx> groups, BattleSkillState.Army memory) {
+        public TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int mil, int def, CommandBonus bonus, Map<String, TechCtx> groups) {
+            this(tech, skills, mil, def, bonus, groups, new BattleSkillState.Army());
+        }
+        public TechCtx withMemory(BattleSkillState.Army state) {
+            return new TechCtx(tech, skills, commanderMil, commanderDef, commandBonus, groups, state);
+        }
         public TechCtx(Map<String, Integer> tech, Map<String, Integer> skills, int mil, int def, CommandBonus bonus) {
             this(tech, skills, mil, def, bonus, Map.of());
         }
@@ -2657,7 +2862,7 @@ public class BattleService {
             String foeId = entry.getKey();
             if (entry.getValue() == null || entry.getValue() <= 0 || getStats(foeId) == null) continue;
             int distance = getUnitDistToFoe(side, unitId, foeId, minePos, enemyPos, initialDist);
-            UnitOrder order = foeOrders != null ? foeOrders.getOrDefault(foeId, foeOrders.get(UnitEquipmentEffects.base(foeId))) : null;
+            UnitOrder order = foeOrders != null ? foeOrders.getOrDefault(foeId, foeOrders.get(BattleUnitIds.base(foeId))) : null;
             CommandAction action = order != null ? order.action() : defaultAction(foeId);
             int foeStep = action == CommandAction.ADVANCE
                     ? (int) ((foeCtx != null
@@ -2703,7 +2908,7 @@ public class BattleService {
                                      Map<String, Integer> minePos, Map<String, Integer> enemyPos,
                                      int initialDist, TechCtx ctx) {
         for (String candidate : foeArmy.keySet()) {
-            if (UnitEquipmentEffects.base(candidate).equals(UnitEquipmentEffects.base(attackerId))
+            if (BattleUnitIds.base(candidate).equals(BattleUnitIds.base(attackerId))
                     && foeArmy.getOrDefault(candidate, 0) > 0 && baseAttack(attackerId, candidate) > 0
                     && getUnitDistToFoe(side, attackerId, candidate, minePos, enemyPos, initialDist) <= effectiveRange(attackerId, ctx)) return candidate;
         }
@@ -2792,7 +2997,7 @@ public class BattleService {
      * 动作词映射 - 对应 JS Battle.verb
      */
     private String verb(String id) {
-        return switch (UnitEquipmentEffects.base(id)) {
+        return switch (BattleUnitIds.base(id)) {
             case "infantry" -> "射击";
             case "truck" -> "碾压";
             case "armored", "recon_car" -> "扫射";

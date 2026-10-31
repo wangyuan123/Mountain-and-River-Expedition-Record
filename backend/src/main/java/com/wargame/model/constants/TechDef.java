@@ -37,7 +37,7 @@ public record TechDef(
         // 城墙科技只强化真实玩家墙体，不能叠加军队攻防生命乘区。
         m.put("wall_reinforcement", new TechDef("wall_reinforcement", "城墙加固", "军事", "当前城墙生命与防御 +5%/级，最高各 +50%；无城墙时不产生属性，不强化驻军或城防工事。",
                 10, 2, Map.of("steel", 320, "food", 160, "rare", 30), 1.8, "wall_stats"));
-        m.put("log_load", new TechDef("log_load", "负重科技", "后勤", "所有兵种负重 +5%/级，最高 +50%；与装备负重相乘，运输机运力同样生效。",
+        m.put("log_load", new TechDef("log_load", "负重科技", "后勤", "所有兵种负重 +5%/级，最高 +50%；运输机运力同样生效。",
                 10, 2, Map.of("steel", 200, "food", 100), 1.6, "load"));
         // 装甲
         m.put("arm_engine", new TechDef("arm_engine", "燃烧引擎", "机动", "陆军世界行军与战场移动速度 +5%/级，最高 +50%，包含步兵与车辆",
@@ -70,12 +70,10 @@ public record TechDef(
         // 侦察
         m.put("recon_level", new TechDef("recon_level", "侦察技术", "侦察", "侦查交火时，双方各按自身等级每级增加5点先手值，最高50点，每个交火回合生效；不增加地图扫描半径。成功侦查后城市情报Lv.1—10依次解锁：城防类型、城防数量等级、精确守军、守城将领、建筑等级、驻城将领人数、账号科技、可掠夺资源测算、驻城将领档案、战力评估。野地Lv.1起可查看精确守军。",
                 10, 1, Map.of("steel", 180, "oil", 60), 1.6, "recon"));
-        m.put("recon_radar", new TechDef("recon_radar", "雷达预警", "侦察", "拦截敌方侦查的首回合，守方每级增加2点先手值，最高20点。Lv.1—10依次解锁来源玩家与行动、出发坐标、军种构成、兵力区间、兵种名称、精确总兵力、精确编成、带兵将领、科技装备、司令官加成。不公开带兵将领的有效属性和技能。需对应侦查部队驻防才能拦截。",
+        m.put("recon_radar", new TechDef("recon_radar", "雷达预警", "侦察", "拦截敌方侦查的首回合，守方每级增加2点先手值，最高20点。Lv.1—10依次解锁来源玩家与行动、出发坐标、军种构成、兵力区间、兵种名称、精确总兵力、精确编成、带兵将领、战斗科技、司令官加成。不公开带兵将领的有效属性和技能。需对应侦查部队驻防才能拦截。",
                 10, 2, Map.of("steel", 240, "oil", 100, "rare", 20), 1.7, "radar"));
         m.put("prisoner_education", new TechDef("prisoner_education", "战俘收编", "后勤", "讨伐其他玩家并获胜后，按敌方各兵种损失数量计算战俘。俘获比例每级增加 0.1 个百分点，最高 1%，不足 1 个向下取整。需战俘营有空位，敌方已回收的伤兵不能被俘获。",
                 10, 3, Map.of("steel", 320, "food", 220), 1.8, "capture_permille"));
-        m.put("unit_refit", new TechDef("unit_refit", "武器装备", "军事", "Lv.1—10逐级解锁陆上防护、航空轻舰防护、陆上武器载荷、航空武器载荷、通信调度、机动节油、陆上专用防护、大型舰船防护、定向反制、高级火控配方；对应设施按配方独立要求Lv.2/4/6/8/10。制造并配装后才获得装备效果。",
-                10, 2, Map.of("steel", 300, "oil", 100, "rare", 50), 2.0, "unit_recipes"));
         TECHS = Collections.unmodifiableMap(m);
     }
 }

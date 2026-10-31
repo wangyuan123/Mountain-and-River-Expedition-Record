@@ -60,7 +60,7 @@ public class AdminSystemTest extends BaseServiceTest {
         if (!adminUserRepository.existsByUsername("admin")) {
             AdminUser admin = new AdminUser();
             admin.setUsername("admin");
-            admin.setPasswordHash(passwordEncoder.encode("admin123456"));
+            admin.setPasswordHash(passwordEncoder.encode("isolated-admin-system-password"));
             admin.setRole("SUPER_ADMIN");
             admin.setDisabled(0);
             admin.setCreatedAt(System.currentTimeMillis());
@@ -71,7 +71,7 @@ public class AdminSystemTest extends BaseServiceTest {
 
     @Test
     void testAdminLogin() {
-        Map<String, Object> res = adminAuthService.login("admin", "admin123456", null);
+        Map<String, Object> res = adminAuthService.login("admin", "isolated-admin-system-password", null);
         assertNotNull(res.get("token"));
         assertEquals("admin", res.get("username"));
         assertEquals("SUPER_ADMIN", res.get("role"));

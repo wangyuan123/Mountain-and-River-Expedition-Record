@@ -4535,8 +4535,7 @@ body[data-theme="dark"] {
 }
 
 /* 抽屉内共享局部配色，卡片、进度条和操作入口随主题一起变化。 */
-[data-theme|="blue-white"] .player-drawer-mask,
-[data-theme|="blue-white"] .unit-equipment-overlay {
+[data-theme|="blue-white"] .player-drawer-mask {
   --surface: #ffffff;
   --surface-muted: #f6f9fc;
   --ink: #283b50;
@@ -4547,8 +4546,7 @@ body[data-theme="dark"] {
   color-scheme: light;
 }
 
-[data-theme="paper"] .player-drawer-mask,
-[data-theme="paper"] .unit-equipment-overlay {
+[data-theme="paper"] .player-drawer-mask {
   --surface: #f6f5f0;
   --surface-muted: #f0eee6;
   --ink: #273136;
@@ -4559,8 +4557,7 @@ body[data-theme="dark"] {
   color-scheme: light;
 }
 
-[data-theme="dark"] .player-drawer-mask,
-[data-theme="dark"] .unit-equipment-overlay {
+[data-theme="dark"] .player-drawer-mask {
   --surface: #111724;
   --surface-muted: #162032;
   --ink: #e2e8f0;

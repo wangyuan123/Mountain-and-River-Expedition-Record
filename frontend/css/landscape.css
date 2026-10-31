@@ -2,6 +2,10 @@
 
 @media (orientation: landscape) {
   #footbar .footer-site-info { display: none; }
+
+  /* 横屏大地图隐藏特勤部和论坛入口，其他页面及竖屏仍保留。 */
+  #screen:has(#view > .world-map-shell) #topbar .player-bar-right .vip-entry-btn,
+  #screen:has(#view > .world-map-shell) #topbar .player-bar-right .forum-entry-btn { display: none; }
 }
 
 @media (orientation: landscape) and (min-width: 480px) {

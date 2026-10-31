@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup(realCatalog = false) {
   const timers = [];
@@ -176,11 +176,11 @@ test('免费加速按钮在无道具时仍可用，超过门槛仍需道具', ()
   context.Date = class extends Date { static now() { return 1000000; } };
   state.items = {};
   state.freeBuildSpeedUpSeconds = 300;
-  const job = { id: 'farm', slot: 0, queueId: 42, finishesAt: 1300000 };
+  const job = { id: 'farm', slot: 0, queueId: 42, freeSpeedUpAt:1000000, finishesAt: 1300000 };
   assert.equal(G.Build.canFreeSpeedUp(job), true);
   assert.match(G.Build.renderQueueHtml([job], state), /免费加速/);
   assert.doesNotMatch(G.Build.renderQueueHtml([job], state), /disabled/);
-  job.finishesAt++;
+  job.finishesAt++; job.freeSpeedUpAt++;
   assert.equal(G.Build.canFreeSpeedUp(job), false);
   assert.doesNotMatch(G.Build.renderQueueHtml([job], state), /免费加速/);
   assert.match(G.Build.renderQueueHtml([job], state), /disabled/);
@@ -195,7 +195,7 @@ test('所有施工详情和满员弹窗在倒计时进入五分钟时切换免�
     context.Date = class extends Date { static now() { return now; } };
     state.items = {};
     state.constructions = [{ id: 'farm', slot: 0, queueId: 42, startedAt: 990000,
-      finishesAt: 1301000, targetLevel: 3 }];
+      freeSpeedUpAt: 1001000, finishesAt: 1301000, targetLevel: 3 }];
     G.Build[view]('farm', 0);
     const modal = context.document.body.appended.at(-1);
     const selector = view === 'showJobDetails' ? '#detailSpeedUp' : view === 'onSlotClick' ? '#bdetailSpeedBtn' : '#busySpeedUp0';
@@ -209,7 +209,7 @@ test('所有施工详情和满员弹窗在倒计时进入五分钟时切换免�
 
 test('免费加速精确定位队列，连点只发一次请求，失败后可重试', async () => {
   const { G, state } = setup();
-  state.constructions = [{ id: 'farm', queueId: 42, finishesAt: Date.now() + 60000 }];
+  state.constructions = [{ id: 'farm', queueId: 42, freeSpeedUpAt: 0, finishesAt: Date.now() + 60000 }];
   let resolve;
   let calls = 0;
   let renders = 0;
@@ -401,6 +401,7 @@ test('点击卡槽建筑弹出详情弹窗，包含资源产出、升级和拆�
   assert.match(modalHtml, /id="bdetailDisBtn"/);
   assert.match(modalHtml, /拆除完成后建筑彻底消失，并释放该卡槽地块/);
 
+  G.Core.state.gameplay.buildings.farm.maxLevel = 2;
   // 2. 测试 slot 0 (Lv.2，达市政厅上限，拆除降为 Lv.1)
   G.Build.onSlotClick('farm', 0);
   const modalHtml2 = appended[appended.length - 1].innerHTML;
@@ -479,7 +480,7 @@ test('雷达建筑目录保留旧键并新增相邻的单栋联防雷达，造�
   }
   const order = G.Build.GROUPS.army.order;
   assert.equal(order.indexOf('guild_radar'), order.indexOf('radar') + 1);
-  assert.equal(G.DATA.groupSlots.army, 35);
+  assert.equal(G.ServerRules.value('groupSlots', {}).army.cap, 35);
 });
 
 test('城防与联防雷达卡片及详情各自读取建筑等级，情报明细由科技控制', () => {
@@ -530,6 +531,7 @@ test('两类雷达的选建项独立，满足服务端建筑前置后无需军�
   state.buildings.command = 10;
   state.buildings.lab = 5;
   state.buildings.liaison = 5;
+  for (const id of ['radar','guild_radar']) state.gameplay.prerequisites.buildings[id][0] = { requirements: [], missing: [] };
   for (const [cityLevel, guildLevel] of [[0, 0], [10, 0], [0, 10], [10, 10]]) {
     state.buildings.radar = cityLevel;
     state.buildings.guild_radar = guildLevel;
@@ -684,6 +686,7 @@ test('联络中心不显示废弃的军官刷新品质，展示情报联络枢�
   const { G, context, state } = setup();
   G.DATA.buildings.liaison = { name: '联络中心', desc: '盟军情报与外交联络', baseCost: { steel: 200, food: 120, gold: 200 }, growth: 1.6, slots: 1 };
   state.buildings.liaison = 5;
+  for (const id of ['radar','guild_radar']) state.gameplay.prerequisites.buildings[id][0] = { requirements: [], missing: [] };
   G.Build.onSlotClick('liaison', null);
   const modalHtml = context.document.body.appended.at(-1).innerHTML;
 
@@ -720,7 +723,7 @@ test('研发中心升级预览按真实科技目录展示开放种类、等级�
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), context);
   for (let level = 1; level <= 10; level++) {
     state.buildings.lab = level;
-    const count = [0, 6, 16, 22, 23, 24, 24, 24, 24, 24, 24][level];
+    const count = [0, 6, 15, 21, 22, 23, 23, 23, 23, 23, 23][level];
     G.Build.onSlotClick('lab', null);
     const modal = context.document.body.appended.at(-1).innerHTML;
     assert.match(modal, new RegExp('>' + count + ' 项'));
@@ -744,6 +747,7 @@ test('城墙、研发中心、雷达站与军需仓库展示准确属性与加�
 
   // 1. 满级城防
   state.buildings.wall = 10;
+  state.gameplay.wall = {maxHp:2500000,defense:200};
   G.Build.onSlotClick('wall', null);
   const wallModal = context.document.body.appended.at(-1).innerHTML;
   assert.match(wallModal, /城防武器容量/);

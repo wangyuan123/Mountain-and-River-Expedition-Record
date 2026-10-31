@@ -3,6 +3,8 @@ package com.wargame;
 import com.wargame.model.constants.WorldConfig;
 import com.wargame.model.entity.*;
 import com.wargame.repository.PlayerItemRepository;
+import com.wargame.repository.ArmyProductionQueueRepository;
+import com.wargame.repository.ConstructionRepository;
 import com.wargame.service.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -19,6 +21,8 @@ class CityTeleportTest extends BaseServiceTest {
     @Autowired WorldMapService map;
     @Autowired MarchRouteService routes;
     @Autowired PlayerItemRepository items;
+    @Autowired ArmyProductionQueueRepository production;
+    @Autowired ConstructionRepository construction;
     private Player player;
     private PlayerCity main;
     private WorldMap world;
@@ -159,10 +163,145 @@ class CityTeleportTest extends BaseServiceTest {
         assertEquals(10,count(CityTeleportService.ADVANCED));
     }
 
+    @Test void readinessListsSimultaneousBlockersWithoutConsumingItemsOrMovingCity() {
+        main.setReadyAt(System.currentTimeMillis() + 60000);
+        main.setSurrenderOfferId(1L); main.setSurrenderFrozenAt(1L);
+        playerCityRepository.saveAndFlush(main);
+        March departure = march(player.getId(), 0, "wild", "42", "gather", false);
+        March arrival = march(999L, 0, "player", main.getId().toString(), "reinforce", false);
+        Map<String, Object> result = teleport.readiness(player.getId());
+        assertEquals(false, result.get("ready"));
+        List<?> checks = (List<?>) result.get("checks");
+        Set<Object> blocked = new HashSet<>();
+        checks.forEach(value -> { Map<?, ?> check = (Map<?, ?>) value; if (Boolean.FALSE.equals(check.get("passed"))) blocked.add(check.get("key")); });
+        assertEquals(Set.of("construction", "surrender", "departures", "arrivals"), blocked);
+        assertEquals(10, count(CityTeleportService.NORMAL));
+        assertEquals(10, count(CityTeleportService.ADVANCED));
+        assertEquals(10, playerCityRepository.findById(main.getId()).orElseThrow().getX());
+        main.setReadyAt(0L); main.setSurrenderOfferId(null); main.setSurrenderFrozenAt(0L);
+        playerCityRepository.saveAndFlush(main);
+        marchRepository.deleteAll(List.of(departure, arrival)); marchRepository.flush();
+        assertEquals(true, teleport.readiness(player.getId()).get("ready"));
+        assertEquals(true, teleport.preview(player.getId(), "southeast", 700, 600).get("valid"));
+    }
+
     @Test void foundingInOtherBattlefieldsUsesSameFourCellRules() {
         player.setMilitaryRank(7);playerRepository.save(player);giveResources(player.getId(),100000,100000,100000,100000,100000);
         assertEquals(true,cities.site(player.getId(),650,650).get("valid"));
         PlayerCity founded=cities.foundAt(player.getId(),null,650,650,"东南分城");
         assertEquals(650,founded.getX());assertFalse(terrain.siteReason(world.getId(),terrain.current(),651,651,null).isEmpty());
+    }
+
+    private void navalAsset(String kind, int slot) {
+        if (kind.equals("fleet")) {
+            ArmyUnit unit=createArmyUnit(player.getId(),"destroyer",2);
+            unit.setCitySlot(slot);armyUnitRepository.saveAndFlush(unit);
+        } else if (kind.equals("queue") || kind.equals("finishedQueue")) {
+            ArmyProductionQueue job=new ArmyProductionQueue();job.setPlayerId(player.getId());job.setCitySlot(slot);
+            job.setUnitType("destroyer");job.setBuildingType("shipyard");job.setUnitCount(2);
+            job.setStartedAt(1L);job.setFinishesAt(kind.equals("finishedQueue")?2L:System.currentTimeMillis()+60000);
+            job.setDurationSeconds(60);job.setSpeedMultiplier(1.0);production.saveAndFlush(job);
+        } else if (kind.endsWith("Construction")) {
+            Construction job=new Construction();job.setPlayerId(player.getId());job.setCitySlot(slot);
+            job.setBuildingType(kind.startsWith("port")?"port":"shipyard");job.setTargetLevel(1);
+            job.setSlot(0);job.setStartAt(1L);job.setFinishAt(System.currentTimeMillis()+60000);
+            construction.saveAndFlush(job);
+        } else {
+            Building building=createBuilding(player.getId(),kind,1);
+            building.setCitySlot(slot);buildingRepository.saveAndFlush(building);
+        }
+    }
+
+    /** 人工海岸保证内陆与沿海落点确定，避免普通传送的随机结果掩盖错误。 */
+    private void coast() {
+        char[] mask="0".repeat(400*400).toCharArray();
+        for(int y=0;y<400;y++)for(int x=200;x<400;x++)mask[y*400+x]='1';
+        world.setTerrainData(new String(mask));worldMapRepository.saveAndFlush(world);
+    }
+
+    @ParameterizedTest @ValueSource(strings={"fleet","queue","finishedQueue","port","shipyard","portConstruction","shipyardConstruction"})
+    void navalAssetsRejectInlandPreviewAndDirectSubmitWithoutConsuming(String asset) {
+        navalAsset(asset,0);
+        // 历史资格不能绕过目的地地形限制。
+        main.setLegacyNaval(true);playerCityRepository.saveAndFlush(main);
+        var preview=teleport.preview(player.getId(),"northwest",50,60);
+        assertEquals(false,preview.get("valid"));assertTrue(preview.get("reason").toString().contains("沿海或海岛"));
+        assertThrows(IllegalArgumentException.class,()->advanced("northwest",50,60));
+        assertEquals(10,count(CityTeleportService.ADVANCED));
+        assertEquals(10,playerCityRepository.findById(main.getId()).orElseThrow().getX());
+    }
+
+    @ParameterizedTest @ValueSource(strings={"northwest","northeast","southwest","southeast"})
+    void fleetCanTeleportToCoastInEveryBattlefield(String field) {
+        coast();navalAsset("fleet",0);
+        int x=field.endsWith("east")?600:198,y=field.startsWith("south")?600:60;
+        assertEquals(true,teleport.preview(player.getId(),field,x,y).get("valid"));
+        advanced(field,x,y);
+        assertEquals(9,count(CityTeleportService.ADVANCED));
+        assertEquals(2,armyUnitRepository.findByPlayerIdAndCitySlotAndType(player.getId(),0,"destroyer").get(0).getCount());
+    }
+
+    @ParameterizedTest @ValueSource(strings={"northwest","northeast","southwest","southeast"})
+    void fleetCanTeleportToIslandInteriorInEveryBattlefield(String field) {
+        world.setTerrainData(WorldTerrainService.generate());worldMapRepository.saveAndFlush(world);
+        navalAsset("fleet",0);
+        int x=field.endsWith("east")?434:364,y=field.startsWith("south")?642:156;
+        assertFalse(WorldTerrainService.coastal(terrain.current(),x,y,2));
+        assertTrue(WorldTerrainService.isIsland(terrain.current(),x,y));
+        assertEquals(true,teleport.preview(player.getId(),field,x,y).get("valid"));
+        advanced(field,x,y);assertEquals(9,count(CityTeleportService.ADVANCED));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"fleet","queue","finishedQueue","port","shipyard","portConstruction","shipyardConstruction"})
+    void randomTeleportFiltersForNavalAssetsAndNeverFallsBackToInland(String asset) {
+        navalAsset(asset,0);
+        // 只保留一处空闲内陆落点，沿海边缘用野地占住；不能退而选择这个内陆落点。
+        char[] mask="1".repeat(400*400).toCharArray();
+        for(int y=10;y<12;y++)for(int x=10;x<12;x++)mask[y*400+x]='0';
+        for(int y=59;y<63;y++)for(int x=49;x<53;x++) {
+            mask[y*400+x]='0';
+            if(x==49||x==52||y==59||y==62)createWildTile(world.getId(),"hill",x,y,1,Map.of(),100);
+        }
+        world.setTerrainData(new String(mask));worldMapRepository.saveAndFlush(world);
+        assertEquals("",terrain.siteReason(world.getId(),terrain.current(),50,60,null));
+        assertFalse(WorldTerrainService.coastal(terrain.current(),50,60,2));
+        assertFalse(WorldTerrainService.isIsland(terrain.current(),50,60));
+        assertThrows(IllegalArgumentException.class,()->teleport.teleport(player.getId(),CityTeleportService.NORMAL,"northwest",null,null));
+        assertEquals(10,count(CityTeleportService.NORMAL));
+        assertEquals(10,playerCityRepository.findById(main.getId()).orElseThrow().getX());
+        coast();
+        var result=teleport.teleport(player.getId(),CityTeleportService.NORMAL,"northwest",null,null);
+        int x=(Integer)result.get("x"),y=(Integer)result.get("y");
+        assertTrue(WorldTerrainService.isIsland(terrain.current(),x,y)||WorldTerrainService.coastal(terrain.current(),x,y,2));
+        assertEquals(9,count(CityTeleportService.NORMAL));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"fleet","queue","port","shipyard","portConstruction","shipyardConstruction"})
+    void otherCityNavalAssetsDoNotRestrictSelectedLandCity(String asset) {
+        PlayerCity branch=city(player,1,30,30);navalAsset(asset,1);
+        assertEquals(true,teleport.preview(player.getId(),"northwest",50,60).get("valid"));
+        advanced("northwest",50,60);
+        try(var ignored=scope.enter(branch)) {
+            assertEquals(false,teleport.preview(player.getId(),"northwest",70,80).get("valid"));
+            assertThrows(IllegalArgumentException.class,()->advanced("northwest",70,80));
+        }
+        assertEquals(9,count(CityTeleportService.ADVANCED));
+    }
+
+    @Test void landCityWithEmptyNavalRowsAndLegacyFlagStillTeleportsFreely() {
+        main.setLegacyNaval(true);playerCityRepository.saveAndFlush(main);
+        createArmyUnit(player.getId(),"destroyer",0);createArmyUnit(player.getId(),"infantry",5);
+        createBuilding(player.getId(),"port",0);createBuilding(player.getId(),"shipyard",0);
+        assertEquals(true,teleport.preview(player.getId(),"northwest",50,60).get("valid"));
+        advanced("northwest",50,60);
+        teleport.teleport(player.getId(),CityTeleportService.NORMAL,"northwest",null,null);
+        assertEquals(9,count(CityTeleportService.ADVANCED));assertEquals(9,count(CityTeleportService.NORMAL));
+    }
+
+    @Test void submitRechecksAssetsAddedAfterSuccessfulPreview() {
+        assertEquals(true,teleport.preview(player.getId(),"northwest",50,60).get("valid"));
+        navalAsset("queue",0);
+        assertThrows(IllegalArgumentException.class,()->advanced("northwest",50,60));
+        assertEquals(10,count(CityTeleportService.ADVANCED));
     }
 }

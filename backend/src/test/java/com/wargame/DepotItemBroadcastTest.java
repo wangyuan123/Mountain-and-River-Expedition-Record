@@ -133,6 +133,8 @@ class DepotItemBroadcastTest extends BaseServiceTest {
         String content = chat.sendItemOpened(player.getId(), "黄金箱", List.of("黄金×10")).content();
         assertEquals("玩家「统帅" + player.getId() + "」打开了「黄金箱」，获得：黄金×10。", content);
         assertFalse(content.contains(player.getUsername()));
+        Map<?, ?> statePlayer = (Map<?, ?>) gameStateService.getGameState(player.getId()).get("player");
+        assertEquals("统帅" + player.getId(), statePlayer.get("name"));
     }
 
     @Test

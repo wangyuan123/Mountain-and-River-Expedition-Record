@@ -2,7 +2,6 @@ package com.wargame;
 
 import com.wargame.model.constants.UnitDef;
 import com.wargame.model.constants.FortDef;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.service.BattleService;
@@ -149,7 +148,7 @@ class BattleContactMovementTest {
                 String own = units.get(i), foe = units.get(i + 6);
                 a.put(own, 100_000); b.put(foe, 100_000);
                 ap.put(own, random.nextInt(501)); bp.put(foe, 500 + random.nextInt(501));
-                for (String id : List.of(own, foe)) tech.put(UnitEquipmentEffects.key(id, "speed"), 15);
+                for (String id : List.of(own, foe)) tech.put("@ue:" + id + ":" + "speed", 15);
                 if (sample % 4 != 0) {
                     ao.put(own, new BattleService.UnitOrder(BattleService.CommandAction.values()[random.nextInt(3)]));
                     bo.put(foe, new BattleService.UnitOrder(BattleService.CommandAction.values()[random.nextInt(3)]));

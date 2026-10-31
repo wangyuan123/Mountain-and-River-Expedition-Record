@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function loadGame() {
   const context = vm.createContext({ window: null, Math });
@@ -10,6 +10,7 @@ function loadGame() {
   require('./load-constants.cjs')(context);
   const saveSource = fs.readFileSync(path.join(__dirname, '..', 'js', 'save.js'), 'utf8');
   vm.runInContext(saveSource, context, { filename: 'save.js' });
+  context.Game.state = structuredClone(require('./server-gameplay.cjs').fixture);
   return context;
 }
 
@@ -42,24 +43,10 @@ test('officer experience costs increase through level 99 and total 20,355,750', 
   assert.equal(total, 20355750);
 });
 
-test('local officer experience uses real curve across stages and at max level', () => {
+test('browser exposes no local experience, resource, prestige or random growth settlement', () => {
   const context = loadGame();
   context.document = { getElementById: () => null };
-  context.Game.DATA = {};
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
-  context.Game.toast = () => {};
-  for (const [start, experience, expectedLevel, expectedRemaining] of [
-    [19, 12074, 21, 4274], [19, 12075, 22, 0],
-    [49, 232800, 52, 0], [79, 1263750, 82, 0],
-    [50, 100333, 51, 22833], [80, 100333, 80, 100333],
-    [99, 956324, 99, 956324], [99, 956325, 100, 0], [99, 1000000, 100, 0],
-    [1, 2281050, 62, 40375], [1, 20000000, 99, 600575], [1, 20355750, 100, 0]
-  ]) {
-    const officer = { id: 1, name: '测试军官', level: start, exp: experience - 1, attrPoints: 7 };
-    context.Game.Core.state = { officers: [officer] };
-    context.Game.Core.addOfficerExp(1, 1);
-    assert.equal(officer.level, expectedLevel);
-    assert.equal(officer.exp, expectedRemaining);
-    assert.equal(officer.attrPoints, 7 + expectedLevel - start);
-  }
+  for (const name of ['addOfficerExp', 'payCost', 'addPrestige', 'enterWarState']) assert.equal(context.Game.Core[name], undefined);
+  assert.equal(context.Game.growAttr, undefined);
 });

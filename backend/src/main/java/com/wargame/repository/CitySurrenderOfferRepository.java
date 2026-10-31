@@ -28,4 +28,9 @@ public interface CitySurrenderOfferRepository extends JpaRepository<CitySurrende
 
     @Query("select count(o) from CitySurrenderOffer o where o.initiatorId = :playerId and o.status = 'ACCEPTED'")
     long countReservedCitySlots(@Param("playerId") Long playerId);
+
+    /** 先锁账号再读取预留；返回标量，避免已缓存的邀请状态影响名额判定。 */
+    @Query(value = "select id from city_surrender_offers where initiator_id = :playerId "
+            + "and status = 'ACCEPTED' order by id for update", nativeQuery = true)
+    List<Long> findCurrentReservationsForUpdate(@Param("playerId") Long playerId);
 }

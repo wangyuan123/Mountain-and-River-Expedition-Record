@@ -72,15 +72,15 @@ class SortieBattleTest extends BaseServiceTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {false, true})
-    void automaticAndLegacySortieUseAttackedCityCapacityAndDoNotCountForts(boolean legacyPreset) {
+    void millionTroopsDefendOnlyAttackedCityRegardlessOfLegacyPreset(boolean legacyPreset) {
         Player defender = createTestPlayer("sortie-defender", 30);
         if (legacyPreset) {
-            // 旧版保存的 37,500 人预设在开战时缩减，不能绕过新的 25,000 人上限。
+            // 历史低额预设不再裁剪本城兵力，分城全员参战且不借用主城部队。
             defender.setSortieArmy(JsonUtil.toJson(Map.of("infantry", 37500)));
             playerRepository.save(defender);
         }
         createBuilding(defender.getId(), "wall", 10);
-        ArmyUnit infantry = createArmyUnit(defender.getId(), "infantry", 100000);
+        ArmyUnit infantry = createArmyUnit(defender.getId(), "infantry", 1000000);
         infantry.setCitySlot(1);
         armyUnitRepository.save(infantry);
         createArmyUnit(defender.getId(), "infantry", 500);
@@ -88,13 +88,13 @@ class SortieBattleTest extends BaseServiceTest {
 
         March march = attack(defender, 1, Map.of("infantry", 100));
         BattleSession session = sessions.findById(march.getBattleId()).orElseThrow();
-        assertEquals(Map.of("infantry", 25000, "bunker", 1000), JsonUtil.parseIntMap(session.getInitialDefender()));
-        assertEquals(100000, armyUnitRepository.findByPlayerIdAndCitySlotAndType(defender.getId(), 1, "infantry").get(0).getCount());
+        assertEquals(Map.of("infantry", 1000000, "bunker", 1000), JsonUtil.parseIntMap(session.getInitialDefender()));
+        assertEquals(1000000, armyUnitRepository.findByPlayerIdAndCitySlotAndType(defender.getId(), 1, "infantry").get(0).getCount());
         assertEquals(500, armyUnitRepository.findByPlayerIdAndCitySlotAndType(defender.getId(), 0, "infantry").get(0).getCount());
     }
 
     @Test
-    void mobilizationExpiryRestoresDefaultDefenseButKeepsRunningBattleSnapshot() throws Exception {
+    void mobilizationExpiryDoesNotChangeFullDefenseOrRunningSnapshot() throws Exception {
         var clock = new java.util.concurrent.atomic.AtomicLong(System.currentTimeMillis());
         try (var ignored = com.wargame.util.GameClock.use(clock::get)) {
             Player defender = createTestPlayer("buff-sortie-defender", 30);
@@ -107,28 +107,28 @@ class SortieBattleTest extends BaseServiceTest {
             preferences.save(defender.getId(), new com.wargame.service.BattleActionPreferences.Preferences(
                     config.outgoing(), config.defending(), Map.of("infantry", 37500), config.formationKey()));
             March march = attack(defender, 0, Map.of("infantry", 100));
-            assertEquals(Map.of("infantry", 37500), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
+            assertEquals(Map.of("infantry", 100000), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
             clock.addAndGet(com.wargame.model.constants.MobilizationRules.DURATION_MS);
-            assertEquals(Map.of("infantry", 10000), preferences.selectSortieArmy(defender.getId(), Map.of("infantry", 100000)));
-            assertEquals(Map.of("infantry", 37500), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
+            assertEquals(Map.of("infantry", 100000), preferences.selectSortieArmy(defender.getId(), Map.of("infantry", 100000)));
+            assertEquals(Map.of("infantry", 100000), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
         }
     }
 
     @ParameterizedTest
     @ValueSource(ints = {1, 10000})
-    void partialSortiePreservesReservesAndNewTroopsOnVictoryAndDefeat(int attackers) {
+    void fullDefensePreservesOnlyPostSnapshotTroopsOnVictoryAndDefeat(int attackers) {
         Player defender = createTestPlayer("partial-sortie", 30);
         defender.setSortieArmy(JsonUtil.toJson(Map.of("infantry", 100)));
         playerRepository.save(defender);
-        ArmyUnit infantry = createArmyUnit(defender.getId(), "infantry", 100000);
-        ArmyUnit rockets = createArmyUnit(defender.getId(), "rocket", 9000);
+        ArmyUnit infantry = createArmyUnit(defender.getId(), "infantry", 100);
+        ArmyUnit rockets = createArmyUnit(defender.getId(), "rocket", 90);
         March march = attack(defender, 0, Map.of("infantry", attackers));
         BattleSession session = sessions.findById(march.getBattleId()).orElseThrow();
-        assertEquals(Map.of("infantry", 100), JsonUtil.parseIntMap(session.getInitialDefender()));
-        // 战斗快照已生成，再修改战术和新增驻军；本场只应结算快照中的 100 名步兵。
+        assertEquals(Map.of("infantry", 100, "rocket", 90), JsonUtil.parseIntMap(session.getInitialDefender()));
+        // 名单冻结后新增50名步兵和新工事；本场只扣开战名单内的实际损失。
         defender.setSortieArmy("{}");
         playerRepository.save(defender);
-        infantry.setCount(100050);
+        infantry.setCount(150);
         armyUnitRepository.save(infantry);
         Fortification newFort = fort(defender.getId(), 0, 5);
         long deadline = session.getRoundDeadlineAt();
@@ -137,22 +137,26 @@ class SortieBattleTest extends BaseServiceTest {
         }
         assertTrue(sessions.findById(session.getId()).isEmpty());
         int remaining = armyUnitRepository.findById(infantry.getId()).orElseThrow().getCount();
-        assertTrue(remaining >= 99950 && remaining <= 100050, "只允许扣除100名参战步兵的损失");
-        assertEquals(9000, armyUnitRepository.findById(rockets.getId()).orElseThrow().getCount());
+        assertTrue(remaining >= 50 && remaining <= 150, "战中新兵不承担本场战损");
         assertEquals(5, fortificationRepository.findById(newFort.getId()).orElseThrow().getCount());
         var report = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(march.getPlayerId()).get(0).getData());
+        var survivors = JsonUtil.parseIntMap(JsonUtil.toJson(report.get("survivorDefender")));
+        assertEquals(survivors.getOrDefault("infantry", 0) + 50, remaining);
+        assertEquals(survivors.getOrDefault("rocket", 0), armyUnitRepository.findById(rockets.getId()).orElseThrow().getCount());
         assertEquals(attackers == 10000, report.get("win"));
     }
 
     @Test
-    void zeroSortieLeavesOnlyFortsInBattle() {
+    void legacyZeroSortieCannotExcludeTroopsOrLogistics() {
         Player defender = createTestPlayer("zero-sortie", 30);
         defender.setSortieArmy("{}");
         playerRepository.save(defender);
         createArmyUnit(defender.getId(), "infantry", 100000);
+        createArmyUnit(defender.getId(), "truck", 500);
+        createArmyUnit(defender.getId(), "transport", 600);
         fort(defender.getId(), 0, 10);
         March march = attack(defender, 0, Map.of("infantry", 100));
-        assertEquals(Map.of("bunker", 10), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
+        assertEquals(Map.of("infantry", 100000, "truck", 500, "transport", 600, "bunker", 10), JsonUtil.parseIntMap(sessions.findById(march.getBattleId()).orElseThrow().getInitialDefender()));
     }
 
     @ParameterizedTest
@@ -201,7 +205,7 @@ class SortieBattleTest extends BaseServiceTest {
     }
 
     @Test
-    void incomingOfflineBattleAlsoHonorsManualSortieAndPreservesReserves() {
+    void incomingOfflineBattleUsesAllCityTroopsDespiteLegacyPreset() {
         Player defender = createTestPlayer("offline-sortie", 30);
         defender.setSortieArmy(JsonUtil.toJson(Map.of("infantry", 10)));
         playerRepository.save(defender);
@@ -215,8 +219,11 @@ class SortieBattleTest extends BaseServiceTest {
         incoming = incomingMarchRepository.save(incoming);
         marchService.processIncoming(defender.getId(), System.currentTimeMillis());
         assertFalse(incomingMarchRepository.existsById(incoming.getId()));
-        assertEquals(99990, armyUnitRepository.findById(infantry.getId()).orElseThrow().getCount());
-        assertEquals(50000, armyUnitRepository.findById(rockets.getId()).orElseThrow().getCount());
+        var report = JsonUtil.parseObjMap(scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
+        assertEquals(Map.of("infantry", 100000, "rocket", 50000), JsonUtil.parseIntMap(JsonUtil.toJson(report.get("initialDefender"))));
+        var survivors = JsonUtil.parseIntMap(JsonUtil.toJson(report.get("survivorDefender")));
+        assertEquals(survivors.getOrDefault("infantry", 0), armyUnitRepository.findById(infantry.getId()).orElseThrow().getCount());
+        assertEquals(survivors.getOrDefault("rocket", 0), armyUnitRepository.findById(rockets.getId()).orElseThrow().getCount());
     }
 
     @Test

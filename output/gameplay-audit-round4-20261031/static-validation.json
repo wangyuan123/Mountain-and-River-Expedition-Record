@@ -1,0 +1,321 @@
+{
+  "checkedAt": "2026-10-31T06:59:14.793902",
+  "javascriptSyntax": [
+    {
+      "file": "frontend/js/account-email.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/account.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/api-client.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/api.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/army.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/battle-defaults.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/battle.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/build.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/chat.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/cities.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/city-teleport.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/constants.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/core.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/data.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/depot.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/dispatch-route.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/fort.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/friends.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/guild.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/icons.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/item-buffs.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/mail.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/main-quest.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/main-view.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/main.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map-camera.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map-chunks.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map-layout.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map-ocean.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map-terrain.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map-water.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/map.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/market.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/mobilization.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/officer.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/onboarding.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/play-guide.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/player-profile.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/prerequisites.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/prisoners.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/private-chat.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/protection.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/pvp.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/radar.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/rankings.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/recharge.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/save.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/servers.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/shop.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/sound.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/task-quests.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/task.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/tech.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/theme.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/vip.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/world-map.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/world-view.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/world.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/wounded.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/ws-client.js",
+      "exitCode": 0,
+      "error": ""
+    },
+    {
+      "file": "frontend/js/ws-handlers.js",
+      "exitCode": 0,
+      "error": ""
+    }
+  ],
+  "htmlLocalReferences": {
+    "count": 81,
+    "missing": []
+  },
+  "literalImageReferences": {
+    "uniqueCount": 161,
+    "missing": []
+  },
+  "limitations": [
+    "仅检查明确的本地静态路径；动态拼接路径和浏览器渲染需运行环境另验。"
+  ]
+}

@@ -40,6 +40,7 @@ test('world chat stays readable below 10000 prestige and unlocks at the threshol
   assert.equal(calls.length, 0);
 
   context.Game.state.prestige = 10000;
+  context.Game.state.worldChatUnlocked = true;
   context.Game.Chat.updateSendBtnUI();
   assert.equal(button.disabled, false);
   assert.equal(button.textContent, '发送');
@@ -48,4 +49,12 @@ test('world chat stays readable below 10000 prestige and unlocks at the threshol
   assert.equal(input.value, '尚未发送的草稿');
   await context.Game.Chat.send('测试消息');
   assert.deepEqual(calls, ['测试消息']);
+
+  context.Game.state.worldChatUnlocked = true;
+  context.Game.state.prestige = 0;
+  context.Game.Chat.updateSendBtnUI();
+  assert.equal(button.disabled, false);
+  assert.equal(input.disabled, false);
+  await context.Game.Chat.send('声望归零后继续发言');
+  assert.deepEqual(calls, ['测试消息', '声望归零后继续发言']);
 });

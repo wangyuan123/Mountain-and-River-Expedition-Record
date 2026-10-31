@@ -6,7 +6,7 @@
   var Core = G.Core;
   var D = G.DATA;
 
-  var state = { chapters: [], dailyCheckin: null };
+  var state = { chapters: [], dailyCheckin: null, loaded: false, playerId: null };
 
   function loadQuests() {
     var playerId = (Core.state && Core.state.player || {}).id;
@@ -14,6 +14,8 @@
       if (!isCurrentPlayer(playerId)) return [];
       state.chapters = data && data.chapters ? data.chapters : [];
       state.dailyCheckin = data && data.dailyCheckin ? data.dailyCheckin : null;
+      state.loaded = true;
+      state.playerId = playerId;
       return state.chapters;
     });
   }
@@ -228,6 +230,17 @@
       '</b></div><div class="quest-progress-bar"><div class="quest-progress-fill" style="width:' + pct + '%"></div></div></div>';
   }
 
+  /** 优先显示第一个未满足条件；资格和冷却均以服务端结果为准。 */
+  function nextPromotionStep(rank) {
+    if (rank.isMax) return '已达到最高军衔。';
+    if (!rank.prestigeEnough) return '完成下方主线任务或建设，补足晋升声望。';
+    if (!rank.victoriesEnough) return '前往地图剿寇，补足累计胜场。';
+    if (!rank.certificateEnough) return '点击下方购买入口取得晋升凭证。';
+    if (rank.canPromote) return '资格已齐全，点击“授衔晋升”；成功后可在此开启奖励礼包。';
+    if (rank.exam && rank.exam.retryAt > G.gameNow()) return '等待下方显示的考试冷却结束。';
+    return rank.exam && rank.exam.status === 'active' ? '继续军事笔试，通过后返回此处授衔。' : '参加军事笔试，通过后授衔晋升。';
+  }
+
   /** 晋升界面只展示服务端计算的资格，不在浏览器重新判定考试合格。 */
   function renderRankQuestCard() {
     var s = Core.state || {};
@@ -242,6 +255,7 @@
       if (rank.nextCityRankName) h += ' · ' + escapeHtml(rank.nextCityRankName) + '可拥有' + rank.nextExpansionCap + '座';
       h += '</div>';
     }
+    h += '<p role="status"><strong>下一步：</strong>' + escapeHtml(nextPromotionStep(rank)) + '</p>';
     var pendingGifts = (s.rankDiamondGifts || {}).unopenedCount || 0;
     var awarded = state.lastPromotionReward;
     // 开启后的回执永久保留；仅未开启且仍在仓库的奖励继续显示入仓提示。
@@ -252,7 +266,7 @@
       h += '<p role="status">【' + escapeHtml(awarded.data.name) + '】已入仓，开启后获得 ' + G.fmt(awarded.data.diamonds) + ' 钻石。</p>';
     }
     if (pendingGifts > 0 && G.Depot) {
-      h += '<button type="button" class="btn" onclick="Game.Depot.openRankGifts()">前往仓库开启晋升礼包' + (pendingGifts ? '（' + pendingGifts + '份）' : '') + '</button>';
+      h += '<button type="button" class="btn" onclick="Game.Depot.openRankGifts()">开启晋升礼包' + (pendingGifts ? '（' + pendingGifts + '份）' : '') + '</button>';
     }
     if (rank.isMax) return h + '<div class="rank-met">已达最高军衔</div></section>';
     h += '<div class="rank-target">下一阶：<b>' + escapeHtml(rank.nextName) + '</b> · 基础出兵 ' + G.fmt(rank.nextBaseCap) + '</div>';
@@ -537,7 +551,7 @@
     return h + '</section>';
   }
 
-  /** 任务事件仍区分两种战果，只给下一次对应目标的讨伐草稿预选处置模式。 */
+  /** 任务事件仍区分两种战果，推荐下一次对应目标的征服或掠夺入口。 */
   function campaignTaskMode(id) {
     return {
       q2_4: { kind: 'wild', occupyTarget: false },
@@ -548,7 +562,7 @@
   }
 
   /**
-   * 从进行中的任务进入对应目标列表，预选下一次讨伐的占领配置。
+   * 从进行中的任务进入对应目标列表，提示应点击的征服或掠夺按钮。
    * @param {string} id - 主线任务标识
    * @returns {void}
    */
@@ -561,7 +575,7 @@
     Core.state.world._activeTab = mode.kind;
     G.go('world');
     if (G.WorldMap) G.WorldMap.setMode('list');
-    G.toast('请选择' + (mode.kind === 'wild' ? '野地' : '玩家城市') + '讨伐；本次任务预选「' + (mode.occupyTarget ? '征服' : '掠夺') + '」');
+    G.toast('请选择' + (mode.kind === 'wild' ? '野地' : '玩家城市') + '，点击「' + (mode.occupyTarget ? '征服' : '掠夺') + '」进入出征准备');
   }
 
   var EQUIPMENT_NAMES = G.Constants.equipmentNames || {};
@@ -701,6 +715,13 @@
     renderQuestView: renderQuestView,
     drawQuestView: drawQuestView,
     hasUnclaimed: hasUnclaimed,
+    rewardSummary: function () {
+      if (state.playerId !== (Core.state.player || {}).id) return { loaded: false, tasks: 0, checkin: null };
+      var tasks = state.chapters.reduce(function (sum, ch) {
+        return sum + (ch.quests || []).filter(function (q) { return q.status === 'completed'; }).length + (ch.canClaimStage ? 1 : 0);
+      }, 0);
+      return { loaded: state.loaded, tasks: tasks, checkin: state.dailyCheckin };
+    },
     doPromoteRank: doPromoteRank,
     startRankExam: startRankExam,
     submitRankExam: submitRankExam,

@@ -24,6 +24,7 @@ public class AuthController {
     private final AccountService accountService;
     private final com.wargame.config.GameServerIdentity server;
     @org.springframework.beans.factory.annotation.Autowired private com.wargame.service.AccountEmailService emails;
+    @org.springframework.beans.factory.annotation.Autowired private com.wargame.security.ClientIpResolver clientIps;
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.compliance.AntiAddictionService protection;
 
@@ -104,7 +105,7 @@ public class AuthController {
     @PostMapping("/recover")
     public ResponseEntity<Map<String, Object>> recover(@RequestBody AuthDtos.RecoverAccountRequest request,
                                                       HttpServletRequest httpRequest) {
-        accountService.limit("RECOVERY_IP:" + httpRequest.getRemoteAddr(), 30, 60_000);
+        accountService.limit("RECOVERY_IP:" + clientIps.resolve(httpRequest), 30, 60_000);
         return ResponseEntity.ok(accountService.recover(request.recoveryToken(), request.confirm()));
     }
 

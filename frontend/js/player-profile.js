@@ -193,7 +193,7 @@ window.Game = window.Game || {};
         + rankProgressHtml
         + '    </div>'
         + '  </div>'
-        + (G.Mobilization ? '<div class="drawer-section"><div class="drawer-section-title">账号动员</div>' + G.Mobilization.widget() + '</div>' : '')
+        + (G.ItemBuffs ? G.ItemBuffs.placeholder() : '')
         + '  <div class="drawer-section">'
         + '    <div class="drawer-section-title">当前城市</div>'
         + '    <div class="drawer-info-list">'
@@ -247,6 +247,7 @@ window.Game = window.Game || {};
       document.body.appendChild(div);
       updateDrawerHeight();
       startProtectionTimer(div);
+      if (G.ItemBuffs) G.ItemBuffs.mount(div);
       if (G.Mobilization) G.Mobilization.refresh();
 
       requestAnimationFrame(function () {
@@ -259,6 +260,7 @@ window.Game = window.Game || {};
 
     closePlayerDrawer: function () {
       stopProtectionTimer();
+      if (G.ItemBuffs) G.ItemBuffs.unmount();
       if (document.body && document.body.classList) {
         document.body.classList.remove('drawer-open');
       }
@@ -326,8 +328,7 @@ window.Game = window.Game || {};
       var ranks = D.militaryRanks;
       var skills = Core.getCommanderSkills ? Core.getCommanderSkills() : {};
       var skillLevel = Math.max(skills.leadership || 0, skills.supply || 0);
-      var skillBonus = Core.skillBonus ? Math.max(Core.skillBonus('leadership'), Core.skillBonus('supply')) : 0;
-      var skillPercent = Math.round(skillBonus * 100);
+      var skillPercent = G.ServerRules.value('leadershipPercent', 0);
       var total = Core.armyCap ? Core.armyCap() : (rankInfo.baseCap || 25000);
       var cityCap = (Core.state.cityOverview && Core.state.cityOverview.cap) || rankInfo.cityCap;
       var previousFocus = document.activeElement;
@@ -348,11 +349,11 @@ window.Game = window.Game || {};
         + '<button type="button" class="rank-cap-close" aria-label="关闭军衔说明">✕</button></div>'
         + '<div class="modal-body rank-cap-body">'
         + '<div class="rank-cap-summary">当前军衔 <strong class="rank-cap-label">' + G.renderMilitaryRankIcon(rankInfo.tier) + G.escapeHtml(rankInfo.name) + '</strong> · 军衔基础上限 <strong>' + G.fmt(rankInfo.baseCap) + '</strong></div>'
-        + '<p>三军统帅 Lv.' + skillLevel + '（+' + skillPercent + '%）。</p>'
+        + '<p>三军统帅' + (skillLevel > 0 ? '（满级）' : '（未掌握）') + '：+' + skillPercent + '%。</p>'
         + (G.Mobilization ? G.Mobilization.widget() : '')
-        + '<p><strong>当前实际带兵上限：' + G.fmt(total) + '</strong></p>'
+        + '<p><strong>当前实际出征带兵上限：' + G.fmt(total) + '</strong></p>'
         + '<p><strong>当前可拥有城市上限：' + G.fmt(cityCap) + ' 座</strong>（含主城）</p>'
-        + '<p>各军衔的带兵基础上限与城市数量上限如下，实际出征仍需当前城市有足够驻军：</p>'
+        + '<p>守城不受带兵上限限制，开战时全部可战兵力参战。各军衔的出征基础上限与城市数量上限如下，实际出征仍需当前城市有足够驻军：</p>'
         + '<table class="rank-cap-table"><thead><tr><th scope="col">等级</th><th scope="col">军衔</th><th scope="col">带兵基础上限</th><th scope="col">城市上限</th></tr></thead><tbody>' + rows + '</tbody></table>'
         + '</div><div class="modal-foot"><button type="button" class="btn btn-primary rank-cap-done">知道了</button></div>'
         + '</div>';

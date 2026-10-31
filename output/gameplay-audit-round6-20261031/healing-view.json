@@ -1,0 +1,20 @@
+{
+  "vip_healing_quotes": {
+    "backendGoldCost": 660,
+    "backendDiamondCost": 2,
+    "displayedGoldCost": 660,
+    "displayedDiamondCost": 1,
+    "goldMaxWithExactGoldBalance": 220,
+    "diamondMaxWithOneDiamond": 220,
+    "count": 220
+  },
+  "vip_healing_rounding_quotes": {
+    "backendGoldCost": 35,
+    "backendDiamondCost": 1,
+    "displayedGoldCost": 40,
+    "displayedDiamondCost": 1,
+    "goldMaxWithExactGoldBalance": 8,
+    "diamondMaxWithOneDiamond": 10,
+    "count": 10
+  }
+}

@@ -37,6 +37,19 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("ShopController 单元测试")
 public class ShopControllerTest extends BaseServiceTest {
+    @org.springframework.boot.test.mock.mockito.SpyBean
+    private com.wargame.service.InventoryService inventory;
+
+    @Test
+    void ordinaryPurchaseUsesSharedInventoryIntake() {
+        Resources balance = resourcesRepository.findByPlayerIdAndCitySlot(player.getId(), 0).orElseThrow();
+        balance.setDiamond(1000); resourcesRepository.saveAndFlush(balance);
+        var result = shopController.buy(new GameDtos.ShopBuyRequest("skillBook", 2)).getBody();
+        assertEquals(true, result.get("success"));
+        org.mockito.Mockito.verify(inventory).add(player.getId(), "skillBook", 2);
+        assertEquals(2, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook").orElseThrow().getCount());
+        assertEquals(840, balance.getDiamond());
+    }
 
     @Autowired
     private ShopController shopController;
@@ -357,6 +370,10 @@ public class ShopControllerTest extends BaseServiceTest {
     @Test
     @DisplayName("新手礼包资源发往当前城市，账号共享的限购记录不改变")
     void newbiePackCreditsSelectedCity() {
+        var branch = new com.wargame.model.entity.PlayerCity();
+        branch.setOwnerId(player.getId()); branch.setCitySlot(1); branch.setWorldId(1L);
+        branch.setName("礼包测试分城"); branch.setX(20); branch.setY(20); branch.setLastTick(System.currentTimeMillis());
+        playerCityRepository.saveAndFlush(branch);
         Resources city = new Resources();
         city.setPlayerId(player.getId()); city.setCitySlot(1);
         city.setFood(10); city.setSteel(20); city.setOil(30); city.setRare(40); city.setGold(50);
@@ -691,31 +708,34 @@ public class ShopControllerTest extends BaseServiceTest {
     }
 
     @Test
-    @DisplayName("购买指定技能书并使用：扣除钻石、入仓并让军官学习指定技能")
-    void testBuyAndUseSpecificSkillBook() {
+    @DisplayName("指定技能书已下架：拒绝购买且不扣钻石，已有库存仍可学习")
+    void testSpecificSkillBooksAreDelistedAndExistingStockCanStillBeUsed() {
         Resources res = resourcesRepository.findByPlayerId(player.getId()).orElseThrow();
         res.setDiamond(500);
         resourcesRepository.save(res);
 
-        ResponseEntity<Map<String, Object>> buyResp = shopController.buy(new GameDtos.ShopBuyRequest("skillBook_frenzy"));
-        assertNotNull(buyResp.getBody());
-        assertTrue((Boolean) buyResp.getBody().get("success"), "购买全军冲锋技能书应成功");
-        assertEquals("已购买 全军冲锋技能书", buyResp.getBody().get("message"));
-        assertEquals(340, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond(), "应扣除160钻石");
-        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount(), "技能书应入仓");
+        for (String skillId : com.wargame.model.constants.OfficerSkillDef.OFFICER_SKILLS.keySet()) {
+            String itemId = "skillBook_" + skillId;
+            var response = shopController.buy(new GameDtos.ShopBuyRequest(itemId)).getBody();
+            assertNotNull(response);
+            assertEquals(false, response.get("success"), itemId);
+            assertTrue(playerItemRepository.findByPlayerIdAndItemKey(player.getId(), itemId).isEmpty(), "下架商品不应入仓");
+        }
+        assertEquals(500, resourcesRepository.findByPlayerId(player.getId()).orElseThrow().getDiamond(), "购买下架商品不扣钻石");
+        playerItemRepository.saveAndFlush(new PlayerItem(null, player.getId(), "skillBook_frenzy", 1, System.currentTimeMillis()));
 
         Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
         Map<String, Object> useResp = depotService.useItem(player.getId(), "skillBook_frenzy", officer.getId(), null);
 
         assertTrue((Boolean) useResp.get("success"), "使用指定技能书应成功: " + useResp.get("message"));
         assertEquals("frenzy", useResp.get("skillId"));
-        assertEquals(1, useResp.get("level"));
+        assertEquals(5, useResp.get("level"));
         assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount(), "使用后技能书应扣除");
         assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"frenzy\""), "军官应学习全军冲锋");
     }
 
     @Test
-    @DisplayName("升级军官技能消耗同类型技能书并提升一级")
+    @DisplayName("技能默认满级，旧升级入口不扣技能书")
     void testUpgradeSkillWithMatchingBook() {
         Officer officer = createOfficer(player.getId(), "idle", 30, 30, 30);
         officer.setSkills("[{\"id\":\"frenzy\",\"lv\":1}]");
@@ -725,10 +745,9 @@ public class ShopControllerTest extends BaseServiceTest {
 
         Map<String, Object> result = officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_frenzy");
 
-        assertTrue((Boolean) result.get("success"));
-        assertEquals(2, result.get("level"));
-        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":2"));
-        assertEquals(0, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount());
+        assertFalse((Boolean) result.get("success"));
+        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":5"));
+        assertEquals(1, playerItemRepository.findByPlayerIdAndItemKey(player.getId(), "skillBook_frenzy").orElseThrow().getCount());
     }
 
     @Test
@@ -761,7 +780,7 @@ public class ShopControllerTest extends BaseServiceTest {
         officerRepository.save(officer);
         playerItemRepository.tryConsume(player.getId(), "skillBook_frenzy", 1, System.currentTimeMillis());
         assertFalse((Boolean) officerService.upgradeSkill(player.getId(), officer.getId(), 0, "skillBook_frenzy").get("success"));
-        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":1"));
+        assertTrue(officerRepository.findById(officer.getId()).orElseThrow().getSkills().contains("\"lv\":5"));
     }
 
     @Test

@@ -12,7 +12,6 @@ import java.util.*;
 /** Target lookup and intelligence access, shared by dispatch and battle settlement. */
 @Service
 public class MarchTargetService {
-    @org.springframework.beans.factory.annotation.Autowired private UnitEquipmentService unitEquipment;
 
     @org.springframework.beans.factory.annotation.Autowired
     private com.wargame.service.CityScope cityScope;
@@ -212,11 +211,9 @@ public class MarchTargetService {
         return map;
     }
 
-    /** 每场新战斗读取当前账号配装；既有会话只读取它自己的冻结 JSON。 */
+    /** 每场新战斗读取当前有效科技；既有会话只读取它自己的冻结 JSON。 */
     public Map<String, Integer> getCombatTechMap(Long playerId) {
-        Map<String, Integer> result = getTechMap(playerId);
-        if (unitEquipment != null) result.putAll(unitEquipment.snapshot(playerId));
-        return result;
+        return com.wargame.model.constants.TechnologyRules.activeTech(getTechMap(playerId));
     }
 
     public Map<String, Integer> getTechMap(Long playerId) {

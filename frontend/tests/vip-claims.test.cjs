@@ -11,6 +11,7 @@ function setup() {
   const status = { vipLevel: 1, totalRechargeCents: 600, claimedPackLevels: [],
     levels: [{ level: 0 }, { level: 1, title: '特遣队指挥官', requiredCents: 600,
       levelPackRewards: { recruitOrd: 1, gold: 400000 } }] };
+  status.levelPacks = [{level:1, requiredCents:600, rewards:{recruitOrd:1,gold:400000}, claimable:true, claimed:false}];
   const storage = new Map([['wargame_token', 'test-token'], ['wargame_token_server', 'jiangsu-1']]);
   const game = { Core: { state, refreshTop() {} }, state, toast: message => toasts.push(message),
     escapeHtml: value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]) };
@@ -26,7 +27,7 @@ function setup() {
     fetch: async (url, options) => {
       requests.push({ path: new URL(url).pathname, method: options.method, body: options.body && JSON.parse(options.body) });
       const result = options.method === 'GET' ? status : { success: true, message: '领取成功', state: updated };
-      if (options.method !== 'GET') { status.claimedPackLevels = [1]; status.dailyClaimed = true; }
+      if (options.method !== 'GET') { status.claimedPackLevels = [1]; status.dailyClaimed = true; status.levelPacks[0].claimed=true; status.levelPacks[0].claimable=false; }
       return { ok: true, status: 200, headers: { get: () => null }, text: async () => JSON.stringify(result) };
     } };
   context.window = context;

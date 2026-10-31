@@ -271,7 +271,7 @@ class WoundedServiceTest extends BaseServiceTest {
     }
 
     @Test
-    void annihilatedSortieDoesNotClearUnsentReservesOrCountWoundedAsArmy() {
+    void cityDefenseUsesAllTroopsAndNeverCountsWoundedAsActiveArmy() {
         Player defender = createTestPlayer("reserve-defender", 30);
         defender.setSortieArmy("{\"infantry\":10}");
         playerRepository.save(defender);
@@ -285,11 +285,12 @@ class WoundedServiceTest extends BaseServiceTest {
 
         Map<String, Object> report = JsonUtil.parseObjMap(
                 scoutReportRepository.findByPlayerId(defender.getId()).get(0).getData());
-        assertEquals(Map.of("infantry", 10), JsonUtil.parseIntMap(JsonUtil.toJson(report.get("initialDefender"))));
+        // 守城按现行规则全员参战，旧 sortieArmy 设置不能留下未参战的虚构预备队。
+        assertEquals(Map.of("infantry", 17), JsonUtil.parseIntMap(JsonUtil.toJson(report.get("initialDefender"))));
         assertTrue(JsonUtil.parseIntMap(JsonUtil.toJson(report.get("survivorDefender"))).isEmpty());
         Map<String, Object> state = gameStateService.getGameState(defender.getId());
-        assertEquals(Map.of("infantry", 7), JsonUtil.parseIntMap(JsonUtil.toJson(state.get("army"))));
-        assertEquals(5L, state.get("woundedCount"));
+        assertTrue(JsonUtil.parseIntMap(JsonUtil.toJson(state.get("army"))).values().stream().allMatch(n -> n == 0));
+        assertEquals(8L, state.get("woundedCount"));
     }
 
     @Test

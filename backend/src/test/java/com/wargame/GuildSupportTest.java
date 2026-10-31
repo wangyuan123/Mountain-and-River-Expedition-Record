@@ -88,7 +88,10 @@ class GuildSupportTest extends BaseServiceTest {
             assertEquals(5, view.get("ownPerHour"));
             assertEquals(50, view.get("supportPerHour"));
             assertEquals(55, view.get("totalPerHour"));
-            assertEquals(view, gameStateService.getGameState(receiver.getId()).get("foodSupply"));
+            var refreshed = (Map<String, Double>) gameStateService.getGameState(receiver.getId()).get("foodSupply");
+            for (String key : view.keySet()) if (!"estimatedDepletedAt".equals(key)) assertEquals(view.get(key), refreshed.get(key));
+            assertEquals(view.get("estimatedDepletedAt"), refreshed.get("estimatedDepletedAt"), 1000,
+                    "两次查询的估算结束时间只允许随查询时刻前进");
         }
         try (var ignored = scope.enter(source)) {
             assertEquals(140, food.supplyView(sender.getId()).get("totalPerHour"), "已派驻的100步兵不再在来源城重复收费");
@@ -213,7 +216,7 @@ class GuildSupportTest extends BaseServiceTest {
         try (var ignored = scope.enter(destination)) {
             defense = support.defense(destination, targets.getTargetArmy(destination));
         }
-        assertEquals(110, com.wargame.model.constants.UnitEquipmentEffects.aggregate(defense.army()).get("infantry"));
+        assertEquals(110, com.wargame.model.constants.BattleUnitIds.aggregate(defense.army()).get("infantry"));
         March late = dispatch("reinforce", Map.of("infantry", 50), Map.of()); arrive(late);
         GuildSupportService.Losses losses = support.settle(JsonUtil.toJson(defense.support()), defense.army(), Map.of("infantry", 5, "infantry~s1", 50));
         assertEquals(5, losses.initial().get("infantry") - losses.survivors().get("infantry"));
@@ -242,7 +245,7 @@ class GuildSupportTest extends BaseServiceTest {
         homeOfficer.setDefense(1); officerRepository.save(attackOfficer); officerRepository.save(homeOfficer);
         // 医疗在开战后升级，终局采用新回收率，战场攻防仍采用开战来源快照。
         createTechnology(sender.getId(), "log_medical", 10);
-        assertEquals(110, com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(session.getInitialDefender())).get("infantry"));
+        assertEquals(110, com.wargame.model.constants.BattleUnitIds.aggregate(JsonUtil.parseIntMap(session.getInitialDefender())).get("infantry"));
         assertEquals(100, JsonUtil.parseIntMap(JsonUtil.toJson(JsonUtil.parseObjMap(session.getDefenderSupport()).get(reinforcement.getId().toString()))).get("infantry~s1"));
         assertThrows(IllegalArgumentException.class, () -> marchService.cancelMarch(sender.getId(), reinforcement.getId()));
         assertThrows(IllegalArgumentException.class, () -> marchService.dismissSupport(receiver.getId(), reinforcement.getId()));
@@ -258,8 +261,8 @@ class GuildSupportTest extends BaseServiceTest {
         assertEquals(50, attackSnapshot.get("level")); assertEquals(79, homeSnapshot.get("defense"));
         assertEquals("frenzy", JsonUtil.parseList(JsonUtil.toJson(attackSnapshot.get("skills"))).get(0).get("id"));
         assertTrue(data.get("report").toString().contains("军事属性 +219%攻击"));
-        var initial = com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("initialDefender"))));
-        var surviving = com.wargame.model.constants.UnitEquipmentEffects.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("survivorDefender"))));
+        var initial = com.wargame.model.constants.BattleUnitIds.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("initialDefender"))));
+        var surviving = com.wargame.model.constants.BattleUnitIds.aggregate(JsonUtil.parseIntMap(JsonUtil.toJson(data.get("survivorDefender"))));
         assertEquals(initial.get("infantry") - surviving.getOrDefault("infantry", 0), ((Number) data.get("losses")).intValue());
         int stationed = marchRepository.findById(reinforcement.getId()).map(m -> JsonUtil.parseIntMap(m.getArmy()).getOrDefault("infantry", 0)).orElse(0);
         assertTrue(stationed < 100);
@@ -398,15 +401,15 @@ class GuildSupportTest extends BaseServiceTest {
         March returning = marchRepository.findById(reinforcement.getId()).orElseThrow();
         assertFalse(returning.getStationed()); assertTrue(returning.getReturning());
     }
-    @Test void allSupportParticipatesEvenWhenOwnSortieIsEmptyAndAcceptanceClosedAfterArrival() {
+    @Test void allHomeAndSupportParticipateDespiteLegacyZeroPresetAndClosedAcceptance() {
         March first = dispatch("reinforce", Map.of("infantry", 100), Map.of()); arrive(first);
         March late = dispatch("reinforce", Map.of("infantry", 50), Map.of()); arrive(late);
         receiver.setSortieArmy("{}"); playerRepository.save(receiver);
         support.setAcceptance(receiver.getId(), destination.getId(), false);
         try (var ignored = scope.enter(destination)) {
             var defense = support.defense(destination, targets.getTargetArmy(destination));
-            assertEquals(150, defense.army().values().stream().mapToInt(Integer::intValue).sum());
-            assertEquals(2, defense.support().size()); assertFalse(defense.army().containsKey("infantry"));
+            assertEquals(160, defense.army().values().stream().mapToInt(Integer::intValue).sum());
+            assertEquals(2, defense.support().size()); assertEquals(10, defense.army().get("infantry"));
         }
         assertThrows(IllegalArgumentException.class, () -> dispatch("reinforce", Map.of("infantry", 10), Map.of()));
     }

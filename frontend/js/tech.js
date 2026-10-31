@@ -12,33 +12,15 @@ window.Game = window.Game || {};
   var activeBranch = '军事';
   var timerId = null;
 
-  /** 黄金按目标等级独立查表，其他资源保持原成长；所有费用预览和开工确认共用此入口。 */
-  function techCost(id, currentLv) {
-    var t = D.techs[id];
-    var lv = currentLv != null ? currentLv : ((Core.state && Core.state.tech && Core.state.tech[id]) || 0);
-    var mul = Math.pow(t.growth, lv);
-    var cost = {};
-    for (var k in t.baseCost) {
-      if (k !== 'gold') cost[k] = Math.floor(t.baseCost[k] * mul);
-    }
-    var gold = G.Constants.researchGold;
-    cost.gold = gold.curves[gold.techGroups[id]][Math.max(0, Math.min(9, lv))];
-    return cost;
+  /** 只读取后端生成的等级报价，取消客户端费用与工期曲线。 */
+  function techCost(id, level) {
+    if (level == null) level = Core.state.tech[id] || 0;
+    return G.ServerRules.level('technologies', id, level).cost || {};
   }
 
-  /** 仅按开工城市的市长有效学识和格物技能计算工期；研发中心等级只控制准入。 */
-  function techDuration(id, currentLv, labLv) {
-    var lv = currentLv != null ? currentLv : ((Core.state && Core.state.tech && Core.state.tech[id]) || 0);
-    var curves = G.Constants.researchDuration;
-    var curve = curves[id] || (id.indexOf('prod_') === 0 ? curves.resource : curves.normal);
-    var base = curve[Math.max(0, Math.min(9, lv))];
-    var rates = G.Constants.researchSpeed;
-    // 状态中的学识已包含装备与套装加成，不能再重复叠加装备属性。
-    var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
-    var knowledgeSpeed = 1.0 + rates.knowledgePerPoint * Math.max(0, mayor ? (mayor.knowledge || 0) : 0);
-    var mayorSpeed = 1.0 + Math.max(0, Math.min(0.20, Core.mayorSkillBonus ? Core.mayorSkillBonus('research') : 0));
-    var duration = Math.round(base / (knowledgeSpeed * mayorSpeed));
-    return Math.max(5, duration);
+  function techDuration(id, level) {
+    if (level == null) level = Core.state.tech[id] || 0;
+    return G.ServerRules.level('technologies', id, level).duration;
   }
 
   function formatTime(seconds) {
@@ -80,7 +62,7 @@ window.Game = window.Game || {};
             '<li><strong>工期计算：</strong>基础工期 ÷ 学识速度倍率 ÷ 格物技能速度倍率，最后四舍五入到整秒；两项速度倍率分别为“1 + 对应加成”，并相乘。工期最短5秒，不设24小时上限。</li>' +
             '<li><strong>生效时点：</strong>工期在点击开始研发时锁定。更换市长、调整学识或提升技能只影响新开始的研发；中心升级只提高新研究的准入范围，不改变已有科技效果或在研工期。</li>' +
             '<li><strong>加速与暂停：</strong>加速符按标注时长 × 使用数量扣减剩余时间，可直接完成研发；研发所在城市归降或移交期间暂停，完成时间按冻结时长顺延。</li>' +
-            '<li><strong>开工条件：</strong>需要满足建筑和科技前置条件并备齐资源；全帝国同时只能研发一项科技。</li>' +
+            '<li><strong>开工条件：</strong>需要满足建筑和科技前置条件并备齐资源；各城市独立使用科研队列，VIP0—4每城1队、VIP5起每城2队。科技成果全账号共享，同一种科技不能在不同队列同时升级。</li>' +
             '<li><strong>黄金费用：</strong>所有科技每级均消耗黄金，按目标等级逐级增加。9→10级资源产量科技2000万、普通科技3000万、燃烧引擎5000万、喷气推进6500万、舰船动力8000万；市长及加速只缩短工期，不降低黄金费用。开工时一次扣除，取消按开工实际消耗返还80%，旧科研不按新价格补扣或重算退款。</li>' +
           '</ol>' +
         '</div>' +
@@ -100,62 +82,9 @@ window.Game = window.Game || {};
    * @param {number} lv 当前科技等级
    * @returns {Object} 当前与下一级效果，以及可选的卡片说明
    */
-  function getEffectDiffText(t, lv) {
-    var level = Math.max(0, Math.min(t.max, lv));
-    var nextLevel = Math.min(t.max, level + 1);
-    // 同项线性累计，与攻击独立相乘；等级之间的实际输出增幅不是固定再乘 1.1。
-    if (t.affect === 'firepower_all') {
-      return {
-        curStr: '+' + (level * 5) + '%（×' + (1 + level / 20).toFixed(2) + '）',
-        nextStr: '+' + (nextLevel * 5) + '%（×' + (1 + nextLevel / 20).toFixed(2) + '）',
-        currentLabel: '当前行动火力', effectLabel: '行动火力', pct: 5, unit: '%'
-      };
-    }
-    // 配方权限不会直接提高部队属性；制造时还会检查城市生产设施等级。
-    if (t.affect === 'unit_recipes') {
-      return {
-        curStr: level > 0 ? 'Lv.' + level + '及以下配方' : '未解锁',
-        nextStr: 'Lv.' + nextLevel + '及以下配方',
-        currentLabel: '当前可制造配方', effectLabel: '配方权限'
-      };
-    }
-    // 先手使用点数，资源负重和仓库保护使用各自明确登记的百分比。
-    if (t.affect === 'recon') {
-      var intel = ['城防类型', '城防数量与等级', '精确守军', '守城将领', '建筑等级', '驻城将领人数', '账号科技', '可掠夺资源测算', '驻城将领档案', '战力评估'];
-      return {
-        curStr: '情报等级 Lv.' + level,
-        nextStr: '情报等级 Lv.' + nextLevel,
-        currentLabel: '当前可查看',
-        effectLabel: '情报等级',
-        currentText: (level > 0 ? '城市：基础资源、' + intel.slice(0, level).join('、') + '；野地：精确守军' : '基础资源；城市与野地的模糊守军') + '；侦查交火先手+' + (level * 5) + '点',
-        pct: 1, unit: '级'
-      };
-    }
-    if (t.affect === 'radar') {
-      return {
-        curStr: '+' + (level * 2) + '点',
-        nextStr: '+' + (nextLevel * 2) + '点',
-        currentLabel: '当前首回合拦截先手值加成', effectLabel: '首回合拦截先手值',
-        pct: 2, unit: '点'
-      };
-    }
-    // 军事理论提供绝对概率增量，必须显示百分点，不能混入战斗百分比。
-    if (t.affect === 'academy_chance') return { curStr: '+' + (level * 3 / 10).toFixed(1) + '个百分点', nextStr: '+' + (nextLevel * 3 / 10).toFixed(1) + '个百分点', currentLabel: '当前五星名将整批概率加成', effectLabel: '五星名将整批概率加成', pct: 0.3, unit: '个百分点' };
-    // 千分比科技单独显示小数，避免浮点乘法出现0.30000000000000004%。
-    if (t.affect === 'capture_permille') return { curStr: (level / 10).toFixed(1) + '%', nextStr: (nextLevel / 10).toFixed(1) + '%', currentLabel: '当前俘获比例', effectLabel: '俘获比例', pct: 0.1, unit: '%' };
-    if (t.affect === 'medical') return { curStr: (level * 5) + '%', nextStr: (nextLevel * 5) + '%', currentLabel: '本科技伤兵回收率', effectLabel: '伤兵回收率', pct: 5, unit: '%' };
-    var pctMap = G.Constants.techEffectPercent;
-    var pct = pctMap[t.affect];
-    // 未登记的效果不能默认编造为每级 5%，新增科技须明确展示规则。
-    if (pct === undefined) return { curStr: '暂无效果说明', nextStr: '暂无效果说明' };
-    var cur = level * pct;
-    var next = nextLevel * pct;
-    var unit = '%';
-    var curStr = (cur > 0 ? '+' : '') + cur + unit;
-    var nextStr = (next > 0 ? '+' : '') + next + unit;
-    var effectLabels = { wall_stats: '城墙生命与防御', train: '兵种生产速度', build: '建筑资源消耗与基础工期', res_food: '城内粮食产量', res_steel: '城内钢铁产量', res_oil: '城内石油产量', res_rare: '城内稀矿产量', load: '全兵种负重', cap: '仓库掠夺保护额度' };
-    var effectLabel = effectLabels[t.affect];
-    return { curStr: curStr, nextStr: nextStr, pct: pct, unit: unit, effectLabel: effectLabel, currentLabel: effectLabel ? '当前' + effectLabel : null };
+  function getEffectDiffText(t, level) {
+    var id = Object.keys(D.techs).find(function (key) { return D.techs[key] === t; });
+    return G.ServerRules.level('technologies', id, level).effect || { curStr: '待同步', nextStr: '待同步' };
   }
 
   var Tech = {
@@ -207,7 +136,7 @@ window.Game = window.Game || {};
       }
       var requirements = G.Prerequisites && G.Prerequisites.check('technologies', id, lv + 1);
       var missing = requirements && requirements.missing[0];
-      var requiredLabLevel = Math.max(t.labReq, lv + 1);
+      var requiredLabLevel = G.ServerRules.level('technologies', id, lv).requiredLabLevel;
       if (missing || labLv < requiredLabLevel) {
         if (missing) G.Prerequisites.preview('technologies', id, lv + 1);
         else G.toast('需军工科技研发中心 Lv.' + requiredLabLevel);
@@ -247,7 +176,7 @@ window.Game = window.Game || {};
 
       var mayor = Core.getOfficerByRole ? Core.getOfficerByRole('mayor') : null;
       var knowledge = mayor ? Math.max(0, mayor.knowledge || 0) : 0;
-      var knowledgeSpeed = knowledge * G.Constants.researchSpeed.knowledgePerPoint * 100;
+      var knowledgeSpeed = mayor && mayor.researchKnowledgePercent || 0;
       var skillSpeed = Core.mayorSkillBonus ? Core.mayorSkillBonus('research') * 100 : 0;
       var speedParts = [];
       if (knowledge > 0) speedParts.push('学识提速 ' + knowledgeSpeed.toFixed(1) + '%');
@@ -348,14 +277,7 @@ window.Game = window.Game || {};
       var rows = '';
       for (var j = 0; j < owned.length; j++) {
         var o = owned[j];
-        var cardSec = o.seconds || 0;
-        var need = 0;
-        if (cardSec > 0 && remSec > 0) {
-          need = Math.floor(remSec / cardSec);
-          if (need === 0) need = 1;
-        }
-        var useCount = Math.min(need, o.cnt);
-        if (useCount <= 0 && o.cnt > 0) useCount = 1;
+        var useCount = (res && res.speedUpCounts || {})[o.id] || 1;
 
         rows += '<div class="spicker-row" data-sid="' + o.id + '" data-count="' + useCount + '">' +
                   '<span class="spicker-name">⚡ ' + o.name + ' <small style="font-weight:normal;color:#8a7a58">(余' + o.cnt + ')</small></span>' +
@@ -527,7 +449,7 @@ window.Game = window.Game || {};
           var lv = (s.tech && s.tech[id]) || 0;
           var requirements = G.Prerequisites && G.Prerequisites.check('technologies', id, lv + 1);
           var missing = requirements && requirements.missing[0];
-          var requiredLabLevel = Math.max(t.labReq, lv + 1);
+          var requiredLabLevel = G.ServerRules.level('technologies', id, lv).requiredLabLevel;
           var locked = !!missing || labLv < requiredLabLevel;
           var lockText = missing ? requirements.missing.map(G.Prerequisites.missingText).join('；') : '需军工科技研发中心 Lv.' + requiredLabLevel;
           var maxed = lv >= t.max;

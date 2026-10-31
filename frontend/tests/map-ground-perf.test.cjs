@@ -144,10 +144,10 @@ function pendingTextures() {
   return { textures, textureFactory };
 }
 
-async function decorationFixture() {
+async function decorationFixture({ rejectImage = () => false } = {}) {
   const drawImages = [], drawTransforms = [], drawLandmarks = [], c = fixture({ drawImages, drawTransforms, drawLandmarks });
   c.Image = class {
-    set src(value) { this.path = value; if (this.onload) this.onload(); }
+    set src(value) { this.path = value; if (rejectImage(value)) this.onerror(); else this.onload(); }
     get src() { return this.path; }
   };
   await c.Game.MapTerrain.loadMeadows();
@@ -164,13 +164,16 @@ function knownTerrain(terrain, size) {
 function vegetationBounds(terrain, drawImages, drawTransforms, tx, ty, size = 200) {
   drawImages.length = 0; drawTransforms.length = 0;
   terrain.createTile(tx, ty, size);
-  let forestIndex = 0;
-  return drawImages.map(([image, left, top, width, height]) => {
+  assert.equal(drawTransforms.length, drawImages.length * 2);
+  return drawImages.map(([image, left, top, width, height], index) => {
     const forest = /wild-forest-/.test(image.src);
-    const transform = forest ? drawTransforms[forestIndex++ * 2] : [1, 0, 0, 1, 0, 0];
+    const hill = /wild-hill-/.test(image.src);
+    const wetland = /wild-swamp-/.test(image.src);
+    const meadow = /wild-grassland/.test(image.src);
+    const transform = drawTransforms[index * 2];
     const x = tx * terrain.tileSpan - terrain.padding / terrain.density + (left + transform[4]) / terrain.density;
     const y = ty * terrain.tileSpan - terrain.padding / terrain.density + (top + transform[5]) / terrain.density;
-    return { x, y, right: x + width / terrain.density, bottom: y + height / terrain.density, forest };
+    return { x, y, right: x + width / terrain.density, bottom: y + height / terrain.density, forest, hill, wetland, meadow };
   });
 }
 
@@ -184,6 +187,37 @@ test('unknown chunks never receive icons and empty responses release decoration 
   assert.equal(terrain.updateChunk(1, 1, [], 200), true);
   assert.equal(terrain.updateChunk(1, 1, [], 200), false);
   assert.ok(vegetationBounds(terrain, drawImages, drawTransforms, 5, 5).length > 0);
+});
+
+test('surface names match all five miniature types in all four quadrants', async () => {
+  const { terrain, drawImages, drawTransforms } = await decorationFixture();
+  knownTerrain(terrain, 800);
+  const seen = new Set();
+  for (const [tx, ty] of [[1, 68], [5, 66], [3, 66], [3, 67], [5, 5], [105, 5], [5, 105], [105, 105]]) {
+    const icons = vegetationBounds(terrain, drawImages, drawTransforms, tx, ty, 800);
+    for (const icon of icons) {
+      const x = Math.floor((icon.x + icon.right) / 2), y = Math.floor((icon.y + icon.bottom) / 2);
+      const label = icon.forest ? '森林' : icon.hill ? '丘陵' : icon.wetland ? '湿地' : icon.meadow ? '草地' : '灌木';
+      assert.equal(terrain.surfaceName(x, y, 800, '丘陵'), label);
+      seen.add(label);
+    }
+  }
+  assert.deepEqual([...seen].sort(), ['森林', '丘陵', '湿地', '草地', '灌木'].sort());
+});
+
+test('surface names track chunk reservations and restore after targets leave', async () => {
+  const { terrain } = await decorationFixture();
+  knownTerrain(terrain, 800);
+  assert.equal(terrain.surfaceName(7, 272, 800, '丘陵'), '平原');
+  assert.equal(terrain.surfaceName(8, 272, 800, '平原'), '森林');
+  terrain.updateChunk(0, 17, [{ kind: 'npc', x: 9, y: 272 }], 800);
+  assert.equal(terrain.surfaceName(8, 272, 800, '丘陵'), '平原');
+  terrain.updateChunk(0, 17, [], 800);
+  assert.equal(terrain.surfaceName(8, 272, 800, '平原'), '森林');
+  terrain.clearTargets();
+  assert.equal(terrain.surfaceName(8, 272, 800, '平原'), '平原');
+  assert.equal(terrain.surfaceName(8, 272, 800, '海岸'), '海岸');
+  assert.equal(terrain.surfaceName(8, 272, 800, '海岛'), '海岛');
 });
 
 test('decorations avoid every target kind including city far corners and chunk edges', async () => {
@@ -207,7 +241,7 @@ test('decorations avoid every target kind including city far corners and chunk e
   assert.ok(neighbor.every(icon => !overlaps(icon, { x: 14.8, y: 14.8, right: 17.2, bottom: 17.2 })));
 });
 
-test('forest and shrub icons never overlap each other across terrain tiles', async () => {
+test('all terrain miniature types avoid each other across tile boundaries', async () => {
   const { terrain, drawImages, drawTransforms } = await decorationFixture();
   knownTerrain(terrain, 200);
   const icons = new Map();
@@ -223,24 +257,51 @@ test('forest and shrub icons never overlap each other across terrain tiles', asy
   }
 });
 
-test('landmark strokes stay inside their own cell and never cross bitmap decorations', async () => {
+test('terrain decorations only draw miniature images without simplified blocks or landmark strokes', async () => {
   const { terrain, drawImages, drawTransforms, drawLandmarks } = await decorationFixture();
   knownTerrain(terrain, 200);
   let count = 0;
   for (const [tx, ty] of [[4, 4], [5, 5], [10, 10], [20, 20], [30, 30]]) {
     drawLandmarks.length = 0;
-    const icons = vegetationBounds(terrain, drawImages, drawTransforms, tx, ty);
-    for (const [x, y, width, height] of drawLandmarks) {
-      const left = tx * terrain.tileSpan + (x - terrain.padding) / terrain.density;
-      const top = ty * terrain.tileSpan + (y - terrain.padding) / terrain.density;
-      const rect = { x: left, y: top, right: left + width / terrain.density, bottom: top + height / terrain.density };
-      assert.equal(Math.floor(rect.x), Math.floor(rect.right));
-      assert.equal(Math.floor(rect.y), Math.floor(rect.bottom));
-      assert.ok(icons.every(icon => !overlaps(icon, rect)));
-      count++;
-    }
+    count += vegetationBounds(terrain, drawImages, drawTransforms, tx, ty).length;
+    assert.equal(drawLandmarks.length, 0, 'no rectangles or lineTo-based terrain substitutes remain');
   }
-  assert.ok(count > 0, 'control scene must include actual landmark strokes');
+  assert.ok(count > 0, 'control scene must include actual miniature models');
+});
+
+test('the previously simplified forest, shrub, wetland and meadow cells now render matching models', async () => {
+  const { terrain, drawImages, drawTransforms } = await decorationFixture();
+  knownTerrain(terrain, 800);
+  for (const [x, y, label, prefix] of [[21, 264, '森林', 'wild-forest-'], [11, 266, '灌木', 'wild-shrub-'], [14, 267, '湿地', 'wild-swamp-'], [19, 264, '草地', 'wild-grassland']]) {
+    const tx = Math.floor(x / terrain.tileSpan), ty = Math.floor(y / terrain.tileSpan);
+    const icons = vegetationBounds(terrain, drawImages, drawTransforms, tx, ty, 800);
+    const index = icons.findIndex(icon => Math.floor((icon.x + icon.right) / 2) === x && Math.floor((icon.y + icon.bottom) / 2) === y);
+    assert.ok(index >= 0, label + ' cell must contain a model');
+    assert.ok(drawImages[index][0].src.includes(prefix));
+    assert.equal(terrain.surfaceName(x, y, 800, '平原'), label);
+    assert.equal(icons[index].right - icons[index].x, 1);
+    assert.equal(icons[index].bottom - icons[index].y, 1);
+  }
+});
+
+test('failed miniature assets never restore simplified terrain or report an invisible model', async () => {
+  const { terrain, drawImages, drawTransforms, drawLandmarks } = await decorationFixture({ rejectImage: () => true });
+  knownTerrain(terrain, 800);
+  assert.equal(terrain.meadowsReady(), true);
+  assert.equal(vegetationBounds(terrain, drawImages, drawTransforms, 1, 68, 800).length, 0);
+  assert.equal(drawLandmarks.length, 0);
+  assert.equal(terrain.surfaceName(4, 274, 800, '丘陵'), '平原');
+  assert.equal(terrain.surfaceName(8, 272, 800, '平原'), '平原');
+});
+
+test('one failed miniature variant uses a loaded model from the same terrain family', async () => {
+  const { terrain, drawImages, drawTransforms } = await decorationFixture({ rejectImage: source => source.includes('wild-hill-peak-') });
+  knownTerrain(terrain, 800);
+  const icons = vegetationBounds(terrain, drawImages, drawTransforms, 1, 68, 800);
+  const index = icons.findIndex(icon => icon.x === 4 && icon.y === 274);
+  assert.ok(index >= 0);
+  assert.match(drawImages[index][0].src, /wild-hill-(ridge|foothill)-integrated/);
+  assert.equal(terrain.surfaceName(4, 274, 800, '平原'), '丘陵');
 });
 
 test('edge city bounds and target moves refresh reservations without retaining obsolete cells', async () => {
@@ -427,7 +488,7 @@ test('procedural woodland leaves forest target cells clear for their full map ic
     'a forest target reserves its cell and nearby halo from overlapping procedural trees');
 });
 
-test('decorative forests share the selected cell center and size across tiles and zoom levels', async () => {
+test('all decorative models share the selected cell center and size across tiles and zoom levels', async () => {
   const drawImages = [], drawTransforms = [], c = fixture({ drawImages, drawTransforms });
   c.Image = class {
     set src(value) { this.path = value; if (this.onload) this.onload(); }
@@ -440,21 +501,28 @@ test('decorative forests share the selected cell center and size across tiles an
   const camera = new c.Game.MapCamera(800, 10.3, 116.7, 44);
   camera.width = 390; camera.height = 550;
   const sightings = new Map();
-  let count = 0, repeated = 0;
-  for (const [tx, ty] of [[1, 28], [1, 29], [2, 29], [5, 5], [99, 99], [100, 99], [199, 199]]) {
+  let count = 0, repeated = 0, hills = 0;
+  for (const [tx, ty] of [[1, 28], [1, 29], [2, 29], [0, 68], [1, 68], [5, 5], [99, 99], [100, 99], [199, 199]]) {
     drawImages.length = 0; drawTransforms.length = 0;
     terrain.createTile(tx, ty, 800);
-    const forests = drawImages.filter(([image]) => /wild-forest-(dense|ridge|edge)-integrated\.webp$/.test(image.src));
-    assert.equal(drawTransforms.length, forests.length * 2);
-    forests.forEach(([image, left, top, width, height], index) => {
+    const models = drawImages;
+    assert.equal(drawTransforms.length, models.length * 2);
+    models.forEach(([image, left, top, width, height], index) => {
       const transform = drawTransforms[index * 2];
       const x = (tx * terrain.tileSpan * density - terrain.padding + transform[4]) / density;
       const y = (ty * terrain.tileSpan * density - terrain.padding + transform[5]) / density;
-      assert.equal(x - Math.floor(x), .5, 'decorative forest must be centered horizontally in its cell');
-      assert.equal(y - Math.floor(y), .5, 'decorative forest must be centered vertically in its cell');
-      assert.equal(width, density, 'forest canvas must fit one cell');
+      assert.equal(x - Math.floor(x), .5, 'model must be centered horizontally in its cell');
+      assert.equal(y - Math.floor(y), .5, 'model must be centered vertically in its cell');
+      assert.equal(width, density, 'model canvas must fit one cell');
       assert.equal(height, density);
       assert.equal(left, -width / 2); assert.equal(top, -height / 2);
+      if (/wild-hill-/.test(image.src)) {
+        hills++;
+        const cellX = Math.floor(x), cellY = Math.floor(y);
+        const variant = ['peak', 'ridge', 'foothill'][Math.abs(cellX * 2 + cellY) % 3];
+        assert.equal(image.src, 'img/map/wild-hill-' + variant + '-integrated.webp');
+        assert.equal(terrain.surfaceName(cellX, cellY, 800, '平原'), '丘陵');
+      }
       const key = x + ',' + y;
       if (sightings.has(key)) { assert.equal(sightings.get(key), image.src); repeated++; }
       sightings.set(key, image.src); count++;
@@ -470,6 +538,7 @@ test('decorative forests share the selected cell center and size across tiles an
     });
   }
   assert.ok(count > 0, 'control tiles must contain decorative forests');
+  assert.ok(hills > 0, 'control tiles must contain actual hill miniature models');
   assert.ok(repeated > 0, 'neighboring tile halos must retain the same forest placement and variant');
 });
 

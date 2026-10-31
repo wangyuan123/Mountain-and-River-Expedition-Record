@@ -72,6 +72,23 @@
       '</span></button>';
   }
   function timeText(value) { return value == null ? '未知' : new Date(G.GameTime ? G.GameTime.toWallTime(Number(value)) : Number(value)).toLocaleString('zh-CN', { hour12: false }); }
+  /** 只解释当前账号已授权的监测状态；没有警报不等于覆盖区内没有敌军或目标没有守军。 */
+  function helpHtml() {
+    var sensor = city(), sensors = (data().cities || []).filter(function (s) { return s.level > 0 && s.enabled; });
+    var reason = !sensors.length ? '本账号暂无已建成且开启的联防雷达，请先建设或开启。'
+      : data().joinedGuild === false ? '尚未加入军团，联防雷达暂不生成团友预警。'
+      : contacts().length ? '目前已发现符合条件的团友威胁，具体情报以授权等级为准。'
+      : '暂无符合条件的可见团友威胁；需敌军路线经过已开启的覆盖区，且目标威胁团友城市、驻军或野地。自己的直接来袭单独显示。';
+    return '<details><summary>雷达用途与当前覆盖</summary><table><thead><tr><th>升级项目</th><th>实际用途</th></tr></thead><tbody>'
+      + '<tr><td>城防雷达</td><td>配合地图扫描与科研前置；侦查战守方首回合每级+2先手点。不增加联防覆盖或普通部队攻防。基本来袭提醒无需建造。</td></tr>'
+      + '<tr><td>联防雷达</td><td>建筑等级决定覆盖半径；需主动开启。监测威胁团友的完整行军路线是否经过覆盖区，无需等待敌军进入。</td></tr>'
+      + '<tr><td>雷达预警科技</td><td>决定来袭与联防情报详细度，不扩大覆盖半径，不公开未经授权的守军。</td></tr>'
+      + '<tr><td>联络中心</td><td>联防雷达和相关科技的建筑前置，不直接增加情报明细或外交权限。</td></tr></tbody></table>'
+      + '<p>当前城市：' + (sensor && sensor.level > 0 ? '联防雷达Lv.' + sensor.level + '，覆盖半径 ' + Number(sensor.radius) + ' 格，' + (sensor.enabled ? '已开启' : '已关闭') : '未建成联防雷达')
+      + '；账号已开启 ' + sensors.length + ' 座监测城。</p><p>' + escape(reason)
+      + '</p><p>具体原因以最近一次同步状态为准。未发现预警不代表安全；历史记录为监测失效前快照。</p>'
+      + '<button type="button" class="btn sm" onclick="Game.go(\'buildArmy\')">前往建设</button> <button type="button" class="btn sm" onclick="Game.go(\'tech\')">前往科研</button></details>';
+  }
   function cards(history) {
     var list = history ? data().history || [] : contacts();
     var renderedGroups = new Set();
@@ -149,7 +166,7 @@
     return points;
   }
   G.Radar = {
-    data: data, city: city, contacts: contacts, apply: apply, toggle: toggle, buttonHtml: buttonHtml, cards: cards,
+    data: data, city: city, contacts: contacts, apply: apply, toggle: toggle, buttonHtml: buttonHtml, cards: cards, helpHtml: helpHtml,
     unread: function () { return contacts().filter(function (contact) { return !contact.read; }).length; },
     refresh: function () { return request(G.API.getRadar(), false); },
     loadHistory: function () {

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -127,7 +127,7 @@ test('army cards hide prototype and production details by default, keeping heade
 
   // Prototype history and production stats should be present in details area
   assert.match(html, /原型：美国｜装备M1加兰德半自动步枪的步兵/);
-  assert.match(html, /生产: 基础 32秒\/个/);
+  assert.match(html, /生产: 基础 34秒\/个/);
 
   // Header should display [兵种名](编号) format
   assert.match(html, /<span class="n"[^>]*>步兵\(M1\)<\/span>/);
@@ -357,8 +357,8 @@ test('army queue renders free speedup button and executes freeSpeedUp', async ()
     return { success: true, message: '⚡ 免费加速成功，部队生产完成！' };
   };
 
-  const itemWithin5m = { id: 101, unitType: 'infantry', finishesAt: Date.now() + 200000 };
-  const itemOver5m = { id: 102, unitType: 'tank', finishesAt: Date.now() + 600000 };
+  const itemWithin5m = { id: 101, unitType: 'infantry', freeSpeedUpAt: Date.now() - 100000, finishesAt: Date.now() + 200000 };
+  const itemOver5m = { id: 102, unitType: 'tank', freeSpeedUpAt: Date.now() + 300000, finishesAt: Date.now() + 600000 };
 
   assert.ok(G.Army.canFreeSpeedUp(itemWithin5m), '5分钟内的生产任务应可免费加速');
   assert.equal(G.Army.canFreeSpeedUp(itemOver5m), false, '超过5分钟且非引导任务不可免费加速');

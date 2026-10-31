@@ -40,4 +40,8 @@ public class Construction extends CityOwnedEntity {
 
     @Column(name = "prerequisite_requirements", columnDefinition = "TEXT")
     private String prerequisiteRequirements;
+
+    /** 开工实扣成本；历史队列在迁移时按当时旧规则冻结，之后不随科技或价格变化。 */
+    @Column(name = "cost_snapshot", columnDefinition = "TEXT")
+    private String costSnapshot;
 }

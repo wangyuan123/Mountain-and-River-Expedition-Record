@@ -1,7 +1,6 @@
 package com.wargame;
 
 import com.wargame.model.constants.BattleRules;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.dto.BattleRoundState;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.dto.ConquestWallState;
@@ -65,9 +64,9 @@ class ConquestWallBreachTest {
     @ValueSource(ints = {0, 15})
     void fiveThousandMaxTechSpecialBreachesOnNinthContactAttack(int gear) {
         var tech = new java.util.LinkedHashMap<>(MAX_TECH);
-        tech.put(UnitEquipmentEffects.key("special", "fort"), gear);
+        tech.put("@ue:" + "special" + ":" + "fort", gear);
         var state = wall(10, false);
-        int finalAttack = gear == 0 ? 9 : 8;
+        int finalAttack = 9;
         for (int r = 1; r <= finalAttack; r++) {
             var result = round(Map.of("special", 5000), Map.of(), Map.of("special", 1000), 1000, r, 1, tech, Map.of(), state);
             assertEquals(Map.of("special", 5000), result.attackerArmy());
@@ -190,7 +189,7 @@ class ConquestWallBreachTest {
     void wallIgnoresDefenderTechCommanderEquipmentAndLearningSources() {
         var neutral = round(Map.of("special", 5000), Map.of(), Map.of("special", 1000), 1000, 3, 1, MAX_TECH, Map.of(), wall(10, false));
         var boosted = engine.resolveWorldRound(Map.of("special", 5000), Map.of(), Map.of("special", 1000), Map.of(), 1000,
-                MAX_TECH, Map.of("defense_tech", 10, "cmd_hp", 10, UnitEquipmentEffects.key("wall", "hp"), 20),
+                MAX_TECH, Map.of("defense_tech", 10, "cmd_hp", 10, "@ue:" + "wall" + ":" + "hp", 20),
                 Map.of("learn", 5), Map.of("bulwark", 5, "suppress", 5, "counter", 5), 0, 0, 1000, 1000,
                 3, 1, Map.of(), Map.of(), CommandBonus.NONE, new CommandBonus(1L, "守城司令", 1000, 1000, 1000, 1000), "conquer", wall(10, false));
         assertEquals(neutral.wall(), boosted.wall());

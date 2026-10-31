@@ -14,6 +14,22 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DepotPopulationOrderTest extends BaseServiceTest {
+    private AutoCloseable clock;
+    // 数量用例固定操作时刻，人口自然漂移由连续经济用例单独验证。
+    @org.junit.jupiter.api.BeforeEach
+    void pinOperationTime() {
+        long now = System.currentTimeMillis();
+        clock = com.wargame.util.GameClock.use(() -> now);
+    }
+    @org.junit.jupiter.api.AfterEach
+    void restoreClock() throws Exception { clock.close(); }
+
+    @Override protected Player createTestPlayer(String name, int tax) {
+        Player player = super.createTestPlayer(name, tax);
+        player.setLastTick(com.wargame.util.GameClock.now());
+        return playerRepository.save(player);
+    }
+
     @Autowired private DepotService depotService;
     @Autowired private CityScope cityScope;
     @Autowired private PlayerItemRepository playerItemRepository;
@@ -108,6 +124,7 @@ class DepotPopulationOrderTest extends BaseServiceTest {
         branch.setX(20);
         branch.setY(20);
         branch.setCivilianPopulation(50);
+        branch.setLastTick(com.wargame.util.GameClock.now());
         branch = playerCityRepository.save(branch);
         Building house = new Building();
         house.setPlayerId(player.getId());

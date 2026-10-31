@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/** 账号军备进度：部位整备、永久图鉴、任务去重与展示成就，分别使用有前缀的业务键。 */
+/** 账号军备进度：永久图鉴、展示成就和账号方案；历史整备及材料任务键只保留审计，不再生效。 */
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Entity

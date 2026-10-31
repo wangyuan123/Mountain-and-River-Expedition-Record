@@ -18,8 +18,6 @@ class GameTimeActivitiesTest extends BaseServiceTest {
     @Autowired ArmyService army;
     @Autowired ArmyProductionQueueRepository production;
     @Autowired TechResearchQueueRepository research;
-    @Autowired UnitEquipmentOrderRepository equipmentOrders;
-    @Autowired UnitEquipmentService equipment;
     @Autowired BattleSessionRepository battles;
 
     @Test void cityQueuesAndEconomyStayFrozenUntilGameTimeReachesTheirDeadline() throws Exception {
@@ -37,9 +35,6 @@ class GameTimeActivitiesTest extends BaseServiceTest {
             units.setPlayerId(id); units.setCitySlot(0); units.setUnitType("infantry"); units.setUnitCount(2);
             units.setBuildingType("factory"); units.setStartedAt(time.get()); units.setFinishesAt(time.get() + 60_000);
             units.setDurationSeconds(60); units.setSpeedMultiplier(1.0); production.save(units);
-            UnitEquipmentOrder order = new UnitEquipmentOrder();
-            order.setPlayerId(id); order.setCitySlot(0); order.setItemKey("ue_infantry_helmet"); order.setCost("{}");
-            order.setStartAt(time.get()); order.setEndAt(time.get() + 60_000); equipmentOrders.save(order);
             long food = getResources(id).getFood();
             tickService.tick(id);
             tickService.tick(id);
@@ -47,16 +42,13 @@ class GameTimeActivitiesTest extends BaseServiceTest {
             assertTrue(constructionRepository.existsById(building.getId()));
             assertTrue(research.existsById(tech.getId()));
             assertEquals(1, army.getProductionQueue(id).size());
-            assertTrue(equipmentOrders.existsById(order.getId()));
             assertEquals(time.get(), gameStateService.getGameState(id).get("serverTime"));
             time.addAndGet(60_000);
             tickService.tick(id);
             assertFalse(constructionRepository.existsById(building.getId()));
             assertFalse(research.existsById(tech.getId()));
             assertTrue(production.findByPlayerIdOrderByStartedAtAscIdAsc(id).isEmpty());
-            assertFalse(equipmentOrders.existsById(order.getId()));
             assertEquals(2, armyUnitRepository.findByPlayerIdAndType(id, "infantry").get(0).getCount());
-            assertEquals(1, equipment.inventory(id).get("ue_infantry_helmet"));
         }
     }
 

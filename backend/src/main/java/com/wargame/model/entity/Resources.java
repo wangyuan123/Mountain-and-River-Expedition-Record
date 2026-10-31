@@ -50,6 +50,14 @@ public class Resources extends CityOwnedEntity {
     @Column(name = "gold_accrual", nullable = false)
     private double goldAccrual;
 
+    /** 本城连续欠薪起点，使用游戏时钟；补足当期薪资后清空。 */
+    @Column(name = "salary_arrears_started_at")
+    private Long salaryArrearsStartedAt;
+
+    /** 已兑现的欠薪处罚次数，重启、重登及同一时刻重复结算均不重复扣忠诚。 */
+    @Column(name = "salary_arrears_penalties", nullable = false)
+    private long salaryArrearsPenalties;
+
     public void setFood(Long value) { this.food = clampNullable(value); }
     public void setFood(Integer value) { this.food = value == null ? null : Math.max(0L, value.longValue()); }
     public void setSteel(Long value) { this.steel = clampNullable(value); }
@@ -92,4 +100,10 @@ public class Resources extends CityOwnedEntity {
         rare = clampNullable(rare);
         gold = clampNullable(gold);
     }
+    /** 钻石钱包不可保存负数，溢出时由事务整体撤销本次发奖。 */
+    public void setDiamond(Integer value) {
+        if (value != null && value < 0) throw new IllegalArgumentException("钻石余额超出可保存范围");
+        diamond = value;
+    }
+
 }

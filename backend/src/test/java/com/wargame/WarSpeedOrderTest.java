@@ -21,6 +21,7 @@ class WarSpeedOrderTest extends BaseServiceTest {
     @Autowired PlayerItemRepository items;
     @Autowired MailService mail;
     @Autowired EquipmentService equipment;
+    @Autowired com.wargame.repository.PersonalWarRepository wars;
     private Long attackerId;
     private Long defenderId;
     private Long cityId;
@@ -83,6 +84,7 @@ class WarSpeedOrderTest extends BaseServiceTest {
     }
 
     @Test void legacyWarWithoutDeclarationMetadataIsNotEligible() {
+        wars.deleteAll(); wars.flush();
         Player attacker = playerRepository.findById(attackerId).orElseThrow();
         attacker.setWarDeclaredAt(null);
         playerRepository.saveAndFlush(attacker);
@@ -109,12 +111,12 @@ class WarSpeedOrderTest extends BaseServiceTest {
         assertEquals(1, stock());
     }
 
-    @Test void inconsistentTargetCityOrExpiredWarCannotSpendOrder() {
+    @Test void legacyDisplayFieldsCannotOverrideIndependentWarAndExpiredWarCannotSpendOrder() {
         PlayerCity city = playerCityRepository.findById(cityId).orElseThrow();
         long originalEnd = city.getWarEndAt();
         city.setWarEndAt(originalEnd - 1);
         playerCityRepository.saveAndFlush(city);
-        assertThrows(IllegalArgumentException.class, () -> worldService.previewWarOrder(attackerId, cityId));
+        assertNotNull(worldService.previewWarOrder(attackerId, cityId).get("confirmationToken"));
         city.setWarEndAt(originalEnd);
         playerCityRepository.saveAndFlush(city);
         for (Long participant : java.util.List.of(attackerId, defenderId)) {
@@ -124,6 +126,8 @@ class WarSpeedOrderTest extends BaseServiceTest {
         }
         city.setWarEndAt(playerRepository.findById(attackerId).orElseThrow().getWarEndAt());
         playerCityRepository.saveAndFlush(city);
+        var war = wars.findAll().get(0);
+        war.setWarEndAt(GameClock.now() - 1); wars.saveAndFlush(war);
         assertThrows(IllegalArgumentException.class, () -> worldService.previewWarOrder(attackerId, cityId));
         assertEquals(2, stock());
     }

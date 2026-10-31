@@ -21,7 +21,7 @@ window.Game = window.Game || {};
   function clock(ms) { return G.formatDuration(ms / 1000); }
   function active() { return state && ['QUEUED', 'ACCEPTING', 'LOADING', 'COUNTDOWN', 'BATTLING', 'RECOVERING'].indexOf(state.status) >= 0; }
   /** 声望达到门槛后开放对战页操作，账号状态尚未加载时保持锁定。 */
-  function prestigeLocked() { return !(Core.state && Number(Core.state.prestige) >= C.minPrestige); }
+  function prestigeLocked() { return !G.ServerRules.value('pvpAllowed', false); }
   function reset() {
     state = battle = lobby = config = report = estimate = pending = null;
     busy = dirty = saving = false; error = notice = loadedAttempt = rendered = dismissed = ''; drafts = {}; tab = 'lobby';
@@ -147,22 +147,17 @@ window.Game = window.Game || {};
       lobby = l; applyStatus(l.status);
       if (!config) {
         config = JSON.parse(JSON.stringify(l.preset));
-        if (!Object.keys(config.army || {}).length) config.army = proportion(l.available.army, l.available.cap, config.battlefield);
+        if (!Object.keys(config.army || {}).length) config.army = defaultArmy(config.battlefield);
       }
       show();
     }).catch(function (e) { error = e.message; show(); }).finally(function () { lobbyLoading = false; });
   }
-  function proportion(army, cap, field) {
-    var keys = Object.keys(army).filter(function (k) { return unit(k).branch === 'air' || unit(k).branch === (field === 'SEA_AIR' ? 'sea' : 'land'); });
-    var sum = keys.reduce(function (s, k) { return s + army[k]; }, 0), out = {}, left = cap;
-    keys.forEach(function (k) { var n = sum > cap ? Math.floor(army[k] * cap / sum) : army[k]; if (n) { out[k] = n; left -= n; } });
-    keys.forEach(function (k) { if (sum > cap && left > 0 && (out[k] || 0) < army[k]) { out[k] = (out[k] || 0) + 1; left--; } });
-    return out;
-  }
+  /** 后端按战场类型返回默认编队；缺快照时保持空选择，禁止在浏览器重新分配上限。 */
+  function defaultArmy(field) { return Object.assign({}, (lobby.available.defaultArmies || {})[field] || {}); }
   function setCount(k, value) { config.army[k] = Number(value); estimate = null; }
   function setDefault(k, value) { config.defaults[k] = { action: value }; estimate = null; }
-  function setField(field) { config.battlefield = field; config.army = proportion(lobby.available.army, lobby.available.cap, field); estimate = null; rendered = ''; show(); }
-  function setCity(slot) { config.citySlot = Number(slot); config.commanderId = null; config.army = {}; estimate = null; loadLobby(slot).then(function () { config.army = proportion(lobby.available.army, lobby.available.cap, config.battlefield); rendered = ''; show(); }); }
+  function setField(field) { config.battlefield = field; config.army = defaultArmy(field); estimate = null; rendered = ''; show(); }
+  function setCity(slot) { config.citySlot = Number(slot); config.commanderId = null; config.army = {}; estimate = null; loadLobby(slot).then(function () { config.army = defaultArmy(config.battlefield); rendered = ''; show(); }); }
   function savePreset() {
     if (prestigeLocked()) return Promise.resolve();
     var body = Object.assign({}, config, { presetVersion: lobby.presetVersion });
@@ -225,7 +220,7 @@ window.Game = window.Game || {};
     });
     if (!armyKeys.length) h += '<span class="pvp-muted">未指派兵力</span>';
     h += '</div>';
-    h += '<div class="pvp-summary-footer">司令官：<b>' + esc(s.chief && s.chief.name || '未任命') + '</b> · 行动火力 <b>×' + G.Core.firepowerMul(s.tech || {}).toFixed(1) + '</b> <span class="pvp-muted">（实力估值已包含此倍率）</span></div>';
+    h += '<div class="pvp-summary-footer">司令官：<b>' + esc(s.chief && s.chief.name || '未任命') + '</b> · 行动火力 <b>×' + (s.firepowerMultiplier == null ? '待同步' : Number(s.firepowerMultiplier).toFixed(1)) + '</b> <span class="pvp-muted">（实力估值已包含此倍率）</span></div>';
     h += '</div>';
     return h;
   }
@@ -314,9 +309,7 @@ window.Game = window.Game || {};
   }
   function fillMax() {
     if (!config || !lobby) return;
-    var avail = lobby.available.army || {}, cap = Number(lobby.available.cap) || 0;
-    // 与初次编队共用比例分配及余数补齐，末尾兵种无库存时也能填满上限。
-    config.army = proportion(avail, cap, config.battlefield);
+    config.army = defaultArmy(config.battlefield);
     Object.keys(G.DATA.units).forEach(function (k) {
       var el = document.getElementById('pvp-count-' + k);
       if (el) el.value = config.army[k] || 0;
@@ -422,6 +415,8 @@ window.Game = window.Game || {};
     h += '<div class="pvp-battle-sub"><span>我方带兵：' + esc(b.mine.commanderName) + '</span><span>敌方带兵：' + esc(b.enemy.commanderName) + '</span></div>';
     h += G.Battle.renderCommandBonusPanel({ attacker: b.mine.chief, defender: b.enemy.chief }, 'attacker');
     h += '<p class="pvp-rule">回合耗尽时按敌方初始兵力价值损失比例判定；差距≤5个百分点为平局。实际兵力损失：0。</p>';
+    G.Battle._activeTactical = { attackerStats: b.attackerStats, defenderStats: b.defenderStats,
+      attackerTech: b.mine.tech, defenderTech: b.enemy.tech };
     var rows = G.Battle.tacticalMarkerRows(b.myArmy, b.enemyArmy), indexes = {};
     rows.forEach(function (k, i) { indexes[k] = i; });
     h += '<div class="tactical-map pvp-map" style="height:' + (180 + Math.max(0, rows.length - 1) * 70) + 'px"><div class="pvp-baseline mine">我方底线</div><div class="pvp-baseline foe">敌方底线</div>';
@@ -459,6 +454,8 @@ window.Game = window.Game || {};
   function orderText(orders, sources) { return Object.keys(orders || {}).map(function (k) { var o = orders[k]; return esc(name(k)) + ' ' + esc(actions[o.action]) + (o.focusTarget ? ' → ' + esc(name(o.focusTarget)) : '') + ' [' + esc({ MANUAL: '人工锁定', DRAFT: '已保存草稿', AUTO: '默认托管', DEFAULT: '冻结默认' }[sources[k]] || sources[k]) + ']'; }).join('；'); }
   function eventHtml(e, side) {
     var p = e.side === side ? '我方' : '敌方', label = p + ' ' + (e.unit ? name(e.unit) : '将领');
+    if (e.type === 'SKILL_EFFECT') return '<p>' + esc(label + '：' + ((G.DATA.officerSkills[e.skill] || {}).name || e.skill) + ' 生效 · ' + Math.round(e.value * 100) / 100) + '</p>';
+    if (e.type === 'RICOCHET') return '<p>' + esc(label + ' 跳弹射击 → ' + name(e.target) + ' · 伤害 ' + Math.round(e.damage) + ' · 击毁 ' + e.kills) + '</p>';
     if (e.type === 'SKILL_WINDOW') return '<p>' + esc(p + ' ' + ((G.DATA.officerSkills[e.skill] || {}).name || e.skill) + ' Lv.' + e.level + '：' + (reasons[e.reason] || e.reason)) + '</p>';
     if (e.type === 'OFFICER_ATTRIBUTES') return '<p>' + esc(p + ' 将领周期属性：' + (e.active ? '生效' : '本回合不生效') + ' · 军事 ' + e.military + ' / 防御 ' + e.defense) + '</p>';
     if (e.type === 'MOVEMENT') return '<p>' + esc(label + ' 机动：' + e.from + ' → ' + e.to + ' · 速度 ' + Math.round(e.speed || 0) + ' · 闪电突击×' + (e.blitzMultiplier || 1)) + '</p>';

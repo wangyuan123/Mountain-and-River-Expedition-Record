@@ -24,6 +24,7 @@ import java.util.Map;
 
 @Service
 public class GuildService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService resourceEconomy;
 
     public static final int CREATE_GUILD_GOLD_COST = 10000;
 
@@ -74,6 +75,7 @@ public class GuildService {
 
         if (resourcesRepository != null) {
             int slot = cityScope != null ? cityScope.slot(playerId) : 0;
+            if (resourceEconomy != null) resourceEconomy.beforeResourceChange(playerId, slot);
             Resources res = resourcesRepository.findByPlayerIdAndCitySlot(playerId, slot)
                     .or(() -> resourcesRepository.findFirstByPlayerIdOrderByCitySlotAsc(playerId))
                     .orElseThrow(() -> new IllegalArgumentException("未找到资源库，无法创建军团"));
@@ -215,6 +217,8 @@ public class GuildService {
         if ("leader".equals(member.getRole())) {
             List<GuildMember> members = guildMemberRepository.findByGuildIdOrderByJoinedAtAsc(guild.getId());
             if (members.size() > 1) throw new IllegalArgumentException("请先移交团长或移出全部成员");
+            guildApplicationRepository.deleteByGuildId(guild.getId());
+            guildRelations.removeGuild(guild.getId());
             guildMemberRepository.delete(member);
             guildRepository.delete(guild);
             return Map.of("success", true, "message", "军团已解散");
@@ -264,11 +268,20 @@ public class GuildService {
 
     private Map<String, Object> summary(Guild guild) {
         long prestige = 0;
-        for (GuildMember member : guildMemberRepository.findByGuildIdOrderByJoinedAtAsc(guild.getId())) prestige += player(member.getPlayerId()).getPrestige() == null ? 0 : player(member.getPlayerId()).getPrestige();
+        int eligibleMembers = 0;
+        long now = System.currentTimeMillis();
+        for (GuildMember member : guildMemberRepository.findByGuildIdOrderByJoinedAtAsc(guild.getId())) {
+            Player candidate = playerRepository.findById(member.getPlayerId()).orElse(null);
+            if (!com.wargame.util.LeaderboardEligibility.eligible(candidate, now)) continue;
+            eligibleMembers++;
+            prestige += candidate.getPrestige() == null ? 0 : candidate.getPrestige();
+        }
         Player leader = player(guild.getLeaderPlayerId());
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("id", guild.getId()); result.put("name", guild.getName()); result.put("icon", guild.getIcon()); result.put("notice", guild.getNotice());
-        result.put("leaderName", PlayerNames.commanderName(leader)); result.put("members", guildMemberRepository.countByGuildId(guild.getId()));
+        result.put("leaderName", PlayerNames.commanderName(leader)); result.put("members", eligibleMembers);
+        result.put("eligibleMembers", eligibleMembers);
+        result.put("rosterMembers", guildMemberRepository.countByGuildId(guild.getId()));
         result.put("maxMembers", MAX_MEMBERS); result.put("prestige", prestige); result.put("createdAt", guild.getCreatedAt());
         return result;
     }

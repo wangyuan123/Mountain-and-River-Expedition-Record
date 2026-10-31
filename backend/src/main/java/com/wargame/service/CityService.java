@@ -10,6 +10,8 @@ import java.util.*;
 
 @Service
 public class CityService {
+    @org.springframework.beans.factory.annotation.Autowired private CityCapacityService capacity;
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private TickService economy;
     @org.springframework.beans.factory.annotation.Autowired private GarrisonFoodService garrisonFood;
     public static final int SHIELD_PRICE = 200;
     private static final long SHIELD_DURATION_MS = 8L * 3600 * 1000;
@@ -75,6 +77,9 @@ public class CityService {
         return result;
     }
 
+    /** 报价表和实际开盾共用的总额，客户端仅按选中数量查表。 */
+    public static int shieldCost(int count) { return Math.multiplyExact(count, SHIELD_PRICE); }
+
     /** 校验全部城市后按去重数量扣钻；与开战共用账号锁，保证扣款、单城续期原子生效。 */
     @Transactional
     public Map<String, Object> activateShields(Long playerId, List<Long> cityIds) {
@@ -85,13 +90,14 @@ public class CityService {
         long now = GameClock.now();
         if (selected.stream().anyMatch(c -> c.isSurrenderFrozen(now)))
             throw new IllegalArgumentException("归降移交中的城市只读");
-        int cost = Math.multiplyExact(selected.size(), SHIELD_PRICE);
+        int cost = shieldCost(selected.size());
         Resources wallet = scope.wallet(playerId);
         int diamond = Objects.requireNonNullElse(wallet.getDiamond(), 0);
         if (diamond < cost) throw new IllegalArgumentException("钻石余额不足，开启护盾需要 " + cost + " 钻石");
         wallet.setDiamond(diamond - cost);
         resources.save(wallet);
         for (PlayerCity city : selected) {
+            try (var local = scope.enter(city)) { economy.settleEconomyBeforeChange(playerId); }
             CityState status = states.findByPlayerIdAndCitySlot(playerId, city.getCitySlot()).orElseGet(() -> {
                 CityState created = new CityState();
                 created.setPlayerId(playerId);
@@ -113,6 +119,12 @@ public class CityService {
                         .orElseThrow(() -> new IllegalArgumentException("未找到主城"))
                 : cities.findById(cityId).filter(c -> c.getOwnerId().equals(playerId))
                         .orElseThrow(() -> new IllegalArgumentException("无权操作此城市"));
+        // 归降冻结约束在事务内校验；主动撤盾前先结清原护盾生效时段。
+        players.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        try (var selected = scope.enter(city)) {
+            scope.assertWritable(playerId);
+            economy.settleEconomyBeforeChange(playerId);
+        }
         CityState status = states.findByPlayerIdAndCitySlot(playerId, city.getCitySlot()).orElse(null);
         if (status != null) {
             status.setShieldUntil(0L);
@@ -135,23 +147,23 @@ public class CityService {
 
     @Transactional
     public Map<String,Object> site(Long playerId,int x,int y) {
+        players.lockById(playerId).orElseThrow();
         WorldMap world=terrain.lockWorld(); String mask=terrain.ensure();
         // 地图空地允许内陆与海岛建城，预览与提交共用四格占地校验。
         String reason=terrain.siteReason(world.getId(),mask,x,y,null);
-        var player=players.findById(playerId).orElseThrow();
-        if(reason.isEmpty()&&cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId).size()>=MilitaryRankDef.getCityCap(player.getMilitaryRank()))reason="城市数量已达军衔上限";
+        if(reason.isEmpty()&&!capacity.hasRoom(playerId,null))reason="城市数量（含待移交预留）已达军衔上限";
         boolean coastal=WorldTerrainService.isIsland(mask,x,y) || WorldTerrainService.coastal(mask,x,y,2);
         return Map.of("x",x,"y",y,"span",2,"coastal",coastal,"cityType",WorldTerrainService.foundingTerrain(mask,x,y),"valid",reason.isEmpty(),"reason",reason,"buildCost",BUILD_COST,"buildDurationMs",BUILD_DURATION_MS);
     }
 
     @Transactional
     public PlayerCity foundAt(Long playerId, Long wildId, Integer x, Integer y, String name) {
-        WorldMap world=terrain.lockWorld(); String mask=terrain.ensure();
         name = com.wargame.model.constants.DisplayNamePolicy.validate(name, 12, "城市名称");
+        // 接管恢复主城也会写世界地图，统一先锁账号再锁地图，避免与建城互相等待。
         Player player = players.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        List<PlayerCity> owned = cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(playerId);
-        int cap = MilitaryRankDef.getCityCap(player.getMilitaryRank());
-        if (owned.size() >= cap) {
+        WorldMap world=terrain.lockWorld(); String mask=terrain.ensure();
+        List<Integer> owned = cities.findCurrentSlotsForUpdate(playerId);
+        if (!capacity.hasRoom(playerId, null)) {
             var next = MilitaryRankDef.nextCityRank(player.getMilitaryRank());
             throw new IllegalArgumentException("城市数量已达上限" + (next == null ? "" : "，晋升至" + next.name() + "可拥有" + MilitaryRankDef.getCityCap(next.tier()) + "座城市"));
         }
@@ -166,12 +178,13 @@ public class CityService {
         if(x==null||y==null)throw new IllegalArgumentException("请选择建城坐标");
         String reason=terrain.siteReason(world.getId(),mask,x,y,wildId);
         if(!reason.isEmpty())throw new IllegalArgumentException(reason);
+        economy.beforeResourceChange(playerId, scope.slot(playerId));
         Resources balance = resources.findCityForTreatment(playerId, scope.slot(playerId)).orElseThrow();
         for (var cost : BUILD_COST.entrySet()) if (amount(balance, cost.getKey()) < cost.getValue()) throw new IllegalArgumentException("建城资源不足");
         balance.setFood(balance.getFood() - BUILD_COST.get("food")); balance.setSteel(balance.getSteel() - BUILD_COST.get("steel"));
         balance.setOil(balance.getOil() - BUILD_COST.get("oil")); balance.setRare(balance.getRare() - BUILD_COST.get("rare")); balance.setGold(balance.getGold() - BUILD_COST.get("gold"));
         resources.save(balance);
-        int slot = owned.stream().mapToInt(PlayerCity::getCitySlot).max().orElse(0) + 1;
+        int slot = owned.stream().mapToInt(Integer::intValue).max().orElse(0) + 1;
         long readyAt = GameClock.now() + BUILD_DURATION_MS;
         PlayerCity city = new PlayerCity();
         city.setOwnerId(playerId); city.setCitySlot(slot); city.setName(name); city.setWorldId(world.getId());

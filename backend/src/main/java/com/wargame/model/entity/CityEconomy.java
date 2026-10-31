@@ -2,6 +2,18 @@ package com.wargame.model.entity;
 
 /** Local economy; the legacy player columns remain authoritative for the main city. */
 public interface CityEconomy {
+    /** 安抚、税率等即时变化保留小数；达到上限或清零时同步清除越界余量。 */
+    default void adjustSentiment(double moraleDelta, double resentmentDelta) {
+        double morale = Math.max(0, Math.min(100, (getMorale() == null ? 70 : getMorale()) + getMoraleAccrual() + moraleDelta));
+        double resentment = Math.max(0, Math.min(100, (getResentment() == null ? 0 : getResentment()) + getResentmentAccrual() + resentmentDelta));
+        setMorale((int) Math.floor(morale)); setMoraleAccrual(morale - Math.floor(morale));
+        setResentment((int) Math.floor(resentment)); setResentmentAccrual(resentment - Math.floor(resentment));
+    }
+
+    double getMoraleAccrual();
+    void setMoraleAccrual(double value);
+    double getResentmentAccrual();
+    void setResentmentAccrual(double value);
     Integer getTax();
     void setTax(Integer value);
     Integer getMorale();

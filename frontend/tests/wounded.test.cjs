@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const fs = require('node:fs');
 const path = require('node:path');
 function setup() {
@@ -28,6 +28,7 @@ function setup() {
     { id: 2, citySlot: 0, unit: 'scout', count: 20, cityName: '迁城前名称', cityX: 20, cityY: 20, recoveryPercent: 50, expiresAt: 9000, goldPerUnit: 12 },
     { id: 3, citySlot: 1, unit: 'scout', count: 99, cityName: '分城', cityX: 30, cityY: 30, recoveryPercent: 50, expiresAt: 9000, goldPerUnit: 12 }
   ] };
+  for (const batch of data.batches) batch.preview = { count: batch.count, gold: 120, diamond: 1, maxGold: batch.count, maxDiamond: batch.count, originalGold: 120 };
   G.Wounded.data = data;
   return { G, data, nodes, document: ctx.document, setToken: value => token = value, stopped: () => stopped };
 }
@@ -59,7 +60,7 @@ test('camp follows the active city, ignores other city slots, and does not split
   const { G, data } = setup();
   let html = G.Wounded.renderContent(data);
   assert.match(html, /7 天|超过 7 天未治疗将全部消失/);
-  assert.match(html, /最高 50%|最高 15%|无基础回收率/);
+  assert.match(html, /最高 65% 回收/);
   assert.match(html, /当前救治城市：&lt;主城&gt; \(10,10\)/);
   assert.match(html, /&lt;主城&gt;/);
   assert.doesNotMatch(html, /<主城>/);
@@ -107,8 +108,9 @@ test('diamond fees round up once per 1000 total gold and MAX stops at the afford
   batch.goldPerUnit = 1;
   batch.count = 2000;
   data.resources = { gold: 2000, diamond: 1 };
-  assert.match(G.Wounded.renderContent(data), /每 1000 黄金折算 1 颗/);
+  assert.match(G.Wounded.renderContent(data), /每 1000 基础黄金折算 1 颗/);
   for (const [count, cost, disabled] of [[1, 1, false], [999, 1, false], [1000, 1, false], [1001, 2, true]]) {
+    batch.preview = { count, gold: count, diamond: cost, maxGold: 2000, maxDiamond: 1000 };
     const buttons = G.Wounded.paymentButtons(batch, count);
     assert.match(buttons, new RegExp('钻石治疗 · ' + cost));
     assert.equal(/disabled[^>]+heal\(1,'diamond'\)/.test(buttons), disabled);
@@ -128,6 +130,9 @@ test('quantity input and slider stay linked, use whole counts, and never exceed 
   assert.equal(nodes['wounded-qty-1'].value, 4);
   assert.equal(nodes['wounded-range-1'].value, 4);
   assert.equal(nodes['wounded-range-1'].style['--p'], '40%');
+  assert.match(nodes['wounded-pay-1'].innerHTML, /黄金治疗 · —/);
+  data.batches[0].preview = { count: 4, gold: 48, diamond: 1, maxGold: 10, maxDiamond: 10 };
+  G.Wounded.updateControls(data.batches[0], 4);
   assert.match(nodes['wounded-pay-1'].innerHTML, /黄金治疗 · 48/);
   for (const [value, expected] of [['99', 10], ['-3', 0], ['2.8', 2], ['', 0], ['bad', 0]]) {
     G.Wounded.changeQuantity(1, value);
@@ -137,45 +142,26 @@ test('quantity input and slider stay linked, use whole counts, and never exceed 
   }
 });
 
-test('currency MAX respects city balances and diamond rounding, sets both controls, and never heals', () => {
-  const { G, data, nodes } = setup();
-  const batch = data.batches[0];
-  batch.count = 20410;
-  batch.goldPerUnit = 76;
-  data.resources = { gold: 25625, diamond: 2635 };
+test('currency MAX uses server affordability and never submits or derives a price from unit cost', () => {
+  const { G, data, nodes } = setup(), batch = data.batches[0];
+  batch.count = 20410; batch.goldPerUnit = 1;
+  batch.preview = { count: 337, gold: 25612, diamond: 26, maxGold: 337, maxDiamond: 3460 };
+  data.resources = { gold: 25625, diamond: 263 };
   mountControls(nodes, 1);
   G.API.healWounded = () => assert.fail('MAX must not submit treatment');
   G.Wounded.selectMax(1, 'gold');
   assert.equal(G.Wounded.quantities[1], 337);
-  assert.equal(nodes['wounded-qty-1'].value, 337);
   assert.equal(nodes['wounded-range-1'].value, 337);
   assert.match(nodes['wounded-pay-1'].innerHTML, /黄金治疗 · 25612/);
-  assert.equal(nodes['wounded-warning-1'].hidden, true);
-  G.Wounded.selectMax(1, 'diamond');
-  assert.equal(G.Wounded.quantities[1], 20410);
-  assert.equal(nodes['wounded-qty-1'].value, 20410);
-  assert.equal(nodes['wounded-range-1'].value, 20410);
-  assert.match(nodes['wounded-pay-1'].innerHTML, /钻石治疗 · 1552/);
-  assert.match(nodes['wounded-pay-1'].innerHTML, /disabled[^>]+heal\(1,'gold'\)/);
-  assert.doesNotMatch(nodes['wounded-pay-1'].innerHTML, /disabled[^>]+heal\(1,'diamond'\)/);
-  data.resources.diamond = 263;
   G.Wounded.selectMax(1, 'diamond');
   assert.equal(G.Wounded.quantities[1], 3460);
   assert.equal(nodes['wounded-qty-1'].value, 3460);
-  assert.equal(nodes['wounded-range-1'].value, 3460);
+  assert.match(nodes['wounded-pay-1'].innerHTML, /钻石治疗 · —/);
+  batch.preview = { count: 3460, gold: 262960, diamond: 263, maxGold: 337, maxDiamond: 3460 };
+  G.Wounded.updateControls(batch, 3460);
   assert.match(nodes['wounded-pay-1'].innerHTML, /钻石治疗 · 263/);
-  assert.equal(Math.ceil(batch.goldPerUnit * 3461 / 1000), 264);
-  data.resources = { gold: 9999999, diamond: 9999999 };
-  assert.equal(G.Wounded.maxAffordable(batch, 'gold'), batch.count);
-  assert.equal(G.Wounded.maxAffordable(batch, 'diamond'), batch.count);
-  data.resources = { gold: 75, diamond: 1.9 };
-  assert.equal(G.Wounded.maxAffordable(batch, 'gold'), 0);
-  assert.equal(G.Wounded.maxAffordable(batch, 'diamond'), 13);
-  data.resources.diamond = 2;
-  batch.goldPerUnit = 2001;
-  assert.equal(G.Wounded.maxAffordable(batch, 'diamond'), 0);
-  data.resources.diamond = 3;
-  assert.equal(G.Wounded.maxAffordable(batch, 'diamond'), 1);
+  data.resources.gold = 9999999;
+  assert.equal(G.Wounded.maxAffordable(batch, 'gold'), 337, 'local balance cannot rebuild eligibility');
 });
 
 test('warning explains gold, diamond, and combined shortages and clears when affordable', () => {
@@ -189,6 +175,7 @@ test('warning explains gold, diamond, and combined shortages and clears when aff
     [{ gold: 1200, diamond: 2 }, /^$/, false, false]
   ]) {
     data.resources = resources;
+    data.batches[0].preview = { count: 10, gold: 1200, diamond: 2, maxGold: goldDisabled ? 5 : 10, maxDiamond: diamondDisabled ? 8 : 10 };
     G.Wounded.changeQuantity(1, '10');
     const warning = nodes['wounded-warning-1'];
     assert.match(warning.textContent, expected);
@@ -202,6 +189,7 @@ test('warning explains gold, diamond, and combined shortages and clears when aff
 test('zero affordability keeps MAX selection at zero across refresh and explains replenishment', () => {
   const { G, data, nodes } = setup();
   data.resources = { gold: 11, diamond: 0 };
+  data.batches[0].preview = { count: 0, gold: 0, diamond: 0, maxGold: 0, maxDiamond: 0 };
   mountControls(nodes, 1);
   for (const currency of ['gold', 'diamond']) {
     G.Wounded.selectMax(1, currency);
@@ -223,6 +211,7 @@ test('balances, buttons, and warnings refresh while an input is focused', () => 
   nodes['wounded-balance'] = { textContent: '' };
   document.activeElement = { tagName: 'INPUT' };
   data.resources = { gold: 600, diamond: 1 };
+  data.batches[0].preview = { count: 10, gold: 1200, diamond: 2, maxGold: 5, maxDiamond: 8 };
   G.Wounded.paint();
   assert.equal(nodes['wounded-content'].innerHTML, 'keep focused controls');
   assert.equal(nodes['wounded-qty-1'].value, 10);
@@ -231,6 +220,7 @@ test('balances, buttons, and warnings refresh while an input is focused', () => 
   assert.match(nodes['wounded-warning-1'].textContent, /黄金和钻石余额均不足/);
   assert.equal((nodes['wounded-pay-1'].innerHTML.match(/disabled/g) || []).length, 2);
   data.resources = { gold: 1200, diamond: 2 };
+  data.batches[0].preview = { count: 10, gold: 1200, diamond: 2, maxGold: 10, maxDiamond: 10 };
   G.Wounded.paint();
   assert.equal(nodes['wounded-warning-1'].hidden, true);
   assert.doesNotMatch(nodes['wounded-pay-1'].innerHTML, /disabled/);
@@ -338,4 +328,26 @@ test('switching city resets pending treatment and old completion cannot overwrit
   treatments[1]({ success: true, camp: branchCamp });
   await newTreatment;
   assert.equal(G.Wounded.pending, false);
+});
+
+
+test('VIP total gold rounding keeps all ten affordable while diamonds use the original price', () => {
+  const { G, data } = setup();
+  const batch = { id: 1, count: 10, goldPerUnit: 4, originalGoldPerUnit: 5, vipDiscountPercent: 30, preview: { count:10, gold:35, diamond:1, maxGold:10, maxDiamond:10, originalGold:50 } };
+  data.resources = { gold: 35, diamond: 1 };
+  assert.equal(G.Wounded.treatmentPrice(batch, 10, 'gold'), 35);
+  assert.equal(G.Wounded.maxAffordable(batch, 'gold'), 10);
+  assert.doesNotMatch(G.Wounded.paymentButtons(batch, 10), /disabled[^>]+gold/);
+  const larger = { ...batch, count: 220, goldPerUnit: 3, vipDiscountPercent: 40, preview: { count:220, gold:660, diamond:2, maxGold:11, maxDiamond:200 } };
+  assert.equal(G.Wounded.treatmentPrice(larger, 220, 'gold'), 660);
+  assert.equal(G.Wounded.treatmentPrice(larger, 220, 'diamond'), 2);
+  assert.equal(G.Wounded.maxAffordable(larger, 'diamond'), 200);
+});
+
+test('frozen wounded keep their remaining window visible and pause treatment buttons', () => {
+  const { G, data } = setup();
+  data.batches.forEach(batch => { batch.frozen = true; });
+  assert.match(G.Wounded.renderContent(data), /归降移交中，救治暂停 · 剩余期限/);
+  const buttons = G.Wounded.paymentButtons(data.batches[0], 10);
+  assert.equal((buttons.match(/ disabled/g) || []).length, 4);
 });

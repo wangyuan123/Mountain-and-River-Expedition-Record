@@ -22,6 +22,18 @@ public class SpeedUpSupport {
         this.playerItemRepository = playerItemRepository;
     }
 
+    /** 加速符推荐数量由服务端快照返回，客户端不再将剩余工期换算为消耗数量。 */
+    public Map<String, Integer> suggestedCounts(Long playerId, long finishesAt) {
+        long remaining = Math.max(0, (long) Math.ceil((finishesAt - com.wargame.util.GameClock.now()) / 1000.0));
+        Map<String, Integer> result = new java.util.LinkedHashMap<>();
+        for (var owned : playerItemRepository.findByPlayerId(playerId)) {
+            ItemDef item = GameData.ITEMS.get(owned.getItemKey());
+            if (item == null || item.speedUpSeconds() <= 0 || owned.getCount() == null || owned.getCount() <= 0) continue;
+            result.put(owned.getItemKey(), (int) Math.min(owned.getCount(), Math.max(1, remaining / item.speedUpSeconds())));
+        }
+        return result;
+    }
+
     /**
      * 校验加速符是否合法并原子扣减 count 个。
      *

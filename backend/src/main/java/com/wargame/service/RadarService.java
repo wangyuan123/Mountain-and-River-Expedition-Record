@@ -318,6 +318,7 @@ public class RadarService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("revision", monitors.findById(owner).map(RadarMonitor::getRevision).orElse(0L));
         result.put("cities", allSensors.stream().map(this::sensorView).toList()); result.put("contacts", current); result.put("history", history);
+        result.put("joinedGuild", guildId != null);
         result.put("unread", unread); result.put("nextBeforeId", history.size() == Math.max(1, Math.min(100, policy.getPageSize()))
                 ? history.get(history.size() - 1).get("contactId") : null);
         return result;

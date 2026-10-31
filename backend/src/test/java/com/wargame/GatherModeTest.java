@@ -40,76 +40,91 @@ class GatherModeTest extends BaseServiceTest {
     }
 
     @Test
-    void dispatchPersistsSelectedModeAndAcceptsLegacyRequests() throws Exception {
+    void removedGatherDispatchAndRouteAreRejectedWithoutDeductions() throws Exception {
+        long oil = getResources(playerId).getOil();
+        for (String kind : new String[]{"wild_gather", "wild"}) {
+            DispatchRequest request = new DispatchRequest(kind, tile.getId(), "gather", Map.of("truck", 1), null, null);
+            assertTrue(assertThrows(IllegalArgumentException.class,
+                    () -> marchService.createDispatch(playerId, request)).getMessage().contains("派兵采集已取消"));
+            assertThrows(IllegalArgumentException.class, () -> marchService.previewRoute(playerId, request));
+        }
         DispatchRequest legacy = objectMapper.readValue("{\"targetKind\":\"wild_gather\",\"targetId\":" + tile.getId() +
-                ",\"action\":\"gather\",\"army\":{\"truck\":1}}", DispatchRequest.class);
-        assertEquals("manual", marchService.createDispatch(playerId, legacy).getGatherMode());
-        DispatchRequest selected = objectMapper.readValue("{\"targetKind\":\"wild_gather\",\"targetId\":" + tile.getId() +
-                ",\"action\":\"gather\",\"army\":{\"truck\":1},\"gatherMode\":\"manual\"}", DispatchRequest.class);
-        Long marchId = marchService.createDispatch(playerId, selected).getId();
-        entityManager.flush();
-        entityManager.clear();
-        March persisted = marchRepository.findById(marchId).orElseThrow();
-        assertEquals("manual", persisted.getGatherMode());
-        assertFalse(persisted.getGatherStopped());
-        assertFalse(persisted.getGathering());
+                ",\"army\":{\"truck\":1}}", DispatchRequest.class);
+        assertThrows(IllegalArgumentException.class, () -> marchService.createDispatch(playerId, legacy));
+        assertEquals(10, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
+        assertEquals(oil, getResources(playerId).getOil());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
     }
 
     @Test
-    void infantryCanGatherAndReturnPersonalCargoWithoutTrucks() {
-        createArmyUnit(playerId, "infantry", 20);
-        March march = marchService.createDispatch(playerId, new DispatchRequest(
-                "wild_gather", tile.getId(), "gather", Map.of("infantry", 20), null, null));
-        marchService.processMarches(playerId, march.getArriveAt());
-        assertTrue(march.getGathering());
-        assertEquals(200, march.getGatherAmount());
+    void legacyGatherEndpointRejectsArmyAndOnlyStartsExistingGarrison() throws Exception {
+        var auth = org.mockito.Mockito.mock(com.wargame.service.AuthService.class);
+        org.mockito.Mockito.when(auth.getCurrentPlayer()).thenReturn(playerRepository.findById(playerId).orElseThrow());
+        var state = org.mockito.Mockito.mock(com.wargame.service.GameStateService.class);
+        org.mockito.Mockito.when(state.getGameState(playerId)).thenReturn(Map.of());
+        var controller = new com.wargame.controller.WildController(auth, worldService, marchService, state);
+        var dispatch = objectMapper.readValue("{\"wildTileId\":" + tile.getId() + ",\"army\":{\"truck\":1}}",
+                com.wargame.model.dto.GameDtos.WildDispatchRequest.class);
+        assertTrue(assertThrows(IllegalArgumentException.class, () -> controller.gather(dispatch))
+                .getMessage().contains("派兵采集已取消"));
+        org.mockito.Mockito.verifyNoInteractions(state);
+        assertEquals(10, armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0).getCount());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        var manual = objectMapper.readValue("{\"wildTileId\":" + tile.getId() + "}",
+                com.wargame.model.dto.GameDtos.WildDispatchRequest.class);
+        assertThrows(IllegalArgumentException.class, () -> controller.gather(manual), "尚未进驻时不可采集");
+        March station = marchService.createDispatch(playerId, new DispatchRequest(
+                "wild", tile.getId(), "station", Map.of("truck", 1), null, null));
+        marchService.processMarches(playerId, station.getArriveAt());
+        assertFalse(Boolean.TRUE.equals(tile.getGathering()));
+        assertEquals(true, controller.gather(manual).getBody().get("success"));
+        assertTrue(tile.getGathering());
+    }
 
-        marchService.processMarches(playerId, march.getGatherEndAt());
-        assertFalse(march.getReturning());
-        march.setGatherStartAt(System.currentTimeMillis() - 120_000L);
-        march.setGatherEndAt(System.currentTimeMillis() - 60_000L);
-        marchService.stopGatherMarch(playerId, march.getId());
-        marchService.cancelMarch(playerId, march.getId());
-        assertTrue(march.getReturning());
-        assertEquals(200, march.getGatherAmount());
-        assertEquals(1000, getResources(playerId).getFood(), "采集资源返城后才入库");
-        marchService.processMarches(playerId, march.getArriveAt());
-        assertFalse(marchRepository.existsById(march.getId()));
+    @Test
+    void legacyOutboundGatherOnlyStationsTroopsAndWaitsForManualStart() {
+        long now = System.currentTimeMillis();
+        March outbound = createMarch(playerId, "wild_gather", tile.getId().toString(), "粮田",
+                10, 10, 15, 15, Map.of("truck", 1), "gather", now, now + 30_000L, false, false);
+        outbound.setGatherMode("auto");
+        marchRepository.save(outbound);
+        marchService.processMarches(playerId, now + 30_000L);
+        assertFalse(marchRepository.existsById(outbound.getId()));
+        assertEquals(Map.of("truck", 1), JsonUtil.parseIntMap(tile.getGarrison()));
+        marchService.processMarches(playerId, now + 3_600_000L);
+        assertFalse(Boolean.TRUE.equals(tile.getGathering()));
+        assertNull(tile.getGatherStartAt());
+        assertEquals(1000, tile.getTotalRes());
+        assertEquals(1000, getResources(playerId).getFood());
+        marchService.startWildGather(playerId, tile.getId());
+        assertTrue(tile.getGathering());
+        assertEquals(500, tile.getGatherLoad());
+    }
+
+    @Test
+    void infantryStationsBeforeManualGatherAndReturn() {
+        createArmyUnit(playerId, "infantry", 20);
+        March station = marchService.createDispatch(playerId, new DispatchRequest(
+                "wild", tile.getId(), "station", Map.of("infantry", 20), null, null));
+        marchService.processMarches(playerId, station.getArriveAt());
+        assertFalse(Boolean.TRUE.equals(tile.getGathering()));
+        assertNull(tile.getGatherStartAt());
+        marchService.startWildGather(playerId, tile.getId());
+        assertEquals(200, tile.getGatherLoad());
+        tile.setGatherStartAt(System.currentTimeMillis() - 120_000L);
+        tile.setGatherEndAt(System.currentTimeMillis() - 60_000L);
+        wildTileRepository.save(tile);
+        marchService.processMarches(playerId, System.currentTimeMillis() + 3_600_000L);
+        assertTrue(tile.getGathering());
+        assertTrue(marchRepository.findByPlayerId(playerId).isEmpty());
+        marchService.harvestWild(playerId, tile.getId());
+        assertEquals(1000, getResources(playerId).getFood(), "收获后等待手动回城，抵达后才入库");
+        assertEquals(200, tile.getGatherHarvested());
+        marchService.recallWild(playerId, tile.getId());
+        March returning = marchRepository.findByPlayerId(playerId).get(0);
+        marchService.processMarches(playerId, returning.getArriveAt());
         assertEquals(1200, getResources(playerId).getFood());
         assertEquals(20, armyUnitRepository.findByPlayerIdAndType(playerId, "infantry").get(0).getCount());
-    }
-
-    @Test
-    void dispatchedGatherUses100BaseSpeedAndCommanderLogisticsMultiplier() {
-        tile.setTotalRes(20_000);
-        wildTileRepository.save(tile);
-        ArmyUnit trucks = armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0);
-        trucks.setCount(40);
-        armyUnitRepository.save(trucks);
-        Officer commander = createOfficer(playerId, "march", 30, 200, 10);
-        March march = marchService.createDispatch(playerId, new DispatchRequest(
-                "wild_gather", tile.getId(), "gather", Map.of("truck", 40), commander.getId(), null));
-
-        marchService.processMarches(playerId, march.getArriveAt());
-
-        assertEquals(20_000, march.getGatherAmount());
-        assertEquals(67_000L, march.getGatherEndAt() - march.getGatherStartAt());
-    }
-
-    @Test
-    void dispatchedGatherUses100BaseSpeedWithoutCommander() {
-        tile.setTotalRes(10_000);
-        wildTileRepository.save(tile);
-        ArmyUnit trucks = armyUnitRepository.findByPlayerIdAndType(playerId, "truck").get(0);
-        trucks.setCount(20);
-        armyUnitRepository.save(trucks);
-        March march = marchService.createDispatch(playerId, new DispatchRequest(
-                "wild_gather", tile.getId(), "gather", Map.of("truck", 20), null, null));
-
-        marchService.processMarches(playerId, march.getArriveAt());
-
-        assertEquals(10_000, march.getGatherAmount());
-        assertEquals(100_000L, march.getGatherEndAt() - march.getGatherStartAt());
     }
 
     @Test
@@ -336,7 +351,15 @@ class GatherModeTest extends BaseServiceTest {
         // 一辆卡车基础负重500，保留半田采集场景，验证满载待命与提前停止。
         trucks.setCount(9);
         armyUnitRepository.save(trucks);
-        marchService.processMarches(playerId, gatherStart);
+        // 已开始采集的历史存档；新版接口不再允许创建这种派遣。
+        march.setGathering(true);
+        march.setGatherStartAt(gatherStart);
+        march.setGatherEndAt(gatherStart + 60_000L);
+        march.setGatherAmount(500);
+        march.setGatherRes("food");
+        march.setGatherOccupationVersion(tile.getOccupationVersion());
+        march.setGatherOwnerCitySlot(tile.getOccupiedCitySlot());
+        marchRepository.saveAndFlush(march);
         assertTrue(march.getGathering());
         assertEquals(gatherStart, march.getGatherStartAt());
         assertEquals(500, march.getGatherAmount());

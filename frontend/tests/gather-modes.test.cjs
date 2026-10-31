@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const path = require('node:path');
 
 function setup() {
@@ -56,15 +56,17 @@ function setup() {
   return { context, game: context.Game, state, target, requests, commands, routes, modals, toasts, selectMode: value => { selectedMode = value; } };
 }
 
-test('gather preparation exposes only manual instructions without automatic controls', () => {
+test('wild dispatch only stations troops and explains the manual gathering steps', () => {
   const { game, state, routes } = setup();
   const view = { innerHTML: '' };
   assert.equal(routes.at(-1), 'dispatch');
-  assert.equal(state.world._dispatchTarget.gatherMode, 'manual');
+  assert.equal(state.world._dispatchTarget.kind, 'wild');
+  assert.equal(state.world._dispatchTarget.action, 'station');
+  assert.equal(state.world._dispatchTarget.gatherMode, undefined);
   game.World.renderDispatch(view);
-  assert.match(view.innerHTML, /手动采集/);
-  assert.match(view.innerHTML, /手动点击“收获”，再点击“部队回城”/);
-  assert.match(view.innerHTML, /放弃野地需另行手动操作/);
+  assert.match(view.innerHTML, /派遣进驻/);
+  assert.match(view.innerHTML, /抵达后驻扎待命.*手动点击“采集”.*手动收获、下令回城/);
+  assert.doesNotMatch(view.innerHTML, /出发采集|采集派遣/);
   assert.doesNotMatch(view.innerHTML, /dpGatherMode|dpGatherAfterAction|全自动|自动废弃/);
 });
 
@@ -86,19 +88,21 @@ test('gather alert titles distinguish outbound, harvesting, full, harvested and 
   }
 });
 
-test('normal and stale gathering drafts always submit manual and retain without losing troops', async () => {
+test('stale gathering drafts become station dispatches without losing troops', async () => {
   for (const mode of ['manual', 'auto', undefined]) {
     const { game, state, requests, selectMode } = setup();
+    state.world._dispatchTarget.kind = 'wild_gather';
+    state.world._dispatchTarget.action = 'gather';
     state.world._dispatchTarget.gatherMode = mode;
     state.world._dispatchTarget.gatherAfterAction = 'abandon';
     selectMode('auto');
     game.World.launchDispatch();
     await new Promise(setImmediate);
     assert.equal(requests.length, 1);
-    assert.equal(requests[0].gatherMode, 'manual');
-    assert.equal(requests[0].gatherAfterAction, 'retain');
-    assert.equal(requests[0].targetKind, 'wild_gather');
-    assert.equal(requests[0].action, 'gather');
+    assert.equal(Object.hasOwn(requests[0], 'gatherMode'), false);
+    assert.equal(Object.hasOwn(requests[0], 'gatherAfterAction'), false);
+    assert.equal(requests[0].targetKind, 'wild');
+    assert.equal(requests[0].action, 'station');
     assert.equal(requests[0].army.truck, 2);
   }
 });
@@ -448,4 +452,24 @@ test('owned territory list treats legacy and current tasks as manual', () => {
   assert.match(view.innerHTML, /部队回城/);
   assert.match(view.innerHTML, /Game.World.recallWild/);
   assert.doesNotMatch(view.innerHTML, /Game.World.harvestWild|Game.World.startGatherWild/);
+});
+
+
+test('owned resource lists only offer station dispatch before manual gathering', () => {
+  const { game, state, target, requests, modals } = setup();
+  game.WorldView = { ensure: () => true };
+  state.world.wildTiles = [target];
+  state.world._activeTab = 'owned';
+  const view = { innerHTML: '' };
+  game.World.renderView(view);
+  assert.match(view.innerHTML, />派遣<\/button>/);
+  assert.doesNotMatch(view.innerHTML, /派兵采集|startGatherWild/);
+  target.garrison = { truck: 2 };
+  game.World.renderView(view);
+  assert.match(view.innerHTML, /startGatherWild[(]0[)]/);
+  assert.doesNotMatch(view.innerHTML, /派兵采集/);
+  assert.equal(requests.length, 0);
+  game.World.startGatherWild(0);
+  assert.equal(requests.length, 0, '打开采集确认后仍需玩家点击开始');
+  assert.equal(modals.length, 1);
 });

@@ -34,13 +34,13 @@ class OfficerEquipmentConcurrencyTest extends BaseServiceTest {
             return List.of(fa.get(20, TimeUnit.SECONDS), fb.get(20, TimeUnit.SECONDS));
         } finally { pool.shutdownNow(); }
     }
-    @Test void sameExpectedPreparationLevelIsChargedOnlyOnce() throws Exception {
+    @Test void retiredPreparationIsRejectedConcurrentlyWithoutCharging() throws Exception {
         Long p = createTestPlayer("prep-race", 30).getId(); var o = officer(p); giveResources(p, 100, 100, 100, 100, 5000);
-        give(p, OfficerEquipmentProgressService.PARTS, 100);
+        give(p, "officerPreparationParts", 100);
         var results = race(() -> gear.prepare(p, o.getId(), "helmet", 0), () -> gear.prepare(p, o.getId(), "helmet", 0));
-        assertEquals(1, results.stream().filter(r -> r.get("success").equals(true)).count());
-        assertEquals(80, items.findByPlayerIdAndItemKey(p, OfficerEquipmentProgressService.PARTS).orElseThrow().getCount());
-        assertEquals(4000, resourcesRepository.findByPlayerId(p).orElseThrow().getGold());
+        assertEquals(0, results.stream().filter(r -> r.get("success").equals(true)).count());
+        assertEquals(100, items.findByPlayerIdAndItemKey(p, "officerPreparationParts").orElseThrow().getCount());
+        assertEquals(5000, resourcesRepository.findByPlayerId(p).orElseThrow().getGold());
     }
     @Test void oneBoxCannotBeOpenedTwiceConcurrently() throws Exception {
         Long p = createTestPlayer("box-race", 30).getId(); give(p, "box_marshal_defense", 1);
@@ -48,14 +48,13 @@ class OfficerEquipmentConcurrencyTest extends BaseServiceTest {
         assertEquals(1, results.stream().filter(r -> r.get("success").equals(true)).count());
         for (var d : OfficerEquipmentDef.setItems("marshal_defense")) assertEquals(1, items.findByPlayerIdAndItemKey(p, d.key()).orElseThrow().getCount());
     }
-    @Test void twoOfficersCannotBothConsumeOnePhysicalSetAndDuplicateClaimsDoNotPayTwice() throws Exception {
+    @Test void twoOfficersCannotBothConsumeOnePhysicalSetAndRetiredClaimsNeverPay() throws Exception {
         Long p = createTestPlayer("loadout-race", 30).getId(); var a = officer(p); var b = officer(p);
         OfficerEquipmentDef.setItems("recruit_military").forEach(d -> give(p, d.key(), 1));
         var results = race(() -> gear.equipSet(p, a.getId(), "recruit_military"), () -> gear.equipSet(p, b.getId(), "recruit_military"));
         assertEquals(1, results.stream().filter(r -> r.get("success").equals(true)).count()); assertEquals(12, worn.findByPlayerId(p).size());
-        progress.event(p, "wild", "one-win", 1);
         var claims = race(() -> progress.claim(p, "wild"), () -> progress.claim(p, "wild"));
-        assertEquals(1, claims.stream().filter(r -> r.get("success").equals(true)).count());
-        assertEquals(40, items.findByPlayerIdAndItemKey(p, OfficerEquipmentProgressService.PARTS).orElseThrow().getCount());
+        assertEquals(0, claims.stream().filter(r -> r.get("success").equals(true)).count());
+        assertTrue(items.findByPlayerIdAndItemKey(p, "officerPreparationParts").isEmpty());
     }
 }

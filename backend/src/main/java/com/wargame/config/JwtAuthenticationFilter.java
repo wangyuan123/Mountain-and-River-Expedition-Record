@@ -22,19 +22,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
     private final GameServerIdentity server;
+    private final com.wargame.repository.AdminUserRepository admins;
+    private final com.wargame.security.RequestRateLimits limits;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService,
-                                   GameServerIdentity server) {
+                                   GameServerIdentity server, com.wargame.repository.AdminUserRepository admins,
+                                   com.wargame.security.RequestRateLimits limits) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
         this.server = server;
+        this.admins = admins;
+        this.limits = limits;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
-        if (request.getRequestURI().startsWith("/api/auth/")) response.setHeader("Cache-Control", "no-store");
+        if (request.getRequestURI().startsWith("/api/auth/") || request.getRequestURI().startsWith("/api/admin/"))
+            response.setHeader("Cache-Control", "no-store");
+        if (!limits.allowIp(request, response)) return;
         if (request.getRequestURI().startsWith("/api/") && !"OPTIONS".equals(request.getMethod())) {
             try { server.requireSelected(request.getHeader("X-Game-Server")); }
             catch (IllegalArgumentException error) {
@@ -48,12 +55,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 if (jwtUtil.isAdminToken(token)) {
                     String username = jwtUtil.getUsernameFromToken(token);
                     Long adminId = jwtUtil.getAdminIdFromToken(token);
-                    String role = jwtUtil.getRoleFromToken(token);
-                    com.wargame.model.AdminPrincipal principal = new com.wargame.model.AdminPrincipal(adminId, username, "", role, false);
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            principal, null, principal.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    var admin = adminId == null ? null : admins.findById(adminId).orElse(null);
+                    // 不复用 JWT 内的权限：停用、删除、改密、改权限及退出后均以当前数据库状态为准。
+                    if (admin == null || !admin.isActive() || !admin.getUsername().equals(username)
+                            || !com.wargame.security.AdminCredentials.allowedRole(admin.getRole())
+                            || com.wargame.security.AdminCredentials.LEGACY_DEFAULT_HASH.equals(admin.getPasswordHash())
+                            || !admin.getRole().equals(jwtUtil.getRoleFromToken(token))
+                            || admin.getAuthVersion() == null || admin.getAuthVersion() != jwtUtil.getAuthVersion(token)) {
+                        SecurityContextHolder.clearContext();
+                    } else {
+                        var principal = com.wargame.model.AdminPrincipal.from(admin);
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                principal, null, principal.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                    }
                 } else {
                     String username = jwtUtil.getUsernameFromToken(token);
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -74,6 +90,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.clearContext();
             }
         }
+        if (!limits.allowAccount(request, response, SecurityContextHolder.getContext().getAuthentication())) return;
         filterChain.doFilter(request, response);
     }
 

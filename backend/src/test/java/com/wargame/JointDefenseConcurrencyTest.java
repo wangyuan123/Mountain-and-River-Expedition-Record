@@ -94,4 +94,39 @@ class JointDefenseConcurrencyTest extends BaseServiceTest {
             var left = workers.submit(a); var right = workers.submit(b); left.get(30, TimeUnit.SECONDS); right.get(30, TimeUnit.SECONDS);
         } finally { workers.shutdownNow(); }
     }
+
+    @Test void openingCityBattleAndDispatchCannotReuseTheSameTroops() throws Exception {
+        record DepartureRace(Long attacker, Long defender, Long attack, Long wild) {}
+        DepartureRace f = new TransactionTemplate(transactions).execute(status -> {
+            String suffix = UUID.randomUUID().toString();
+            var a = createTestPlayer("lock-race-a" + suffix, 30);
+            var d = createTestPlayer("lock-race-d" + suffix, 30);
+            var world = createTestWorld();
+            world.setTerrainData("0".repeat(WorldTerrainService.SIZE * WorldTerrainService.SIZE)); worldMapRepository.save(world);
+            city(a, world, 10); var target = city(d, world, 20);
+            createArmyUnit(d.getId(), "infantry", 1000); createArmyUnit(d.getId(), "scout", 10);
+            giveResources(d.getId(), 100000, 100000, 100000, 100000, 100000);
+            long now = GameClock.now(); a.setWarAgainstId(d.getId()); a.setWarAt(now - 1); a.setWarEndAt(now + 3600000); playerRepository.save(a);
+            var wild = createWildTile(world.getId(), "forest", 30, 10, 1, Map.of("infantry", 1), 1000);
+            var attack = createMarch(a.getId(), "player", target.getId().toString(), target.getName(), 10, 10, 20, 10,
+                    Map.of("infantry", 1), "plunder", now - 60000, now - 1, false, false);
+            return new DepartureRace(a.getId(), d.getId(), attack.getId(), wild.getId());
+        });
+        var departed = new java.util.concurrent.atomic.AtomicBoolean(false);
+        race(() -> marchService.processMarches(f.attacker(), GameClock.now()), () -> {
+            try {
+                marchService.createDispatch(f.defender(), new com.wargame.model.dto.DispatchRequest("wild", f.wild(), "scout", Map.of("scout", 1), null, null));
+                departed.set(true);
+            } catch (com.wargame.security.GameAccessException error) {
+                assertEquals("CITY_IN_BATTLE", error.getCode());
+            }
+        });
+        new TransactionTemplate(transactions).executeWithoutResult(status -> {
+            var session = battles.findByMarchId(f.attack()).orElseThrow();
+            int expected = departed.get() ? 9 : 10;
+            assertEquals(expected, JsonUtil.parseIntMap(session.getInitialDefender()).get("scout"));
+            assertEquals(expected, armyUnitRepository.findByPlayerIdAndCitySlotAndType(f.defender(), 0, "scout").get(0).getCount());
+            assertEquals(departed.get() ? 1 : 0, marchRepository.countByPlayerIdAndCitySlot(f.defender(), 0));
+        });
+    }
 }

@@ -31,6 +31,7 @@ class CityShieldServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "economy", mock(com.wargame.service.TickService.class));
         when(players.lockById(1L)).thenReturn(Optional.of(new Player()));
         wallet.setDiamond(1000);
         when(scope.wallet(1L)).thenReturn(wallet);

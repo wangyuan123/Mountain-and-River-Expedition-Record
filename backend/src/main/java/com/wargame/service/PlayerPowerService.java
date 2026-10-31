@@ -2,8 +2,7 @@ package com.wargame.service;
 
 import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.constants.UnitDef;
-import com.wargame.model.constants.UnitEquipmentDef;
-import com.wargame.model.constants.UnitEquipmentEffects;
+import com.wargame.model.constants.BattleUnitIds;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.model.entity.OfficerEquipment;
 import com.wargame.util.JsonUtil;
@@ -28,9 +27,7 @@ public class PlayerPowerService {
         final List<MarchArmy> marches = new ArrayList<>();
         final Map<Long, Officer> officers = new HashMap<>();
         final Map<String, Integer> tech = new HashMap<>();
-        final Map<String, Map<String, String>> loadouts = new HashMap<>();
         final Map<Long, List<OfficerEquipment>> officerEquipment = new HashMap<>();
-        final Map<String, Integer> preparation = new HashMap<>();
         final Map<Long, EquipmentService.Attributes> attributes = new HashMap<>();
         final Set<Integer> headquarters = new HashSet<>();
         long development;
@@ -89,17 +86,6 @@ public class PlayerPowerService {
             Assets a = all.get(rs.getLong("player_id"));
             if (a != null) a.tech.merge(rs.getString("type"), Math.max(0, rs.getInt("level")), Math::max);
         });
-        query("SELECT player_id, unit_type, slots FROM unit_loadouts", playerId, "player_id", rs -> {
-            Assets a = all.get(rs.getLong("player_id"));
-            if (a == null) return;
-            String unit = rs.getString("unit_type");
-            Map<String, String> slots = new HashMap<>();
-            JsonUtil.parseObjMap(rs.getString("slots")).forEach((slot, item) -> {
-                UnitEquipmentDef def = UnitEquipmentDef.ITEMS.get(String.valueOf(item));
-                if (def != null && def.unit().equals(unit) && def.slot().equals(slot)) slots.put(slot, def.key());
-            });
-            a.loadouts.put(unit, slots);
-        });
         query("SELECT player_id, city_slot, type, level FROM buildings", playerId, "player_id", rs -> {
             Assets a = all.get(rs.getLong("player_id"));
             if (a != null) {
@@ -129,10 +115,6 @@ public class PlayerPowerService {
                 }
             }
         });
-        query("SELECT player_id, progress_key, amount FROM officer_equipment_progress WHERE progress_key LIKE 'prep/%'", playerId, "player_id", rs -> {
-            Assets a = all.get(rs.getLong("player_id"));
-            if (a != null) a.preparation.put(rs.getString("progress_key"), Math.max(0, rs.getInt("amount")));
-        });
         Map<Long, Scores> result = new HashMap<>();
         all.forEach((id, assets) -> result.put(id, score(assets)));
         result.forEach((id, scores) -> { if (!all.get(id).deleted && powerHistory != null) powerHistory.record(id, scores); });
@@ -151,16 +133,10 @@ public class PlayerPowerService {
             base.setDefense(officer.defense());
             base.setLogistics(officer.logistics());
             base.setKnowledge(officer.knowledge());
-            Map<String, Integer> preparation = new HashMap<>();
-            String prefix = "prep/" + id + "/";
-            assets.preparation.forEach((key, value) -> {
-                if (key.startsWith(prefix)) preparation.put(key.substring(prefix.length()), value);
-            });
             assets.attributes.put(id, EquipmentService.calculateAttributes(base,
-                    assets.officerEquipment.getOrDefault(id, List.of()), preparation));
+                    assets.officerEquipment.getOrDefault(id, List.of())));
         });
         Map<String, Integer> combat = new HashMap<>(assets.tech);
-        combat.putAll(UnitEquipmentEffects.snapshot(assets.loadouts));
         double total = 0, best = 0;
         for (Map.Entry<Integer, Map<String, Integer>> city : assets.cities.entrySet()) {
             Long commander = officerId(assets, city.getKey(), "commander");
@@ -168,7 +144,7 @@ public class PlayerPowerService {
             int leadership = skillLevel(assets.officers.get(commander), "leadership");
             if (leadership == 0) leadership = skillLevel(assets.officers.get(commander), "supply");
             int rankBase = MilitaryRankDef.getRankBase(assets.rank);
-            // 编队估值沿用普通出征与迎战的统一容量，不附加守方兵力。
+            // 编队估值仍衡量单队出征能力，使用出征上限；守城全员参战不改变此估值口径。
             long cap = com.wargame.model.constants.MobilizationRules.apply(
                     (int) Math.floor(rankBase * (1 + 0.04 * leadership)), assets.mobilizationBonus);
             total += armyValue(city.getValue(), combat, commander, chief, assets, Long.MAX_VALUE);
@@ -199,7 +175,7 @@ public class PlayerPowerService {
         for (String branch : List.of("land", "sea")) {
             Map<String, Integer> legal = new HashMap<>();
             army.forEach((unit, count) -> {
-                UnitDef def = UnitDef.UNITS.get(UnitEquipmentEffects.base(unit));
+                UnitDef def = UnitDef.UNITS.get(BattleUnitIds.base(unit));
                 if (def != null && (branch.equals(def.branch()) || "air".equals(def.branch()))) legal.put(unit, count);
             });
             best = Math.max(best, armyValue(legal, tech, commander, chief, assets, cap));
@@ -232,7 +208,7 @@ public class PlayerPowerService {
         double defenseSkill = 1 + 0.1 * skillLevel(commander, "bulwark") / 3.0;
         List<Map.Entry<Double, Integer>> values = new ArrayList<>();
         army.forEach((id, count) -> {
-            String base = UnitEquipmentEffects.base(id);
+            String base = BattleUnitIds.base(id);
             if (!UnitDef.UNITS.containsKey(base) || count == null || count <= 0) return;
             Map<String, Double> stats = battle.practiceStats(base, ctx);
             double attack = Math.max(stats.get("ground"), Math.max(stats.get("air"), stats.get("sea")));

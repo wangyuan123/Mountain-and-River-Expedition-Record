@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function deferred() { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; }
 function runtime() {
@@ -127,14 +127,14 @@ test('recommended scout and campaign formations are prefilled without dispatchin
   }
 });
 
-test('task gathering uses regular gathering dispatch with editable mode and starter truck', async () => {
+test('task gathering prefills a station dispatch and waits for manual gathering', async () => {
   const r = runtime(); r.G.Core.state.army = { infantry: 50, truck: 1 };
   const pending = r.G.Onboarding.findTarget('gather');
   assert.equal(r.calls[0].body.gather, true);
   r.calls[0].request.resolve({ id: 17, kind: 'wild', type: 'grainfield', occupied: true, x: 12, y: 10 }); await pending;
   const target = r.G.Core.state.world._dispatchTarget;
-  assert.equal(target.kind, 'wild_gather'); assert.equal(target.action, 'gather');
-  assert.equal(target.onboardingGather, undefined); assert.equal(target.gatherMode, 'manual');
+  assert.equal(target.kind, 'wild'); assert.equal(target.action, 'station');
+  assert.equal(target.onboardingGather, undefined); assert.equal(target.gatherMode, undefined); assert.equal(target.gatherAfterAction, undefined);
   assert.equal(target.defaultArmy.truck, 1); assert.equal(target.defaultArmy.infantry, undefined); assert.equal(r.G.Core.route, 'dispatch');
   assert.equal(r.G.Onboarding.finishGather, undefined);
 });
@@ -148,7 +148,7 @@ test('gathering can prefill infantry when no transport units are available', asy
     const target = r.G.Core.state.world._dispatchTarget;
     assert.equal(target.defaultArmy.infantry, Math.min(count, 50));
     assert.equal(target.defaultArmy.truck, undefined);
-    assert.equal(target.kind, 'wild_gather'); assert.equal(target.gatherMode, 'manual');
+    assert.equal(target.kind, 'wild'); assert.equal(target.action, 'station'); assert.equal(target.gatherMode, undefined); assert.equal(target.gatherAfterAction, undefined);
     assert.equal(r.G.Core.route, 'dispatch'); assert.equal(r.toasts.length, 0);
   }
 });

@@ -17,6 +17,11 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.security.core.AuthenticationException.class)
+    public ResponseEntity<Map<String, String>> handleAuthentication(org.springframework.security.core.AuthenticationException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "管理员账号或密码错误，或账号不可用", "code", "AUTHENTICATION_FAILED"));
+    }
+
     @ExceptionHandler(com.wargame.security.GameAccessException.class)
     public ResponseEntity<Map<String, Object>> handleGameAccess(com.wargame.security.GameAccessException e) {
         return ResponseEntity.status(e.getStatus()).body(Map.of("error", e.getMessage(), "code", e.getCode()));
@@ -32,7 +37,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleAccount(com.wargame.security.AccountException e) {
         HttpStatus status = "RATE_LIMITED".equals(e.getCode()) ? HttpStatus.TOO_MANY_REQUESTS
                 : "MAIL_UNAVAILABLE".equals(e.getCode()) ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(status).body(Map.of("error", e.getMessage(), "code", e.getCode(), "retryAfter", e.getRetryAfter()));
+        var response = ResponseEntity.status(status);
+        if (status == HttpStatus.TOO_MANY_REQUESTS) response.header("Retry-After", Long.toString(Math.max(1, e.getRetryAfter())));
+        long retryAfter = status == HttpStatus.TOO_MANY_REQUESTS ? Math.max(1, e.getRetryAfter()) : e.getRetryAfter();
+        return response.body(Map.of("error", e.getMessage(), "code", e.getCode(), "retryAfter", retryAfter));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -46,6 +54,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", "请求参数 " + e.getName() + " 格式无效"));
+    }
+
+    /** JSON 类型、整数范围和语法错误均为无效输入，不按服务器故障处理。 */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleUnreadableRequest(Exception e) {
+        return ResponseEntity.badRequest().body(Map.of("error", "请求参数格式无效，数量和等级必须为合法整数"));
     }
 
     @ExceptionHandler(Throwable.class)

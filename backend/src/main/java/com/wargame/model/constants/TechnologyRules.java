@@ -6,7 +6,7 @@ import java.util.*;
 public final class TechnologyRules {
     public static final String VERSION = "technology-v3-20261019";
     public static final String FIVE_LEVEL_VERSION = "technology-v2-20261016";
-    public static final Set<String> EXPANDED = Set.of("unit_refit", "log_warehouse", "recon_level", "recon_radar");
+    public static final Set<String> EXPANDED = Set.of("log_warehouse", "recon_level", "recon_radar");
     private static final int[] NORMAL_SECONDS = {180, 600, 1800, 10800, 43200, 85320, 168420, 332460, 656400, 1296000};
     private static final int[] RESOURCE_SECONDS = {120, 480, 1500, 5400, 21600, 46860, 101640, 220380, 478020, 1036800};
     private static final int[] ARM_ENGINE_SECONDS = {300, 900, 2700, 10800, 43200, 90360, 188940, 395100, 826260, 1728000};
@@ -55,9 +55,27 @@ public final class TechnologyRules {
 
     /** 行动快照冻结负重科技；缺键的旧行军保持零级，不回读当前账号补算。 */
     public static Map<String, Integer> actionSnapshot(Map<String, Integer> tech) {
-        Map<String, Integer> result = UnitEquipmentEffects.only(tech);
+        Map<String, Integer> result = new LinkedHashMap<>();
         result.put(LOAD_SNAPSHOT, level(tech, "log_load", 10));
         return result;
+    }
+
+    /** 过滤历史科技及装备字段，旧战斗和演习存档不再产生兵种装备效果。 */
+    public static Map<String, Integer> activeTech(Map<String, Integer> tech) {
+        Map<String, Integer> result = new LinkedHashMap<>();
+        if (tech != null) tech.forEach((key, value) -> {
+            if (TechDef.TECHS.containsKey(key)) result.put(key, value);
+        });
+        return result;
+    }
+
+    /** 已出发部队只读取冻结的负重等级，禁止回读账号实时科技。 */
+    public static Map<String, Integer> loadSnapshot(Map<String, Integer> snapshot) {
+        return Map.of(LOAD_SNAPSHOT, level(snapshot, LOAD_SNAPSHOT, 10));
+    }
+
+    public static String actionVersion(Map<String, Integer> snapshot) {
+        return Integer.toString(level(snapshot, LOAD_SNAPSHOT, 10));
     }
 
     public static double loadMultiplier(Map<String, Integer> snapshot) {
@@ -74,7 +92,7 @@ public final class TechnologyRules {
             return result;
         }
         if ("inf_load".equals(key)) return Map.of("log_load", 2 * Math.min(5, value));
-        if (Set.of("unit_refit", "recon_radar").contains(key)) return Map.of(key, value == 0 ? 0 : 2 * Math.min(3, value) - 1);
+        if ("recon_radar".equals(key)) return Map.of(key, value == 0 ? 0 : 2 * Math.min(3, value) - 1);
         TechDef def = TechDef.TECHS.get(key);
         return def == null ? Map.of() : Map.of(key, Math.min(EXPANDED.contains(key) ? 5 : def.maxLevel(), value));
     }

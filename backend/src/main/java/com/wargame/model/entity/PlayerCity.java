@@ -118,4 +118,13 @@ public class PlayerCity extends VersionedEntity implements CityEconomy {
     public void setCityPosX(Integer value) { x = value; }
     public Integer getCityPosY() { return y; }
     public void setCityPosY(Integer value) { y = value; }
+    @Column(name = "morale_accrual", nullable = false)
+    private double moraleAccrual;
+    @Column(name = "resentment_accrual", nullable = false)
+    private double resentmentAccrual;
+
+    /** 主动安抚、税率变更与移交写入整值时，清除旧的小数尾差。 */
+    public void setMorale(Integer value) { morale = value; moraleAccrual = 0; }
+    public void setResentment(Integer value) { resentment = value; resentmentAccrual = 0; }
+
 }

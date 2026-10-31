@@ -22,7 +22,6 @@ public class AccountEmailProperties {
     private int dailyLimit = 1000;
     private int queueLimit = 1000;
     private String supportUrl = "";
-    private String trustedProxies = "";
 
     public boolean available() {
         return enabled && !host.isBlank() && !username.isBlank() && !password.isBlank()

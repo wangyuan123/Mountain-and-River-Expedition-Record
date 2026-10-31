@@ -314,69 +314,18 @@ window.Game = window.Game || {};
    * @returns {Object} 按野地总资源计算的数量、进度和负重状态
    */
   G.wildGatherProgress = function (tile, now, marches) {
-    var total = Math.max(0, Number(tile.totalRes) || 0);
-    var recorded = Math.max(0, Math.min(total, Number(tile.mined) || 0));
-    var pool = Math.max(0, total - recorded);
-    var tasks = [];
-    var harvestedCount = tile.gatherHarvested != null ? 1 : 0;
-    var harvested = Math.max(0, Number(tile.gatherHarvested) || 0);
-    if (tile.gathering) tasks.push({
-      startAt: tile.gatherStartAt, endAt: tile.gatherEndAt,
-      amount: tile.gatherLoad
-    });
-    (marches || []).forEach(function (march) {
-      if (march.targetKind !== 'wild_gather' || march.targetId == null || String(march.targetId) !== String(tile.id) || march.returning) return;
-      if (march.gatherStopped) {
-        // 已收获的货物已结算过野地消耗，不能再次从当前储量扣减；零收获也属于待回城任务。
-        harvested += Math.max(0, Number(march.gatherAmount) || 0);
-        harvestedCount++;
-        return;
-      }
-      if (!march.gathering) return;
-      tasks.push({
-        startAt: march.gatherStartAt, endAt: march.gatherEndAt,
-        amount: march.gatherAmount != null ? march.gatherAmount : march.gatherLoad
-      });
-    });
-    var current = 0, latestEnd = 0, capacity = 0;
-    // 服务端核定的采集量已受负重限制；时间比例封顶后数量与进度都不再增长。
-    tasks.forEach(function (task) {
-      var start = Number(task.startAt) || now, end = Number(task.endAt) || now;
-      var amount = Math.max(0, Number(task.amount) || 0);
-      // 先乘资源量再除时长，避免浮点比例把整秒应得的110误算成109。
-      current += end > start ? Math.floor(amount * Math.max(0, Math.min(end - start, now - start)) / (end - start)) : amount;
-      capacity += amount;
-      latestEnd = Math.max(latestEnd, end);
-    });
-    var sessionGathered = Math.min(pool, current);
-    var atCapacity = tasks.length > 0 && capacity > 0 && current >= capacity;
-    var tip;
-    if (tasks.length) {
-      if (sessionGathered >= pool && pool > 0) tip = '已采满，请收获';
-      else if (atCapacity) tip = '已达到负重上限，请收获';
-      else tip = '采集中，剩余 ' + G.formatGatherDuration((latestEnd - now) / 1000);
-    } else {
-      tip = harvestedCount > 0 ? '已收获，等待回城命令' : pool <= 0 ? '资源已耗尽' : '尚未开始采集';
-    }
-    return {
-      percent: pool > 0 ? Math.min(100, Math.round(sessionGathered / pool * 100)) : 0,
-      mined: sessionGathered,
-      total: pool,
-      remaining: Math.max(0, pool - sessionGathered),
-      current: sessionGathered,
-      load: capacity,
-      atCapacity: atCapacity,
-      active: tasks.length > 0,
-      activeCount: tasks.length,
-      harvested: harvested,
-      harvestedCount: harvestedCount,
-      hasHarvested: harvestedCount > 0,
-      tip: tip
-    };
+    // 数量保持服务器采样值，倒计时仅用于显示，不能推算资源收益。
+    var snapshot = tile.gatherView;
+    if (!snapshot) return { percent: 0, mined: null, total: null, remaining: null, current: null, load: null,
+      active: false, activeCount: 0, harvestedCount: 0, harvested: null, hasHarvested: false, tip: '等待采集状态同步' };
+    var result = Object.assign({}, snapshot);
+    if (result.active && !result.atCapacity && result.endAt > now) result.tip += '，剩余 ' + G.formatGatherDuration((result.endAt - now) / 1000);
+    return result;
   };
 
   /** 已收获与正在采集分别展示，避免收获后显示零采量或把已结算货物再次计入野地剩余量。 */
   G.wildGatherAmountText = function (progress) {
+    if (progress.mined == null || progress.total == null) return '采集数量待同步';
     var activeText = '已采集：' + G.fmt(progress.mined) + ' / ' + G.fmt(progress.total);
     if (!progress.hasHarvested) return activeText;
     return '已收获：' + G.fmt(progress.harvested) + (progress.active ? ' · ' + activeText : '');
@@ -404,6 +353,7 @@ window.Game = window.Game || {};
 
   G.Constants = {
     rechargeUnavailableMessage: '暂未开放充值，敬请期待',
+    cityBattleLockedMessage: '当前城市正在战斗，暂时无法出征，请等待战斗结束',
     siteInfo: {
       operator: '山河远征网络科技有限公司',
       icpNumber: '京ICP备00000000号-1',
@@ -417,12 +367,8 @@ window.Game = window.Game || {};
       mail: 1, chat: 1, recharge: 1, login: 1,
       guild: 1, rankings: 1, map: 1, wild: 1, dispatch: 1
     },
-    // 单队行军令与服务端 WorldConfig 一致，去程和回程各可使用一次。
-    marchAcceleration: { minRemainingMs: 30000 },
     // 按速度加成从低到高排列；旧 marchOrd 库存继续对应极速档。
     marchOrderTiers: ['basicMarchOrd', 'advancedMarchOrd', 'marchOrd'],
-    // 每座城市独立计算领地名额，服务端 wilds.cap 返回基础5块加本城市政厅等级。
-    wildOccupation: { baseCap: 5 },
     // 按钮音效是当前设备的听觉偏好，不随游戏账号或服务端存档变化。
     uiSound: {
       storageKey: 'wargame_ui_sound_v1',
@@ -724,31 +670,13 @@ window.Game = window.Game || {};
       { id: 'rank-colonel', name: '上校', src: 'img/avatars/historical/rank-colonel-v1.webp' },
       { id: 'rank-general', name: '将军', src: 'img/avatars/historical/rank-general-v1.webp' }
     ],
-    depotCategories: { equipment: '军官装备', unitEquipment: '兵种装备', officer: '军官道具', resource: '资源道具', util: '功能道具' },
-    depotCategoryOrder: ['equipment', 'unitEquipment', 'officer', 'resource', 'util'],
-    commandBonusRate: 0.001,
+    depotCategories: { equipment: '军官装备', officer: '军官道具', resource: '资源道具', util: '功能道具' },
+    depotCategoryOrder: ['equipment', 'officer', 'resource', 'util'],
     officerRoles: { mayor: '市长', commander: '指挥官', commander_in_chief: '司令官', march: '行军中', idle: '闲置' },
     officerAttributes: { logistics: '后勤', military: '军事', defense: '防御', knowledge: '学识' },
     resourceNames: { food: '粮食', steel: '钢铁', oil: '石油', rare: '稀矿', gold: '黄金' },
     connectionStatusNames: { connected: '已连接', connecting: '连接中', reconnecting: '重连中', disconnected: '已断开' },
     battleReportTitles: { conquer: '讨伐报告', plunder: '讨伐报告', feint: '佯攻报告', harass: '袭扰报告', guerrilla: '游击报告', scout: '侦查报告' },
-    battleSkillBonusLabels: {
-      '全军冲锋': '全军攻击力 +',
-      '坚守阵地': '全军防御力 +',
-      '闪电突击': '战场移动速度 +',
-      '火力压制': '敌方自身攻击力 -',
-      '破甲打击': '无视敌方有效防御 ',
-      '三军统帅': '带兵上限 +',
-      '战地急救': '伤兵额外回收 +',
-      '屯田增产': '基础资源产出 +',
-      '工程营造': '建筑工期 -',
-      '精明理财': '黄金税收产出 +',
-      '格物致知': '科研速度 +',
-      '军屯自给': '全城养兵耗粮 -',
-      '绝境反击': '反击伤害为剩余兵力总伤害的 ',
-      '师夷长技': '借用同名敌军攻击的 ',
-      '借甲御敌': '借用同名敌军防御的 '
-    },
     battleResourceNames: { food: '粮', steel: '钢', oil: '油', rare: '稀矿', gold: '金', diamond: '钻' },
     // 全部陆军共享燃烧引擎，步兵系的其他战斗属性仍按 inf 分类。
     unitSpeedTechKeys: { truck: 'arm_engine' },
@@ -762,33 +690,14 @@ window.Game = window.Game || {};
       neutral: { fill: 0x343b36, edge: 0xaeb8ad, ink: 0xf1f3ea }
     },
     techBranches: ['军事', '机动', '后勤', '侦察'],
-    // 与服务端 TechnologyRules 一致：中心只控制准入，学识按每点连续计入速度。
-    // 按目标等级查表，舰船动力末级对齐终局项目28天，与服务端和设计文档一致。
-    researchDuration: {"normal":[180,600,1800,10800,43200,85320,168420,332460,656400,1296000],"resource":[120,480,1500,5400,21600,46860,101640,220380,478020,1036800],"arm_engine":[300,900,2700,10800,43200,90360,188940,395100,826260,1728000],"nav_engine":[300,900,2700,10800,43200,96660,216180,483480,1081500,2419200],"air_engine":[300,900,2700,10800,43200,96660,216180,483480,1081500,2419200]},
-    researchSpeed: { knowledgePerPoint: 0.001 },
-    // 与服务端 TechnologyGoldCosts 及定稿v6逐级表一致；黄金独立于旧资源成长和加速计算。
-    researchGold: {
-      version: 'tech-research-gold-20261028-v6',
-      curves: {
-        resource: [4000, 20000, 80000, 240000, 720000, 2000000, 4800000, 9200000, 14400000, 20000000],
-        normal: [6000, 30000, 120000, 360000, 1080000, 3000000, 7200000, 13800000, 21600000, 30000000],
-        land: [10000, 50000, 200000, 600000, 1800000, 5000000, 12000000, 23000000, 36000000, 50000000],
-        air: [13000, 65000, 260000, 780000, 2340000, 6500000, 15600000, 29900000, 46800000, 65000000],
-        naval: [16000, 80000, 320000, 960000, 2880000, 8000000, 19200000, 36800000, 57600000, 80000000]
-      },
-      techGroups: {
-        prod_food: 'resource', prod_steel: 'resource', prod_oil: 'resource', prod_rare: 'resource',
-        military_theory: 'normal', attack_tech: 'normal', defense_tech: 'normal', weapon_range: 'normal',
-        cmd_hp: 'normal', fire_density: 'normal', wall_reinforcement: 'normal', log_load: 'normal',
-        log_warehouse: 'normal', log_food: 'normal', log_train: 'normal', log_build: 'normal',
-        log_medical: 'normal', recon_level: 'normal', recon_radar: 'normal', prisoner_education: 'normal',
-        unit_refit: 'normal', arm_engine: 'land', air_engine: 'air', nav_engine: 'naval'
-      }
-    },
-    // 仅列实际生效的百分比科技；情报、配方、俘获比例及未生效科技由科技页单独说明。
-    techEffectPercent: { wall_stats: 5, atk_all: 5, def_all: 5, range_all: 5, hp_all: 5, firepower_all: 5, spd_arm: 5, spd_air: 5, spd_nav: 5, res_food: 5, res_steel: 5, res_oil: 5, res_rare: 5, load: 5, cap: 5, food_save: -5, train: 5, build: -5, medical: 5 },
     worldTargetKeys: { wild: 'wildTiles', player: 'playerCities', simulated_npc: 'simulatedNpcCities', bandit: 'bandits' },
     battleRoundLimits: { plunder: 25, conquer: 35, feint: 10, harass: 15, guerrilla: 5 },
+    // 掠夺入口仅提供三档作战时长，实际动作与回合上限继续使用既有规则。
+    plunderModes: [
+      { action: 'guerrilla', name: '游击' },
+      { action: 'feint', name: '佯攻' },
+      { action: 'harass', name: '袭击' }
+    ],
     campaignModes: [
       { action: 'conquer', name: '征服' },
       { action: 'plunder', name: '掠夺' },
@@ -803,7 +712,6 @@ window.Game = window.Game || {};
     ],
     dispatchActionNames: { campaign: '讨伐', conquer: '征服', plunder: '掠夺', feint: '佯攻', harass: '袭扰', guerrilla: '游击', scout: '侦查', gather: '采集', station: '派遣进驻', intercept_scout: '出城拦截' },
     cityStateNames: { peace: '和平', war: '战争', shield: '护盾' },
-    shieldPricePerCity: 200,
     battlefields: [
       { id: 'northwest', name: '西北战场', column: 0, row: 0 },
       { id: 'northeast', name: '东北战场', column: 1, row: 0 },
@@ -832,11 +740,8 @@ window.Game = window.Game || {};
       'CALENDAR_UNAVAILABLE', 'PLAY_WINDOW_CLOSED', 'PLAY_TIME_EXHAUSTED', 'PLAY_SESSION_EXPIRED'
     ],
     identityStatusNames: { VERIFIED: '已核验', EXPIRED: '需要重新核验', UNVERIFIED: '未核验' },
-    buildMaxConcurrent: 3,
-    saveAttrMax: 219,
-    officerMaxLevel: 100,
-    // 当前星级 1～4 升到下一星的失败率；失败仍消耗一枚星耀符。
-    starUpFailureRates: [10, 20, 30, 60],
+    // 失败率从认证状态中的服务端目录装载。
+    starUpFailureRates: [],
     shopCategories: [
       { id: 'all',     name: '全部' },
       { id: 'officer', name: '军官' },
@@ -848,62 +753,62 @@ window.Game = window.Game || {};
     shopItems: [
 
       // —— 军官道具 ——
-      { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: 'img/items/exp-book.svg', desc: '军官使用,获得10000经验',          price: 10,   stock: null, tag: '热销' },
-      { id: 'expBookAdv', cat: 'officer',  name: '高级经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供100000经验，可批量使用', price: 100,  stock: null, tag: '推荐' },
-      { id: 'expBookRapid', cat: 'officer', name: '极速经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供500000经验，可批量使用', price: 500, stock: null, tag: '50万经验' },
+      { id: 'expBook',    cat: 'officer',  name: '经验书',     icon: 'img/items/exp-book.svg', desc: '军官使用,获得10000经验',          stock: null, tag: '热销' },
+      { id: 'expBookAdv', cat: 'officer',  name: '高级经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供100000经验，可批量使用', stock: null, tag: '推荐' },
+      { id: 'expBookRapid', cat: 'officer', name: '极速经验书', icon: 'img/items/exp-book-adv.svg', desc: '每本提供500000经验，可批量使用', stock: null, tag: '50万经验' },
       // 一级至满级共需20355750经验，按41本极速经验书总价打八折，与服务端经验曲线核对。
-      { id: 'expBookMax', cat: 'officer',  name: '满级经验书', icon: 'img/items/exp-book-max.svg', desc: '使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点', price: 16400, stock: null, tag: '极品' },
-      { id: 'skillBook',  cat: 'officer',  name: '普通技能书', icon: 'img/items/skill-book.svg', desc: '选择军官使用，随机学习一个未掌握且不互斥的技能，初始等级受军官星级影响', price: 80, stock: null, tag: '随机' },
-      { id: 'universalSkillBook', cat: 'officer', name: '通用技能书', icon: 'img/items/universal-skill-book.svg', desc: '从技能池自选一个未掌握且不互斥的技能，学习后为 Lv.1；仅用于学习，不用于升级', price: 800, stock: null, tag: '自选' },
-      { id: 'loyaltyBox', cat: 'officer',  name: '忠诚宝箱',   icon: 'img/items/loyalty-box.svg', desc: '军官忠诚度+20,提升留任意愿',     price: 50,   stock: null, tag: '' },
-      { id: 'renameCard', cat: 'officer',  name: '军官改名卡', icon: 'img/items/rename-card.svg', desc: '为军官更换新名字',               price: 60,   stock: null, tag: '' },
-      { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: 'img/items/recruit-ord.svg', desc: '刷新军校,保底出现一名五星军官',   price: 500,  stock: null, tag: '稀有' },
-      { id: 'starUp',     cat: 'officer',  name: '星耀符',     icon: 'img/items/star-up.svg', desc: '升2/3/4/5星失败率10/20/30/60%，失败也消耗1枚', price: 300, stock: null, tag: '' },
+      { id: 'expBookMax', cat: 'officer',  name: '满级经验书', icon: 'img/items/exp-book-max.svg', desc: '使用1本即可将1～99级军官直接升至满级(Lv.100)，补足升级属性点', stock: null, tag: '极品' },
+      { id: 'skillBook',  cat: 'officer',  name: '普通技能书', icon: 'img/items/skill-book.svg', desc: '选择军官使用，随机学习一个未掌握的技能，直接获得满级技能', stock: null, tag: '随机' },
+      { id: 'universalSkillBook', cat: 'officer', name: '通用技能书', icon: 'img/items/universal-skill-book.svg', desc: '从技能池自选一个未掌握的技能，直接获得满级技能，无需升级', stock: null, tag: '自选' },
+      { id: 'loyaltyBox', cat: 'officer',  name: '忠诚宝箱',   icon: 'img/items/loyalty-box.svg', desc: '军官忠诚度+20,提升留任意愿',     stock: null, tag: '' },
+      { id: 'renameCard', cat: 'officer',  name: '军官改名卡', icon: 'img/items/rename-card.svg', desc: '为军官更换新名字',               stock: null, tag: '' },
+      { id: 'recruitOrd', cat: 'officer',  name: '征募令',     icon: 'img/items/recruit-ord.svg', desc: '刷新军校,保底出现一名五星军官',   stock: null, tag: '稀有' },
+      { id: 'starUp',     cat: 'officer',  name: '星耀符',     icon: 'img/items/star-up.svg', desc: '升2/3/4/5星失败率10/20/30/60%，失败也消耗1枚', stock: null, tag: '' },
 
       // —— 资源道具 ——
-      { id: 'goldBox',    cat: 'resource', name: '黄金箱',     icon: 'img/resources/models/gold.webp', desc: '开启获得5万黄金',        price: 80,   stock: null, tag: '' },
-      { id: 'resBox',     cat: 'resource', name: '资源箱',     icon: 'img/items/res-box.svg', desc: '开启获得粮钢油稀各5万',        price: 80,  stock: null, tag: '热销' },
-      { id: 'foodPack', cat: 'resource', name: '粮食大礼包', icon: 'img/resources/models/food.webp', desc: '开启获得60万粮食', price: 200, stock: null, tag: '' },
-      { id: 'steelPack',  cat: 'resource', name: '钢铁大礼包', icon: 'img/resources/models/steel.webp', desc: '开启获得60万钢铁',            price: 200,  stock: null, tag: '' },
-      { id: 'oilPack', cat: 'resource', name: '石油大礼包', icon: 'img/resources/models/oil.webp', desc: '开启获得60万石油', price: 200, stock: null, tag: '' },
-      { id: 'rarePack', cat: 'resource', name: '稀矿大礼包', icon: 'img/resources/models/rare.webp', desc: '开启获得60万稀矿', price: 200, stock: null, tag: '' },
-      { id: 'supplyPack', cat: 'resource', name: '战备补给包', icon: 'img/resources/models/food.webp', desc: '开启获得粮钢油稀各40万',  price: 500,  stock: null, tag: '超值' },
-      { id: 'resourcePack100w', cat: 'resource', name: '资源大礼包（100万）', icon: 'img/items/res-box.svg', desc: '粮食/钢铁/石油/稀矿各100万', price: 1150, stock: null, tag: '' },
-      { id: 'resourcePack200w', cat: 'resource', name: '资源大礼包（200万）', icon: 'img/items/res-box.svg', desc: '粮食/钢铁/石油/稀矿各200万', price: 2200, stock: null, tag: '' },
-      { id: 'resourcePack350w', cat: 'resource', name: '资源大礼包（350万）', icon: 'img/items/res-box.svg', desc: '粮食/钢铁/石油/稀矿各350万', price: 3700, stock: null, tag: '' },
-      { id: 'resourcePack500w', cat: 'resource', name: '资源大礼包', icon: 'img/items/resource-pack-500w.svg', desc: '粮食/钢铁/石油/稀矿各500万', price: 5000, stock: null, tag: '豪华' },
+      { id: 'goldBox',    cat: 'resource', name: '黄金箱',     icon: 'img/resources/models/gold.webp', desc: '开启获得5万黄金',        stock: null, tag: '' },
+      { id: 'resBox',     cat: 'resource', name: '资源箱',     icon: 'img/items/res-box.svg', desc: '开启获得粮钢油稀各5万',        stock: null, tag: '热销' },
+      { id: 'foodPack', cat: 'resource', name: '粮食大礼包', icon: 'img/resources/models/food.webp', desc: '开启获得60万粮食', stock: null, tag: '' },
+      { id: 'steelPack',  cat: 'resource', name: '钢铁大礼包', icon: 'img/resources/models/steel.webp', desc: '开启获得60万钢铁',            stock: null, tag: '' },
+      { id: 'oilPack', cat: 'resource', name: '石油大礼包', icon: 'img/resources/models/oil.webp', desc: '开启获得60万石油', stock: null, tag: '' },
+      { id: 'rarePack', cat: 'resource', name: '稀矿大礼包', icon: 'img/resources/models/rare.webp', desc: '开启获得60万稀矿', stock: null, tag: '' },
+      { id: 'supplyPack', cat: 'resource', name: '战备补给包', icon: 'img/resources/models/food.webp', desc: '开启获得粮钢油稀各40万',  stock: null, tag: '超值' },
+      { id: 'resourcePack100w', cat: 'resource', name: '资源大礼包（100万）', icon: 'img/items/res-box.svg', desc: '粮食/钢铁/石油/稀矿各100万', stock: null, tag: '' },
+      { id: 'resourcePack200w', cat: 'resource', name: '资源大礼包（200万）', icon: 'img/items/res-box.svg', desc: '粮食/钢铁/石油/稀矿各200万', stock: null, tag: '' },
+      { id: 'resourcePack350w', cat: 'resource', name: '资源大礼包（350万）', icon: 'img/items/res-box.svg', desc: '粮食/钢铁/石油/稀矿各350万', stock: null, tag: '' },
+      { id: 'resourcePack500w', cat: 'resource', name: '资源大礼包', icon: 'img/items/resource-pack-500w.svg', desc: '粮食/钢铁/石油/稀矿各500万', stock: null, tag: '豪华' },
 
       // —— 功能道具 - 加速符（建筑施工 / 军队生产通用）——
-      { id: 'speedUp10m', cat: 'util', name: '10分加速符',icon: 'img/items/speedup-10m.svg', desc: '立即缩短10分钟建筑/造兵时间',     price: 30,   stock: null, tag: '' },
-      { id: 'speedUp1h',  cat: 'util', name: '1时加速符', icon: 'img/items/speedup-1h.svg', desc: '立即缩短1小时建筑/造兵时间',     price: 100,  stock: null, tag: '热销' },
-      { id: 'speedUp5h',  cat: 'util', name: '5时加速符', icon: 'img/items/speedup-5h.svg', desc: '立即缩短5小时建筑/造兵时间',     price: 400,  stock: null, tag: '' },
-      { id: 'speedUp12h', cat: 'util', name: '12时加速符',icon: 'img/items/speedup-12h.svg', desc: '立即缩短12小时建筑/造兵时间',    price: 800,  stock: null, tag: '' },
-      { id: 'speedUp24h', cat: 'util', name: '24时加速符',icon: 'img/items/speedup-24h.svg', desc: '立即缩短24小时建筑/造兵时间',    price: 1500, stock: null, tag: '推荐' },
-      { id: 'speedUp36h', cat: 'util', name: '36时加速符',icon: 'img/items/speedup-36h.svg', desc: '立即缩短36小时建筑/造兵时间',    price: 2000, stock: null, tag: '' },
-      { id: 'speedUp48h', cat: 'util', name: '48时加速符',icon: 'img/items/speedup-48h.svg', desc: '立即缩短48小时建筑/造兵时间',    price: 2500, stock: null, tag: '超值' },
-      { id: 'speedUp72h', cat: 'util', name: '72时加速符',icon: 'img/items/speedup-72h.svg', desc: '立即缩短72小时建筑/造兵时间',    price: 3500, stock: null, tag: '限时' },
-      { id: 'shield2h', cat: 'util', name: '2小时护盾', icon: 'img/items/shield-2h.svg', desc: '本城2小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 60, stock: null, tag: '短休' },
-      { id: 'shield', cat: 'util', name: '8小时护盾', icon: 'img/items/shield-8h.svg', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 200, stock: null, tag: '过夜' },
-      { id: 'shield12h', cat: 'util', name: '12小时护盾', icon: 'img/items/shield-12h.svg', desc: '本城12小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 280, stock: null, tag: '半日' },
-      { id: 'shield24h', cat: 'util', name: '24小时护盾', icon: 'img/items/shield-24h.svg', desc: '本城24小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 500, stock: null, tag: '全天' },
-      { id: 'shield72h', cat: 'util', name: '72小时护盾', icon: 'img/items/shield-72h.svg', desc: '本城72小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', price: 1350, stock: null, tag: '长假' },
-      { id: 'basicMarchOrd', cat: 'util', name: '初级行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+10%，持续1小时；情报使用：基础缩短剩余时间10%，指挥官学识提高效果，最高40%，至少保留30秒', price: 100, stock: null, tag: '+10%' },
-      { id: 'advancedMarchOrd', cat: 'util', name: '高级行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+25%，持续1小时；情报使用：基础缩短剩余时间25%，指挥官学识提高效果，最高55%，至少保留30秒', price: 250, stock: null, tag: '+25%' },
-      { id: 'marchOrd', cat: 'util', name: '极速行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：基础缩短剩余时间50%，指挥官学识提高效果，最高80%，至少保留30秒', price: 500, stock: null, tag: '+50%' },
-      { id: 'signalJammingOrder', cat: 'util', name: '通讯干扰令', icon: 'img/items/signal-jamming-order.svg', desc: '对来袭敌军使用：基础延长剩余时间50%，指挥官学识提高效果，最高70%', price: 150, stock: null, tag: '' },
-      { id: 'feintOrder', cat: 'util', name: '撤退拖延令', icon: 'img/items/feint-order.svg', desc: '对从本城撤退的敌军使用：基础延长剩余撤退时间50%，指挥官学识提高效果，最高70%', price: 250, stock: null, tag: '' },
-      { id: 'warSpeedOrder', cat: 'util', name: '宣战加速令', icon: 'img/items/march-ord.svg', desc: '缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟', price: 250, stock: null, tag: '' },
-      { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: 'img/items/population-order.svg', desc: '使用后立即增加500空闲人口,不超过人口上限', price: 100, stock: null, tag: '推荐' },
-      { id: 'emergencyPopulationOrder', cat: 'util', name: '紧急人口动员令', icon: 'img/items/emergency-population-order.svg', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', price: 100, stock: null, tag: '' },
-      { id: 'mobilizationOrder', cat: 'util', name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成', price: 80, stock: null, tag: '+10%' },
-      { id: 'advancedMobilizationOrder', cat: 'util', name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成', price: 220, stock: null, tag: '+25%' },
-      { id: 'rapidMobilizationOrder', cat: 'util', name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号出征与本城防守带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成', price: 500, stock: null, tag: '+50%' },
-      { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: 'img/items/city-rename-card.svg', desc: '为一座城市更换新名字', price: 60, stock: null, tag: '' },
-      { id: 'teleportNormal', cat: 'util', name: '普通传送', icon: 'img/items/teleport-normal.svg', desc: '消耗1个，将当前城市随机传送至开放地图的四格空闲陆地', price: 100, stock: null, tag: '' },
-      { id: 'teleportAdvanced', cat: 'util', name: '高级传送', icon: 'img/items/teleport-advanced.svg', desc: '消耗1个，将当前城市传送至指定坐标，目的地须有完整2×2空闲陆地', price: 500, stock: null, tag: '' },
+      { id: 'speedUp10m', cat: 'util', name: '10分加速符',icon: 'img/items/speedup-10m.svg', desc: '立即缩短10分钟建筑/造兵时间',     stock: null, tag: '' },
+      { id: 'speedUp1h',  cat: 'util', name: '1时加速符', icon: 'img/items/speedup-1h.svg', desc: '立即缩短1小时建筑/造兵时间',     stock: null, tag: '热销' },
+      { id: 'speedUp5h',  cat: 'util', name: '5时加速符', icon: 'img/items/speedup-5h.svg', desc: '立即缩短5小时建筑/造兵时间',     stock: null, tag: '' },
+      { id: 'speedUp12h', cat: 'util', name: '12时加速符',icon: 'img/items/speedup-12h.svg', desc: '立即缩短12小时建筑/造兵时间',    stock: null, tag: '' },
+      { id: 'speedUp24h', cat: 'util', name: '24时加速符',icon: 'img/items/speedup-24h.svg', desc: '立即缩短24小时建筑/造兵时间',    stock: null, tag: '推荐' },
+      { id: 'speedUp36h', cat: 'util', name: '36时加速符',icon: 'img/items/speedup-36h.svg', desc: '立即缩短36小时建筑/造兵时间',    stock: null, tag: '' },
+      { id: 'speedUp48h', cat: 'util', name: '48时加速符',icon: 'img/items/speedup-48h.svg', desc: '立即缩短48小时建筑/造兵时间',    stock: null, tag: '超值' },
+      { id: 'speedUp72h', cat: 'util', name: '72时加速符',icon: 'img/items/speedup-72h.svg', desc: '立即缩短72小时建筑/造兵时间',    stock: null, tag: '限时' },
+      { id: 'shield2h', cat: 'util', name: '2小时护盾', icon: 'img/items/shield-2h.svg', desc: '本城2小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', stock: null, tag: '短休' },
+      { id: 'shield', cat: 'util', name: '8小时护盾', icon: 'img/items/shield-8h.svg', desc: '本城8小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', stock: null, tag: '过夜' },
+      { id: 'shield12h', cat: 'util', name: '12小时护盾', icon: 'img/items/shield-12h.svg', desc: '本城12小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', stock: null, tag: '半日' },
+      { id: 'shield24h', cat: 'util', name: '24小时护盾', icon: 'img/items/shield-24h.svg', desc: '本城24小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', stock: null, tag: '全天' },
+      { id: 'shield72h', cat: 'util', name: '72小时护盾', icon: 'img/items/shield-72h.svg', desc: '本城72小时免受侦查、攻击和宣战，可叠加；期间不能对其他玩家发起军事操作，不保护野地', stock: null, tag: '长假' },
+      { id: 'basicMarchOrd', cat: 'util', name: '初级行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+10%，持续1小时；情报使用：基础缩短剩余时间10%，指挥官学识提高效果，最高40%，至少保留30秒', stock: null, tag: '+10%' },
+      { id: 'advancedMarchOrd', cat: 'util', name: '高级行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+25%，持续1小时；情报使用：基础缩短剩余时间25%，指挥官学识提高效果，最高55%，至少保留30秒', stock: null, tag: '+25%' },
+      { id: 'marchOrd', cat: 'util', name: '极速行军令', icon: 'img/items/march-ord.svg', desc: '仓库启用：行军速度+50%，持续1小时；情报使用：基础缩短剩余时间50%，指挥官学识提高效果，最高80%，至少保留30秒', stock: null, tag: '+50%' },
+      { id: 'signalJammingOrder', cat: 'util', name: '通讯干扰令', icon: 'img/items/signal-jamming-order.svg', desc: '对来袭敌军使用：基础延长剩余时间50%，指挥官学识提高效果，最高70%', stock: null, tag: '' },
+      { id: 'feintOrder', cat: 'util', name: '撤退拖延令', icon: 'img/items/feint-order.svg', desc: '对从本城撤退的敌军使用：基础延长剩余撤退时间50%，指挥官学识提高效果，最高70%', stock: null, tag: '' },
+      { id: 'warSpeedOrder', cat: 'util', name: '宣战加速令', icon: 'img/items/march-ord.svg', desc: '缩短本城发起的宣战备战时间：基础50%，学识提高效果，最高80%，总备战至少30分钟', stock: null, tag: '' },
+      { id: 'populationOrder', cat: 'util', name: '人口动员令', icon: 'img/items/population-order.svg', desc: '使用后立即增加500空闲人口,不超过人口上限', stock: null, tag: '推荐' },
+      { id: 'emergencyPopulationOrder', cat: 'util', name: '紧急人口动员令', icon: 'img/items/emergency-population-order.svg', desc: '使用后立即增加当前城市人口容量上限30%的空闲人口,不超过人口上限', stock: null, tag: '' },
+      { id: 'mobilizationOrder', cat: 'util', name: '战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号各城市出征带兵上限提高10%，每张持续24小时；同档累加时长，异档取最高加成', stock: null, tag: '+10%' },
+      { id: 'advancedMobilizationOrder', cat: 'util', name: '高级战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号各城市出征带兵上限提高25%，每张持续24小时；同档累加时长，异档取最高加成', stock: null, tag: '+25%' },
+      { id: 'rapidMobilizationOrder', cat: 'util', name: '极速战争动员令', icon: 'img/items/march-ord.svg', desc: '仓库使用后，全账号各城市出征带兵上限提高50%，每张持续24小时；同档累加时长，异档取最高加成', stock: null, tag: '+50%' },
+      { id: 'cityRenameCard', cat: 'util', name: '城市改名卡', icon: 'img/items/city-rename-card.svg', desc: '为一座城市更换新名字', stock: null, tag: '' },
+      { id: 'teleportNormal', cat: 'util', name: '普通传送', icon: 'img/items/teleport-normal.svg', desc: '消耗1个，将当前城市随机传送至开放地图的四格空闲陆地', stock: null, tag: '' },
+      { id: 'teleportAdvanced', cat: 'util', name: '高级传送', icon: 'img/items/teleport-advanced.svg', desc: '消耗1个，将当前城市传送至指定坐标，目的地须有完整2×2空闲陆地', stock: null, tag: '' },
 
       // —— 礼包 ——
-      { id: 'newbiePack', cat: 'gift', name: '新手礼包',   icon: 'img/items/newbie-pack.svg', desc: '开启获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000', price: 99, stock: 1, tag: '新手' }
+      { id: 'newbiePack', cat: 'gift', name: '新手礼包',   icon: 'img/items/newbie-pack.svg', desc: '开启获得：粮食×20000、钢铁×20000、石油×10000、稀矿×5000、黄金×3000', stock: 1, tag: '新手' }
     ],
     rechargeCategories: [
       { id: 'diamond', name: '钻石充值' },
@@ -922,75 +827,24 @@ window.Game = window.Game || {};
       { id: 'p10000', cat: 'marshal', name: '五星统帅礼包', icon: '🎖️', rmb: 10000, diamond: 135000, desc: '最高军事委员会五星将官终极军需配给', bonus: '尊荣' }
     ]
   };
-  /** 统计中心已开放及下级新增的科技种类；配套设施仍由前置服务校验，不代表可立即开工。 */
-  G.researchAccess = function (labLevel) {
-    var level = Math.max(0, Math.min(10, labLevel || 0));
-    var techs = (G.DATA && G.DATA.techs) || {};
-    var unlocked = Object.keys(techs).filter(function (id) { return techs[id].labReq <= level; });
-    var newlyUnlocked = Object.keys(techs).filter(function (id) { return level < 10 && techs[id].labReq === level + 1; });
-    return { level: level, unlocked: unlocked, newlyUnlocked: newlyUnlocked };
+  /** 后端提供各研发中心等级的目录范围，客户端仅按所选等级查表。 */
+  G.researchAccess = function (level) {
+    var state = G.Core && G.Core.state || G.state || {};
+    return state.gameplay && state.gameplay.researchAccess[level] || { level: level, unlocked: [], newlyUnlocked: [] };
   };
-  // OFFICER_EQUIPMENT_CATALOG_START
+  // 装备数值目录在登录后安装，启动阶段仅保留界面使用的容器和图标。
   var C = G.Constants;
-  C.officerEquipmentConfig = {"branches":[{"key":"military","name":"军事"},{"key":"defense","name":"防御"},{"key":"logistics","name":"后勤"},{"key":"knowledge","name":"学识"}],"slots":[{"key":"weapon","name":"武器","group":"core","budget":"core"},{"key":"badge","name":"徽章","group":"core","budget":"core"},{"key":"coat","name":"外套","group":"core","budget":"core"},{"key":"helmet","name":"头盔","group":"clothing","budget":"major"},{"key":"gloves","name":"手套","group":"clothing","budget":"minor"},{"key":"belt","name":"腰带","group":"clothing","budget":"minor"},{"key":"trousers","name":"裤装","group":"clothing","budget":"medium"},{"key":"boots","name":"军靴","group":"clothing","budget":"major"},{"key":"backpack","name":"背包","group":"kit","budget":"minor"},{"key":"radio","name":"通讯器","group":"kit","budget":"major"},{"key":"map","name":"图囊","group":"kit","budget":"medium"},{"key":"watch","name":"军表","group":"kit","budget":"medium"}],"tiers":[{"key":"recruit","name":"列兵","persisted_tier_id":1,"progression_order":1,"required_level":1,"box_diamonds":200,"base_main":{"core":5,"major":1,"medium":1,"minor":1},"core_each_secondary":1,"new_slot_each_secondary":0,"resonance_increment_main":[3,1,1,1],"resonance_increment_all":[0,0,0,0],"effective_preparation_cap":1,"expected_full_set":{"main":30,"each_secondary":3},"core_names":{"military":["列兵军刀","列兵臂章","列兵作训服"],"defense":["列兵护身盾","列兵坚守勋章","列兵防弹背心"],"logistics":["列兵工具包","列兵通行证","列兵工作服"],"knowledge":["列兵笔记本","列兵学员章","列兵学员服"]}},{"key":"sergeant","name":"士官","persisted_tier_id":4,"progression_order":2,"required_level":20,"box_diamonds":500,"base_main":{"core":9,"major":1,"medium":1,"minor":1},"core_each_secondary":2,"new_slot_each_secondary":0,"resonance_increment_main":[8,2,2,2],"resonance_increment_all":[0,0,0,0],"effective_preparation_cap":2,"expected_full_set":{"main":50,"each_secondary":6},"core_names":{"military":["士官战刀","士官突击章","士官作战服"],"defense":["士官防护盾","士官坚守章","士官防护甲"],"logistics":["士官维修包","士官勤务章","士官勤务服"],"knowledge":["士官观测镜","士官研习章","士官参谋服"]}},{"key":"officer","name":"校官","persisted_tier_id":2,"progression_order":3,"required_level":40,"box_diamonds":1200,"base_main":{"core":15,"major":3,"medium":2,"minor":1},"core_each_secondary":3,"new_slot_each_secondary":0,"resonance_increment_main":[15,3,3,3],"resonance_increment_all":[0,0,0,0],"effective_preparation_cap":3,"expected_full_set":{"main":87,"each_secondary":9},"core_names":{"military":["校官军刀","校官勋章","校官军服"],"defense":["校官防暴盾","校官铁壁勋章","校官重装防弹甲"],"logistics":["校官补给箱","校官调度章","校官军需服"],"knowledge":["校官战术罗盘","校官参谋章","校官参谋服"]}},{"key":"brigadier","name":"准将","persisted_tier_id":5,"progression_order":4,"required_level":60,"box_diamonds":2400,"base_main":{"core":20,"major":3,"medium":2,"minor":1},"core_each_secondary":4,"new_slot_each_secondary":0,"resonance_increment_main":[20,4,4,4],"resonance_increment_all":[0,0,0,0],"effective_preparation_cap":4,"expected_full_set":{"main":110,"each_secondary":12},"core_names":{"military":["准将指挥刀","准将先锋勋章","准将指挥服"],"defense":["准将卫戍盾","准将壁垒勋章","准将卫戍甲"],"logistics":["准将军需箱","准将统筹勋章","准将军需服"],"knowledge":["准将观测仪","准将谋略勋章","准将参谋服"]}},{"key":"general","name":"上将","persisted_tier_id":6,"progression_order":5,"required_level":80,"box_diamonds":3600,"base_main":{"core":25,"major":4,"medium":3,"minor":2},"core_each_secondary":4,"new_slot_each_secondary":0,"resonance_increment_main":[25,5,5,5],"resonance_increment_all":[0,0,0,0],"effective_preparation_cap":5,"expected_full_set":{"main":142,"each_secondary":12},"core_names":{"military":["上将统御佩剑","上将决胜勋章","上将统御军服"],"defense":["上将要塞盾","上将磐石勋章","上将要塞护甲"],"logistics":["上将补给总箱","上将军需勋章","上将勤务礼服"],"knowledge":["上将测距仪","上将战略勋章","上将战略军服"]}},{"key":"marshal","name":"元帅","persisted_tier_id":3,"progression_order":6,"required_level":100,"box_diamonds":5000,"base_main":{"core":30,"major":4,"medium":3,"minor":2},"core_each_secondary":5,"new_slot_each_secondary":0,"resonance_increment_main":[30,6,6,6],"resonance_increment_all":[5,0,0,2],"effective_preparation_cap":5,"expected_full_set":{"main":172,"each_secondary":22},"core_names":{"military":["元帅佩剑","元帅将星","元帅礼服"],"defense":["元帅重装盾","元帅不屈之星","元帅钛金铠"],"logistics":["元帅辎重车","元帅军需印","元帅长袍"],"knowledge":["元帅望远镜","元帅军师印","元帅军礼服"]}}],"new_slot_branch_names":{"military":{"helmet":"突击头盔","gloves":"射击手套","belt":"战术腰带","trousers":"突击军裤","boots":"突击军靴","backpack":"弹药背包","radio":"突击电台","map":"作战图囊","watch":"战术军表"},"defense":{"helmet":"守备钢盔","gloves":"防护手套","belt":"守备腰带","trousers":"防护军裤","boots":"防护军靴","backpack":"应急背包","radio":"守备电台","map":"工事图囊","watch":"值勤军表"},"logistics":{"helmet":"工勤头盔","gloves":"作业手套","belt":"工具腰带","trousers":"工勤军裤","boots":"勤务军靴","backpack":"补给背包","radio":"调度电台","map":"补给图囊","watch":"运输军表"},"knowledge":{"helmet":"参谋头盔","gloves":"测绘手套","belt":"参谋腰带","trousers":"参谋军裤","boots":"参谋军靴","backpack":"文书背包","radio":"指挥电台","map":"测绘图囊","watch":"校时军表"}},"preparation":{"binding":"player_officer_slot","main_attribute_per_effective_level":1,"empty_slot_bonus":0,"persist_on_gear_change":true,"persist_on_officer_dismissal":false,"success_rate":1,"gold_source":"player_main_city_gold","material_key":"officerPreparationParts","material_name":"军备零件","steps":[{"target_level":1,"required_officer_level":1,"parts":20,"gold":1000},{"target_level":2,"required_officer_level":20,"parts":40,"gold":2000},{"target_level":3,"required_officer_level":40,"parts":60,"gold":3000},{"target_level":4,"required_officer_level":60,"parts":80,"gold":4000},{"target_level":5,"required_officer_level":80,"parts":100,"gold":5000}],"daily":{"available_tasks":4,"max_claims":3,"parts_per_claim":40,"timezone":"Asia/Shanghai","reset":"00:00"},"weekly":{"daily_claims_required":15,"parts":240,"max_claims":1,"timezone":"Asia/Shanghai","reset":"monday_00:00"},"parts_sold_in_shop":false,"gear_dismantles_into_parts":false,"expected_full_officer_cost":{"parts":3600,"gold":180000},"pacing_example":{"assumptions":"120 parts daily; 240 extra on days 7,14,21,...; enough gold and officer level; one officer and no other spending","all_slots_level_1_day":2,"all_slots_level_2_day":6,"all_slots_level_3_day":10,"all_slots_level_4_day":16,"all_slots_level_5_day":24,"four_officers_all_slots_level_5_day":94}}};
+  C.officerEquipmentConfig = { branches: [], slots: [], tiers: [] };
   C.equipmentNames = {}; C.equipmentItems = {}; C.equipmentSets = {};
   C.equipmentTiers = {}; C.equipmentTierOrder = {}; C.equipmentBranches = {}; C.equipmentBranchOrder = {};
   C.equipmentSlots = {}; C.equipmentSlotOrder = {};
   C.equipmentSlotIcons = { weapon: '🗡️', badge: '🎖️', coat: '🦺', helmet: '🪖', gloves: '🧤', belt: '🎒', trousers: '👖', boots: '🥾', backpack: '🎒', radio: '📻', map: '🗺️', watch: '⌚' };
-  var cfg = C.officerEquipmentConfig;
-  cfg.branches.forEach(function (b, i) { C.equipmentBranches[b.key] = b.name; C.equipmentBranchOrder[b.key] = i + 1; });
-  cfg.slots.forEach(function (s, i) { C.equipmentSlots[s.key] = s.name; C.equipmentSlotOrder[s.key] = i + 1; });
-  cfg.tiers.forEach(function (t) {
-    C.equipmentTiers[t.key] = { name: t.name, level: t.required_level, main: t.base_main.core, sub: t.core_each_secondary, cap: t.effective_preparation_cap };
-    C.equipmentTierOrder[t.key] = t.progression_order;
-    cfg.branches.forEach(function (b) {
-      var set = t.key + '_' + b.key, keys = [], setName = t.name + b.name + '套装';
-      cfg.slots.forEach(function (s, i) {
-        var key = set + '_' + s.key, core = s.group === 'core';
-        var name = core ? t.core_names[b.key][i] : t.name + cfg.new_slot_branch_names[b.key][s.key];
-        var main = t.base_main[s.budget], sub = core ? t.core_each_secondary : t.new_slot_each_secondary;
-        var attrs = {}; cfg.branches.forEach(function (attr) { attrs[attr.key] = attr.key === b.key ? main : sub; });
-        C.equipmentNames[key] = name; keys.push(key);
-        C.equipmentItems[key] = { id: key, name: name, cat: 'equipment', tier: t.key, tierName: t.name, branch: b.key, branchName: b.name,
-          slot: s.key, slotName: s.name, level: t.required_level, setKey: set, cap: t.effective_preparation_cap,
-          icon: C.equipmentSlotIcons[s.key], attrs: attrs,
-          desc: setName + '·' + s.name + '：Lv.' + t.required_level + '可穿戴，' + b.name + '+' + main + '，其余属性各+' + sub + '；同套3/6/9/12件累计激活共鸣' };
-      });
-      C.equipmentSets[set] = { id: set, name: setName, tier: t.key, branch: b.key, keys: keys, level: t.required_level, config: t };
-    });
-  });
-  C.shopItems = C.shopItems.filter(function (i) { return i.id.indexOf('box_') !== 0 || !C.equipmentSets[i.id.slice(4)]; });
-  Object.keys(C.equipmentSets).forEach(function (key) {
-    var set = C.equipmentSets[key];
-    C.shopItems.push({ id: 'box_' + key, cat: 'officer', name: set.name.replace('套装', '装备箱'), icon: 'img/items/officer-gear-box.svg',
-      desc: '固定获得十二件装备，每部位一件；Lv.' + set.level + '可穿戴；同套3/6/9/12件共鸣',
-      price: set.config.box_diamonds, stock: null, tag: '十二件整套', equipmentSet: key });
-  });
-  /** 预览与后端相同的基础属性、部位整备和累计共鸣；只计算选择，不扣库存。 */
-  function bonuses(keys, prep) {
-    var result = { military: 0, defense: 0, logistics: 0, knowledge: 0 }, sets = {}, slots = {};
-    keys.forEach(function (key) {
-      var d = C.equipmentItems[key]; if (!d || slots[d.slot]) return;
-      slots[d.slot] = true; sets[d.setKey] = (sets[d.setKey] || 0) + 1;
-      cfg.branches.forEach(function (b) { result[b.key] += d.attrs[b.key]; });
-      result[d.branch] += Math.min((prep || {})[d.slot] || 0, d.cap);
-    });
-    Object.keys(sets).forEach(function (key) {
-      var set = C.equipmentSets[key], t = set.config;
-      for (var i = 0; i < 4; i++) if (sets[key] >= (i + 1) * 3) {
-        cfg.branches.forEach(function (b) { result[b.key] += t.resonance_increment_all[i]; });
-        result[set.branch] += t.resonance_increment_main[i];
-      }
-    });
-    return result;
-  }
   G.EquipmentCatalog = {
-    bonuses: bonuses,
+    /** 属性和套装净变化均由后端战斗共用的属性计算器生成。 */
     preview: function (officer, keys) {
-      var current = bonuses((officer.equipment || []).map(function (e) { return e.itemId || e.itemKey; }), officer.preparation);
-      var next = bonuses(keys, officer.preparation), net = {};
-      cfg.branches.forEach(function (b) { net[b.key] = next[b.key] - current[b.key]; });
-      return { bonus: next, net: net };
+      return G.ServerRules.cachedPreview({ action: 'equipment', objectId: Number(officer.id), keys: keys }, function () {
+        if (G.Core.route === 'officerDetail') G.Core.render();
+      }) || { pending: true, bonus: {}, net: {} };
     }
   };
   // OFFICER_EQUIPMENT_CATALOG_END

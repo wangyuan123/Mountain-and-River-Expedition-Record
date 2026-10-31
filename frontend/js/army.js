@@ -46,13 +46,7 @@ window.Game = window.Game || {};
     return code ? base + '(' + code + ')' : base;
   }
 
-  function unitCost(id, n) {
-    var u = D.units[id];
-    var cost = {};
-    for (var k in u.cost) cost[k] = u.cost[k] * n;
-    cost.pop = u.pop * n;
-    return cost;
-  }
+
 
   function costHtml(cost) {
     var arr = [];
@@ -76,38 +70,13 @@ window.Game = window.Game || {};
   }
 
   function maxRecruitable(unit) {
-    var limit = Math.floor(Core.popFree() / unit.pop);
-    var resources = (Core.state && Core.state.resources) || {};
-    for (var key in unit.cost) {
-      var perUnit = unit.cost[key] || 0;
-      if (perUnit > 0) limit = Math.min(limit, Math.floor((resources[key] || 0) / perUnit));
-    }
-    return Math.max(0, limit);
+    var id = Object.keys(D.units).find(function (key) { return D.units[key] === unit; });
+    var limits = G.ServerRules.value('recruitLimits', {});
+    return limits[id] != null ? limits[id] : (G.ServerRules.value('units', {})[id] || {}).maxRecruitable || 0;
   }
 
-  // 方案B: 按栋独立计算后求和 - 给出该兵种对应的"训练建筑群"统计
-  //   maxBatch = sum(每栋 lv × 10 × trainMul)
-  //   parallel = sum(每栋 1 + lv/5)
-  //   avgSpeed = (sum(每栋 laneSpeed × lanes)) / parallel
-  //             其中 laneSpeed = 1 + min(4, lv × 0.05) + (trainMul - 1)
   function getBuildStats(buildKey) {
-    var arr = Core.buildingLevels(buildKey) || [];
-    var mul = Core.trainMul ? Core.trainMul() : 1;
-    var maxBatch = 0, parallel = 0, weighted = 0;
-    for (var i = 0; i < arr.length; i++) {
-      var lv = arr[i] || 0;
-      if (lv <= 0) continue;
-      maxBatch += Math.floor(lv * 10 * mul);
-      var p = 1 + Math.floor(lv / 5);
-      parallel += p;
-      var laneSpeed = 1 + Math.min(4, lv * 0.05) + Math.max(0, mul - 1);
-      weighted += laneSpeed * p;
-    }
-    parallel = Math.max(0, Math.min(20, parallel));
-    var avgSpeed = parallel > 0 ? weighted / parallel : 1;
-    var rawMaxBatch = maxBatch;
-    maxBatch = Math.min(maxBatch, 500);
-    return { maxBatch: maxBatch, rawMaxBatch: rawMaxBatch, parallel: parallel, avgSpeed: avgSpeed, count: arr.length, sumLevel: arr.reduce(function (sum, lv) { return sum + (lv || 0); }, 0), trainMul: mul };
+    return G.ServerRules.value('training', {})[buildKey] || { maxBatch: 0, rawMaxBatch: 0, parallel: 0, avgSpeed: 0, count: 0, sumLevel: 0, trainMul: 1 };
   }
 
   function formatSeconds(seconds) {
@@ -215,9 +184,8 @@ window.Game = window.Game || {};
   }
 
   function canFreeSpeedUp(item) {
-    if (!item || !item.finishesAt) return false;
-    var rem = Math.max(0, Math.ceil((item.finishesAt - G.gameNow()) / 1000));
-    return rem <= 300;
+    // 免费资格的起点由服务端给出，浏览器只推进截止时间显示。
+    return !!item && item.freeSpeedUpAt != null && G.gameNow() >= item.freeSpeedUpAt;
   }
 
   var freeSpeedUpPending = {};
@@ -276,14 +244,7 @@ window.Game = window.Game || {};
 
     var list = mask.querySelector('.spicker-list');
     owned.forEach(function (o) {
-      var cardSec = o.seconds || 0;
-      var need = 0;
-      if (cardSec > 0 && remSec > 0) {
-        need = Math.floor(remSec / cardSec);
-        if (need === 0) need = 1;
-      }
-      var useCount = Math.min(need, o.cnt);
-      if (useCount <= 0 && o.cnt > 0) useCount = 1;
+      var useCount = (qItem && qItem.speedUpCounts || {})[o.id] || 1;
 
       var row = document.createElement('div');
       row.className = 'spicker-row';
@@ -363,15 +324,15 @@ window.Game = window.Game || {};
           '<div class="army-rules-section">' +
             '<div class="army-rules-sec-title">🪖 编制规模与军事指挥官</div>' +
             '<div class="army-rules-sec-desc">' +
-              '• <strong>带兵上限：</strong>当前本城驻军 <b>' + G.fmt(totalArmy) + ' / ' + G.fmt(armyCap) + '</b>。带兵上限受城市指挥所等级与统帅科技共同影响。<br/>' +
-              '• <strong>指挥官任命：</strong>' + (cmd ? '当前已任命【<b>' + G.escapeHtml(cmd.name) + '</b>】担任军事指挥官。' : '当前<b>未任命军事指挥官</b>。') + '任命指挥官可依据其统御值大幅提升本城部队编制上限，并在城市保卫战中提供攻击、防御等全军战力加成。' +
+              '• <strong>带兵上限：</strong>本城驻军 <b>' + G.fmt(totalArmy) + '</b>；单队出征上限 <b>' + G.fmt(armyCap) + '</b>。本城总驻军数量不受出征上限限制。每支出征队伍的上限由军衔基础、指挥官“三军统帅”技能和动员加成决定；司令部等级只影响同时出征队伍数。<br/>' +
+              '• <strong>指挥官任命：</strong>' + (cmd ? '当前已任命【<b>' + G.escapeHtml(cmd.name) + '</b>】担任军事指挥官。' : '当前<b>未任命军事指挥官</b>。') + '只有其“三军统帅”技能提高单队出征上限，军事属性不提高上限。守城时全部可战兵力参战；军事、防御和战斗技能只加成本城编队，援军使用自己的随队将领。' +
             '</div>' +
           '</div>' +
           '<div class="army-rules-section">' +
             '<div class="army-rules-sec-title">🌾 养兵粮饷与维持消耗</div>' +
             '<div class="army-rules-sec-desc">' +
               '• <strong>常驻粮耗：</strong>现役驻军每小时消耗粮食 <b>-' + G.fmt(foodPerHour) + '/h</b>。<br/>' +
-              '• <strong>断粮惩罚：</strong>当城市粮食储量降为 0 时，全军陷入饥饿状态，部队士气与战斗力将大幅衰减（降低 50% 以上），请注意保持粮仓储备充足。' +
+              '• <strong>补给提醒：</strong>请保持粮仓储备充足；粮食不足时，城市将拒收新增驻军，未参战的外来驻军会整队返程。' +
             '</div>' +
           '</div>' +
           '<div class="army-rules-section">' +
@@ -748,22 +709,20 @@ window.Game = window.Game || {};
         h += '<div class="unit-card-details" style="display:' + (isExpanded ? 'block' : 'none') + ';">';
         if (u.history) h += '<div class="d unit-history">原型：' + G.escapeHtml(u.history) + '</div>';
         h += '<div class="d">' + G.escapeHtml((D.combatRoles && D.combatRoles[id]) || '') + '</div>';
-        var battleSpd = (u.spd || 0) * 50;
-        var secPerGrid = (D.world && D.world.marchSecPerGrid) || 18;
-        var marchSec = (secPerGrid / (u.spd || 1)).toFixed(1).replace(/\.0$/, '');
+        var motion = (G.ServerRules.value('catalog', {}).unitMotion || {})[id] || {};
+        var battleSpd = motion.battleDistance;
+        var marchSec = Number(motion.marchSecondsPerGrid).toFixed(1).replace(/\.0$/, '');
         var spdTip = '战场单回合机动：' + battleSpd + ' 距离（基速档位 ' + (u.spd || 0) + '）；大地图基础行军：' + marchSec + '秒/格';
         h += '<div class="d">对地' + u.atkGround + ' 对空' + u.atkAir + ' 对海' + u.atkSea + ' 对工事' + u.atkFort + ' 防' + u.def + ' 血' + u.hp + ' <span title="' + spdTip + '">移速' + battleSpd + '</span> 射程' + u.range + ' 常驻耗粮' + u.food + '/h</div>';
         h += '<div class="d">火力密度：行动火力 ×' + Core.firepowerMul().toFixed(1) + '，与攻击科技独立相乘</div>';
         h += '<div class="d">行军补给：油耗' + (u.marchOil || 0) + '/100格，粮耗' + (u.marchFood || 0) + '/5分钟</div>';
         if (can) {
           var parallel = stats.parallel;
-          h += '<div class="d unit-prod-stat">生产: 基础 ' + (30 + Math.floor(((u.cost.food || 0) + u.cost.steel + u.cost.oil + u.cost.rare) / 10)) + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
+          h += '<div class="d unit-prod-stat">生产: 基础 ' + (G.ServerRules.value('units', {})[id] || {}).baseSeconds + '秒/个，并行 ' + parallel + ' 条 (按栋独立), 平均速度 ×' + stats.avgSpeed.toFixed(2) + '</div>';
           h += '<div class="desc batch-hint">当前最多可征召 ' + maxRecruit + ' 个（受可用平民和资源限制）；本城设施与已完成科技共同决定兵种准入，生产设施与训练科技影响速度和并行数。</div>';
         }
         h += '</div>';
 
-        // 配装摘要不随属性详情折叠，配置归属账号而非本城兵数。
-        if (G.UnitEquipment) h += G.UnitEquipment.summary(id, true);
 
         // 所有兵种展示同一服务端评估的全部条件与当前进度。
         if (G.Prerequisites) h += G.Prerequisites.recruitmentHtml(id);
@@ -806,5 +765,4 @@ window.Game = window.Game || {};
 
   G.Army = Army;
   Core.views.army = function (v) { Army.renderView(v); };
-  G.unitCost = unitCost;
 })(window.Game);

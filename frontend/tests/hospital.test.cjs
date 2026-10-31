@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 const rules = JSON.parse(fs.readFileSync(path.join(__dirname,
   '../../backend/src/main/resources/game/tech-building-prerequisites.json'), 'utf8'));
@@ -38,50 +38,40 @@ function setup(buildings = {}, constructions = []) {
   return { G, toasts, modals, routes };
 }
 
-test('医院在军事区占一个卡槽，在建时预占，落成后可进入伤兵营', () => {
-  const { G, modals, routes } = setup({ command: 3, hospital: 1 });
-  assert.equal(G.Core.buildingGroup('hospital'), 'army');
-  assert.equal(G.DATA.buildings.hospital.slots, 1);
-  assert.equal(G.Core.groupSlotsUsed('army'), 2);
-  G.Build.openBuildingDetailModal('hospital', null);
-  assert.match(modals[0].innerHTML, /战地医院/);
-  assert.match(modals[0].innerHTML, /前往 伤兵营/);
-  modals[0].querySelector('#bdetailRouteBtn').onclick();
-  assert.deepEqual(routes, ['wounded']);
-  delete G.Core.state.buildings.hospital;
-  G.Core.state.constructions = [{ id: 'hospital', targetLevel: 1 }];
-  assert.equal(G.Core.groupSlotsUsed('army'), 2);
+test('医院详情保留伤兵入口，槽位只读取后端快照',()=>{
+ const {G,modals,routes}=setup({command:3,hospital:1});
+ G.Core.state.gameplay.groupSlots.army.used=2;
+ assert.equal(G.Core.groupSlotsUsed('army'),2);
+ G.Build.openBuildingDetailModal('hospital',null);assert.match(modals[0].innerHTML,/前往 伤兵营/);
+ modals[0].querySelector('#bdetailRouteBtn').onclick();assert.deepEqual(routes,['wounded']);
+ delete G.Core.state.buildings.hospital;assert.equal(G.Core.groupSlotsUsed('army'),2);
 });
 
-test('满级医疗科研要求医院8级，兵站10级仍会显示缺项，医院8级后无需兵站', () => {
-  const { G } = setup({ lab: 10, house: 10, academy: 10, farm: 8, transit: 10, hospital: 7 });
-  const missing = G.Prerequisites.check('technologies', 'log_medical', 10).missing;
-  assert.deepEqual(Array.from(missing, entry => [entry.id, entry.required, entry.actual]), [['hospital', 8, 7]]);
-  const html = G.Prerequisites.html('technologies', 'log_medical', 10);
-  assert.match(html, /战地医院/);
-  assert.doesNotMatch(html, /战地兵站/);
-  G.Core.state.buildings.hospital = 8;
-  G.Core.state.buildings.transit = 0;
-  assert.equal(G.Prerequisites.check('technologies', 'log_medical', 10).missing.length, 0);
+test('医疗卡片显示服务端缺失医院等级，本地改建筑不能解锁',()=>{
+ const {G}=setup({lab:10,hospital:10});
+ const entry={id:'hospital',name:'战地医院',required:8,actual:7,scope:'city',met:false};
+ G.Core.state.gameplay.prerequisites.technologies.log_medical[9]={requirements:[entry],missing:[entry]};
+ assert.match(G.Prerequisites.html('technologies','log_medical',10),/战地医院/);
+ G.Core.state.buildings.hospital=999;
+ assert.equal(G.Prerequisites.check('technologies','log_medical',10).missing[0].actual,7);
+ G.Core.state.gameplay.prerequisites.technologies.log_medical[9]={requirements:[{...entry,actual:8,met:true}],missing:[]};
+ assert.equal(G.Prerequisites.check('technologies','log_medical',10).missing.length,0);
 });
 
-test('医院建造和升级显示全部配套缺项，升级10级允许配套落后', () => {
-  const { G } = setup({ command: 2 });
-  assert.deepEqual(Array.from(G.Prerequisites.check('buildings', 'hospital', 1).missing,
-    entry => [entry.id, entry.required]), [['command', 3], ['house', 1], ['academy', 1], ['farm', 1]]);
-  G.Core.state.buildings = { command: 10, house: 9, academy: 8, farm: 5 };
-  assert.equal(G.Prerequisites.check('buildings', 'hospital', 10).missing.length, 0);
+test('医院各级前置使用后端逐级结果，不套用本地建筑状态',()=>{
+ const {G}=setup();const levels=G.Core.state.gameplay.prerequisites.buildings.hospital;
+ assert.equal(G.Prerequisites.check('buildings','hospital',1),levels[0]);
+ assert.equal(G.Prerequisites.check('buildings','hospital',10),levels[9]);
+ G.Core.state.buildings={command:10,house:10,academy:10,farm:10};
+ assert.equal(G.Prerequisites.check('buildings','hospital',1),levels[0]);
 });
 
-test('医院未竣工或拆除后等级不足时不能解锁医疗科研，升级保留已完成等级', () => {
-  for (const [hospital, targetLevel, ready] of [[0, 1, false], [1, 0, false], [1, 2, true]]) {
-    const { G } = setup({ lab: 3, house: 1, academy: 1, farm: 1, hospital },
-      [{ id: 'hospital', targetLevel }]);
-    assert.equal(G.Prerequisites.check('technologies', 'log_medical', 1).missing.length === 0, ready);
-  }
-  const { G } = setup({ lab: 10, house: 10, academy: 10, farm: 8, hospital: 8 },
-    [{ id: 'hospital', targetLevel: 7 }]);
-  assert.equal(G.Prerequisites.check('technologies', 'log_medical', 10).missing[0].actual, 7);
+test('拆除与升级期间的有效前置完全采用后端评估',()=>{
+ const {G}=setup({hospital:8},[{id:'hospital',targetLevel:7}]);
+ const missing={id:'hospital',required:8,actual:7,name:'战地医院',scope:'city',met:false};
+ G.Core.state.gameplay.prerequisites.technologies.log_medical[9]={requirements:[missing],missing:[missing]};
+ G.Core.state.constructions=[];
+ assert.equal(G.Prerequisites.check('technologies','log_medical',10).missing[0].actual,7);
 });
 
 test('医疗科研卡片与确认入口提示战地医院，前往操作打开军事区医院详情', () => {

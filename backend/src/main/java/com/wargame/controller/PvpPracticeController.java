@@ -28,7 +28,7 @@ public class PvpPracticeController {
     /** 仅编队保存和新入队受声望门槛限制；已参战玩家仍可恢复、指挥和退出。 */
     private Long entrant() {
         var player = auth.getCurrentPlayer();
-        if (player.getPrestige() == null || player.getPrestige() < 10000)
+        if (player.getPrestige() == null || player.getPrestige() < com.wargame.model.constants.GameConstants.PVP_PRESTIGE_THRESHOLD)
             throw new com.wargame.security.GameAccessException("PVP_PRESTIGE_REQUIRED", "声望达到 10000 后解锁 PvP 对战功能");
         return player.getId();
     }

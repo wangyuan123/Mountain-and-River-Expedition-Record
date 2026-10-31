@@ -644,7 +644,7 @@ public class AdminSpawnerService {
             }
 
             // 执行全面级联清除
-            for (String entity : List.of("GuildApplication", "GuildMember", "UnitLoadout", "UnitEquipmentOrder", "OfficerEquipment",
+            for (String entity : List.of("GuildApplication", "GuildMember", "OfficerEquipment",
                     "ArmyProductionQueue", "TechResearchQueue", "PrisonerUnit", "PrisonerOperation", "BattleSettlement",
                     "WoundedUnit", "Building", "ArmyUnit", "Fortification", "Technology", "Officer", "Construction",
                     "Resources", "CityState", "Academy", "PlayerItem", "ScoutReport", "PlayerQuest", "PlayerGuide", "March", "ChatMessage")) {
@@ -658,6 +658,8 @@ public class AdminSpawnerService {
                     + "where w.occupiedBy = :id").setParameter("id", botId).executeUpdate();
             em.createQuery("update Player p set p.warAgainstId = null, p.warAt = 0, p.warEndAt = 0, p.version = p.version + 1 "
                     + "where p.warAgainstId = :id").setParameter("id", botId).executeUpdate();
+            em.createQuery("delete from PersonalWar w where w.playerLowId = :id or w.playerHighId = :id")
+                    .setParameter("id", botId).executeUpdate();
             em.createQuery("delete from PlayerCity c where c.ownerId = :id").setParameter("id", botId).executeUpdate();
 
             playerRepository.delete(bot);

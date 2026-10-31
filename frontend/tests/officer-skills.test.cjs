@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setupGame() {
   const context = vm.createContext({
@@ -26,6 +26,7 @@ function setupGame() {
   context.window = context;
   context.G = context.Game;
 
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/icons.js'), 'utf8'), context);
   require('./load-constants.cjs')(context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/data.js'), 'utf8'), context);
   vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/core.js'), 'utf8'), context);
@@ -57,111 +58,15 @@ test('数据定义包含三军统帅和军屯自给，旧补给兼容指向三�
   }
 });
 
-test('Core.armyCap 仅受军衔和统帅技能影响，城防不增加上限且兼容旧 supply', () => {
-  const { Core, D } = setupGame();
-  D.militaryRanks.forEach((rank) => {
-    assert.equal(rank.baseCap, [25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000, 225000, 250000, 300000, 350000, 400000, 450000, 500000, 550000, 600000][rank.tier - 1]);
-  });
-  Core.state = {
-    player: { militaryRank: 1 },
-    buildings: { command: 1, staff: 0 },
-    officers: [
-      { id: 1, role: 'commander', level: 1, skills: [] }
-    ]
-  };
+test('Core.armyCap 仅受 使用服务器结果', () => { const {Core}=setupGame(); Core.state={player:{militaryRank:17},officers:[]}; Object.assign(Core.state.gameplay,{armyCap:720123,ordinaryArmyCap:600123}); assert.equal(Core.armyCap(),720123); assert.equal(Core.ordinaryArmyCap(),600123); Core.state.player.militaryRank=1; Core.state.buildings={wall:10}; assert.equal(Core.armyCap(),720123); });
 
-  assert.equal(Core.armyCap(), 25000);
-  assert.equal(Core.sortieCap(), 25000);
-  Core.state.buildings.command = 10;
-  Core.state.buildings.staff = 10;
-  Core.state.officers[0].level = 100;
-  assert.equal(Core.armyCap(), 25000);
-  assert.equal(Core.sortieCap(), 25000);
+test('Core.foodPerHour 受到 使用服务器结果', () => { const {Core}=setupGame(); Core.state={army:{infantry:100},officers:[],foodSupply:{totalPerHour:17,ownPerHour:17,supportPerHour:0}}; assert.equal(Core.foodPerHour(),17); Core.state.army.infantry=999; assert.equal(Core.foodPerHour(),17); });
 
-  Core.state.player.militaryRank = 17;
-  assert.equal(Core.armyCap(), 600000);
-  Core.state.buildings.wall = 9;
-  assert.equal(Core.armyCap(), 600000);
-  Core.state.buildings.wall = 10;
-  assert.equal(Core.armyCap(), 600000);
+test('数据定义包含绝境反击 使用服务器结果', () => { const {Core,D}=setupGame(); Core.state={officers:[{role:'commander',skillBonuses:{counter:1},skills:[]}]}; assert.equal(Core.skillBonus('counter'),1); assert.match(D.officerSkills.counter.desc,/100%反击/); Core.state.officers[0].skills=[{id:'counter',lv:1}]; assert.equal(Core.skillBonus('counter'),1); });
 
-  Core.state.officers[0].skills = [{ id: 'leadership', lv: 5 }];
-  assert.equal(Core.armyCap(), 720000);
-  assert.equal(Core.sortieCap(), 720000);
+test('数据定义包含师夷长技 使用服务器结果', () => { const {Core,D}=setupGame(); assert.match(D.officerSkills.learn.desc,/30%/); Core.state={officers:[{role:'commander',skillBonuses:{learn:.3}}]}; assert.equal(Core.skillBonus('learn'),.3); delete Core.state.officers[0].skillBonuses; assert.equal(Core.skillBonus('learn'),0); });
 
-  Core.state.officers[0].skills = [{ id: 'supply', lv: 5 }];
-  assert.equal(Core.armyCap(), 720000);
-  assert.equal(Core.sortieCap(), 720000);
-  Core.state.officers[0].role = 'mayor';
-  assert.equal(Core.armyCap(), 600000);
-});
-
-test('Core.foodPerHour 受到市长军屯技能降低', () => {
-  const { Core, D } = setupGame();
-  D.units.infantry = { food: 1 };
-  Core.state = {
-    army: { infantry: 100 },
-    tech: { log_food: 0 },
-    officers: [
-      { id: 1, role: 'mayor', level: 1, skills: [] }
-    ]
-  };
-
-  assert.equal(Core.foodPerHour(), 100);
-
-  // 市长配置 军屯 Lv.5 (-80%)
-  Core.state.officers[0].skills = [{ id: 'ration', lv: 5 }];
-  assert.equal(Core.foodPerHour(), 20);
-});
-
-test('数据定义包含绝境反击 counter，且 skillBonus 正常生效', () => {
-  const { Core, D } = setupGame();
-  assert.ok(D.officerSkills.counter, '应有 counter 技能');
-  assert.equal(D.officerSkills.counter.name, '绝境反击');
-
-  Core.state = {
-    officers: [
-      { id: 1, role: 'commander', level: 1, skills: [{ id: 'counter', lv: 5 }] }
-    ]
-  };
-  // 与服务端一致：每级增加 20 个百分点，满级按剩余兵力总伤害的 100% 反击。
-  for (let level = 1; level <= 5; level++) {
-    Core.state.officers[0].skills = [{ id: 'counter', lv: level }];
-    assert.equal(Math.round(Core.skillBonus('counter') * 100), level * 20);
-  }
-  assert.match(D.officerSkills.counter.desc, /当前剩余兵力总伤害的20%\/级反击，最高100%/);
-  for (const id of ['frenzy', 'bulwark', 'blitz', 'suppress', 'pierce', 'counter', 'learn', 'borrow_armor']) {
-    assert.match(D.officerSkills[id].desc, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效）/);
-  }
-});
-
-test('数据定义包含师夷长技 learn，且每级攻击参考系数为6%', () => {
-  const { Core, D } = setupGame();
-  assert.ok(D.officerSkills.learn, '应有 learn 技能');
-  assert.equal(D.officerSkills.learn.name, '师夷长技');
-  assert.match(D.officerSkills.learn.desc, /单次最高为敌军对应攻击的30%/);
-
-  Core.state = {
-    officers: [
-      { id: 1, role: 'commander', level: 1, skills: [{ id: 'learn', lv: 5 }] }
-    ]
-  };
-  assert.equal(Math.round(Core.skillBonus('learn') * 100) / 100, 0.30);
-});
-
-test('数据定义包含借甲御敌 borrow_armor，且每级防御参考系数为6%', () => {
-  const { Core, D } = setupGame();
-  assert.ok(D.officerSkills.borrow_armor, '应有 borrow_armor 技能');
-  assert.equal(D.officerSkills.borrow_armor.name, '借甲御敌');
-  assert.match(D.officerSkills.borrow_armor.desc, /单次最高为敌军同名兵种防御的30%/);
-
-  Core.state = {
-    officers: [
-      { id: 1, role: 'commander', level: 1, skills: [{ id: 'borrow_armor', lv: 5 }] }
-    ]
-  };
-  assert.equal(Math.round(Core.skillBonus('borrow_armor') * 100) / 100, 0.30);
-});
+test('数据定义包含借甲御敌 使用服务器结果', () => { const {Core,D}=setupGame(); assert.match(D.officerSkills.borrow_armor.desc,/30%/); Core.state={officers:[{role:'commander',skillBonuses:{borrow_armor:.3}}]}; assert.equal(Core.skillBonus('borrow_armor'),.3); delete Core.state.officers[0].skillBonuses; assert.equal(Core.skillBonus('borrow_armor'),0); });
 
 test('普通技能书保留随机学习效果，新增独立通用书且所有正式技能均生成指定书', () => {
   const { D } = setupGame();
@@ -172,7 +77,7 @@ test('普通技能书保留随机学习效果，新增独立通用书且所有�
 
   assert.equal(D.items.skillBook.name, '普通技能书');
   assert.equal(D.items.universalSkillBook.name, '通用技能书');
-  assert.match(D.items.universalSkillBook.desc, /自选.*Lv\.1.*不用于升级/);
+  assert.match(D.items.universalSkillBook.desc, /自选.*满级.*无需升级/);
   assert.match(D.items.skillBook.desc, /随机学习/);
   assert.equal(D.items.skillBook_supply, undefined, '历史 supply 别名不应生成指定技能书');
 
@@ -184,6 +89,12 @@ test('普通技能书保留随机学习效果，新增独立通用书且所有�
     assert.match(book.desc, /直接学习/);
   }
 });
+
+// 测试夹具只声明服务端允许的技能，不根据本地技能列表重建学习规则。
+function allowSkills(Game, overrides = {}) {
+  const choices = Object.fromEntries(Object.keys(Game.DATA.officerSkills).map(id => [id, {allowed:true,reason:''}]));
+  for (const officer of Game.Core.state.officers || []) officer.skillLearning = Object.assign({}, choices, overrides);
+}
 
 function setupUniversalBook() {
   const context = setupOfficerGame();
@@ -200,6 +111,7 @@ function setupUniversalBook() {
   Game.toast = message => messages.push(message);
   Game.Core.render = () => { renders++; };
   Game.Core.state = { items: { universalSkillBook: 2, skillBook: 3 }, officers: [{ id: 7, name: '<将领>', skills: [] }] };
+  allowSkills(Game);
   context.document.createElement = () => ({
     querySelector: selector => nodes[selector],
     parentNode: { removeChild: () => { removed++; } }
@@ -208,20 +120,23 @@ function setupUniversalBook() {
   return { context, Game, nodes, messages, modal: () => modal, removed: () => removed, renders: () => renders };
 }
 
-test('自选技能池包含15项、识别历史别名、互斥、满槽及库存，并支持分类', () => {
+test('自选技能池包含23项、识别历史别名、自由组合、满槽及库存，并支持分类', () => {
   const { Game } = setupUniversalBook();
-  assert.equal(Game.Officer.universalSkillOptions(7, 'all').length, 15);
+  assert.equal(Game.Officer.universalSkillOptions(7, 'all').length, 23);
   assert.equal(Game.Officer.universalSkillOptions(7, 'domestic').length, 5);
-  assert.equal(Game.Officer.universalSkillOptions(7, 'combat').length, 10);
+  assert.equal(Game.Officer.universalSkillOptions(7, 'combat').length, 18);
   assert.equal(Game.Officer.universalSkillOptions(7).some(choice => choice.id === 'supply'), false);
   Game.Core.state.officers[0].skills = [{ id: 'supply', lv: 4 }, { id: 'bulwark', lv: 2 }];
+  allowSkills(Game, {leadership:{allowed:false,reason:'已掌握'}});
   const choices = Game.Officer.universalSkillOptions(7);
   assert.equal(choices.find(choice => choice.id === 'leadership').reason, '已掌握');
-  assert.match(choices.find(choice => choice.id === 'borrow_armor').reason, /坚守阵地.*互斥/);
+  assert.equal(choices.find(choice => choice.id === 'borrow_armor').reason, '');
   Game.Core.state.officers[0].skills.push({ id: 'frenzy', lv: 1 });
+  allowSkills(Game, {medic:{allowed:false,reason:'技能已满3个，请先废弃一个'}});
   assert.match(Game.Officer.universalSkillOptions(7).find(choice => choice.id === 'medic').reason, /已满3个/);
   Game.Core.state.officers[0].skills = [];
   Game.Core.state.items.universalSkillBook = 0;
+  allowSkills(Game);
   assert.ok(Game.Officer.universalSkillOptions(7).every(choice => choice.reason === '通用技能书不足'));
   assert.equal(Game.Officer.universalSkillOptions(999).length, 0);
 });
@@ -241,7 +156,7 @@ test('自选弹窗只在确认时扣书，重复点击只提交一次，成功�
   assert.match(nodes['[data-skill-options]'].innerHTML, /value="frenzy"/);
   assert.equal(requests.length, 0);
   nodes['[data-skill-options]'].onchange({ target: { value: 'frenzy' } });
-  assert.match(nodes['[data-skill-summary]'].textContent, /全军冲锋.*Lv\.1/);
+  assert.match(nodes['[data-skill-summary]'].textContent, /全军冲锋.*满级/);
   assert.equal(Game.Core.state.items.universalSkillBook, 2);
   const pending = nodes['[data-skill-confirm]'].onclick();
   await nodes['[data-skill-confirm]'].onclick();
@@ -350,6 +265,7 @@ test('军官技能页可列出并使用背包中的指定技能书', async () =>
   };
   Game.Core.render = () => {};
 
+  allowSkills(Game);
   const books = Game.Officer.availableSpecificSkillBooks();
   assert.equal(JSON.stringify(books.map((book) => [book.itemId, book.count])), JSON.stringify([
     ['skillBook_frenzy', 2],
@@ -367,7 +283,7 @@ test('军官技能页可列出并使用背包中的指定技能书', async () =>
   assert.equal(request.officerId, 7);
 });
 
-test('军官技能列表仅显示可点击的技能名称，详情在弹窗内展示', () => {
+test('军官技能列表显示图标和可点击的技能名称，详情在弹窗内展示', () => {
   const context = setupOfficerGame();
   const { Game } = context;
   Game.escapeHtml = value => String(value);
@@ -383,8 +299,9 @@ test('军官技能列表仅显示可点击的技能名称，详情在弹窗内�
   const view = { innerHTML: '' };
   Game.Officer.renderDetail(view);
 
-  assert.match(view.innerHTML, /class="officer-skill-detail-trigger"[^>]*>全军冲锋 Lv\.2\/5<\/button>/);
-  assert.match(view.innerHTML, /\[升级\]<\/button>.*\[废弃\]<\/button>/);
+  assert.match(view.innerHTML, /class="officer-skill-detail-trigger"[^>]*><img[^>]*src="img\/skills\/frenzy\.svg"[^>]*> 全军冲锋（满级）<\/button>/);
+  assert.doesNotMatch(view.innerHTML, /\[升级\]/);
+  assert.match(view.innerHTML, /\[废弃\]<\/button>/);
   assert.doesNotMatch(view.innerHTML, /攻击力额外\+10%\/级/);
 
   const modalNodes = { '.officer-skill-detail-close': {} };
@@ -397,49 +314,77 @@ test('军官技能列表仅显示可点击的技能名称，详情在弹窗内�
   Game.Officer.showSkillDetail('frenzy', 2);
 
   assert.match(modal.innerHTML, /全军冲锋/);
-  assert.match(modal.innerHTML, /当前等级 <b>Lv\.2<\/b>/);
-  assert.match(modal.innerHTML, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外\+10%\/级/);
+  assert.match(modal.innerHTML, /技能效果 <b>满级<\/b>/);
+  assert.match(modal.innerHTML, /首次交战回合触发，此后间隔两个回合再次触发（若第4回合首次交战，则在第4、7、10回合生效），全军攻击力额外\+50%/);
 });
 
-test('军官技能升级只选择对应的指定技能书，满级禁用', async () => {
-  const context = setupOfficerGame();
-  const { Game } = context;
+test('指定技能书渲染图片，已掌握技能禁用，防御技能可自由组合', () => {
+  const { Game } = setupOfficerGame();
   Game.escapeHtml = value => String(value);
   Game.Core.state = {
     _detailOfficerId: 7,
-    items: { skillBook_frenzy: 2, skillBook_finance: 3, skillBook: 4 },
+    items: { skillBook_frenzy: 3, skillBook_borrow_armor: 2, skillBook_medic: 1 },
     officers: [{
-      id: 7, name: '军官', star: 1, level: 10, exp: 0, role: 'idle', loyalty: 100,
-      military: 30, logistics: 30, defense: 30, knowledge: 30,
-      skills: [{ id: 'frenzy', lv: 1 }]
+      id: 7, name: '军官', star: 5, level: 100, exp: 0, role: 'idle', loyalty: 90,
+      military: 90, logistics: 80, defense: 70, knowledge: 60,
+      skills: [{ id: 'frenzy', lv: 1 }, { id: 'bulwark', lv: 1 }]
     }]
   };
-  let modal;
-  const bookButton = { disabled: false };
-  context.document.createElement = () => ({
-    querySelector: selector => selector === '.skill-upgrade-book' ? bookButton : {},
-    parentNode: { removeChild: () => {} }
-  });
-  context.document.body = { appendChild: node => { modal = node; } };
-  let request;
-  let renders = 0;
-  Game.Core.render = () => { renders++; };
-  Game.API.upgradeSkill = (...args) => {
-    request = args;
-    return Promise.resolve({ success: true, message: '升级成功' });
-  };
-
-  Game.Officer.openSkillUpgrade(7, 0);
-  assert.match(modal.innerHTML, /全军冲锋技能书.*×2/);
-  assert.doesNotMatch(modal.innerHTML, /精明理财技能书|通用技能书/);
-  await bookButton.onclick();
-  assert.deepEqual(request, [7, 0, 'skillBook_frenzy']);
-  assert.equal(renders, 1);
-
-  Game.Core.state.officers[0].skills[0].lv = 5;
+  allowSkills(Game, {frenzy:{allowed:false,reason:'已掌握'}});
   const view = { innerHTML: '' };
   Game.Officer.renderDetail(view);
-  assert.match(view.innerHTML, /title="技能已满级">\[升级\]<\/button>/);
+  const buttons = view.innerHTML.match(/<button\b[^>]*>[\s\S]*?<\/button>/g);
+  const combined = buttons.find(button => button.includes('使用借甲御敌技能书'));
+  const duplicate = buttons.find(button => button.includes('使用全军冲锋技能书'));
+  const available = buttons.find(button => button.includes('使用战地急救技能书'));
+  assert.match(combined, /<img[^>]*src="img\/items\/skill-book\.svg"/);
+  assert.doesNotMatch(combined, / disabled/);
+  assert.match(combined, /onclick="Game\.Officer\.useSpecificSkillBook/);
+  assert.match(duplicate, / disabled/);
+  assert.match(duplicate, /已掌握/);
+  assert.doesNotMatch(available, / disabled/);
+  assert.match(available, /onclick="Game\.Officer\.useSpecificSkillBook/);
+  assert.doesNotMatch(view.innerHTML, />\[img\/items\/skill-book\.svg/);
+});
+
+test('指定技能书允许双向组合并发送学习请求', async () => {
+  const { Game } = setupOfficerGame();
+  const officer = { id: 7, skills: [] };
+  Game.Core.state = { items: { skillBook_borrow_armor: 2, skillBook_bulwark: 3 }, officers: [officer] };
+  const requests = [];
+  const messages = [];
+  Game.toast = message => messages.push(message);
+  Game.Core.render = () => {};
+  Game.API.depotUse = (...args) => { requests.push(args); return Promise.resolve({ success: true }); };
+  allowSkills(Game);
+  for (const [owned, target] of [['bulwark', 'borrow_armor'], ['borrow_armor', 'bulwark']]) {
+    officer.skills = [{ id: 'frenzy', lv: 1 }, { id: owned, lv: 1 }];
+    await Game.Officer.useSpecificSkillBook(7, 'skillBook_' + target);
+    assert.deepEqual(requests[requests.length - 1], ['skillBook_' + target, 7]);
+  }
+  assert.equal(requests.length, 2);
+  assert.equal(messages.some(message => message.includes('互斥')), false);
+  assert.equal(Game.Core.state.items.skillBook_borrow_armor, 2, '客户端不自行扣书');
+});
+
+test('取消技能升级，旧入口不消耗书籍且详情不再展示升级按钮', () => {
+  const { Game } = setupOfficerGame();
+  Game.Core.state = {
+    _detailOfficerId: 7, items: { skillBook_frenzy: 2 },
+    officers: [{ id: 7, name: '军官', star: 1, level: 10, exp: 0, role: 'idle', loyalty: 60,
+      military: 30, logistics: 30, defense: 30, knowledge: 30, skills: [{ id: 'frenzy', lv: 1 }] }]
+  };
+  const messages = [];
+  Game.toast = message => messages.push(message);
+  Game.API.upgradeSkill = () => { throw new Error('不应发送升级请求'); };
+  Game.Officer.openSkillUpgrade(7, 0);
+  assert.match(messages[0], /满级.*无需升级/);
+  assert.equal(Game.Core.state.items.skillBook_frenzy, 2);
+  const view = { innerHTML: '' };
+  Game.Officer.renderDetail(view);
+  assert.match(view.innerHTML, /全军冲锋（满级）/);
+  assert.doesNotMatch(view.innerHTML, /\[升级\]|学习Lv\.1|升级已有技能|闲置时忠诚缓慢恢复|任职时缓慢下降/);
+  assert.match(view.innerHTML, /连续欠薪满1分钟游戏时间/);
 });
 
 test('军官详情使用星耀符升星，并处理库存不足和满星状态', async () => {
@@ -500,19 +445,44 @@ test('军官详情使用星耀符升星，并处理库存不足和满星状态',
   assert.doesNotMatch(view.innerHTML, /\[升星至|\[商城购买星耀符\]/);
 });
 
-test('账号动员在统帅后的普通容量上计算，攻守一致且到期即时恢复', () => {
-  const context = setupGame();
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '../js/mobilization.js'), 'utf8'), context);
-  let now = 1000;
-  context.Game.gameNow = () => now;
-  context.Core.state = {
-    player: { militaryRank: 17, mobilizationCycle: 1, mobilizationExpiries: { rapidMobilizationOrder: 2000 } },
-    officers: [{ role: 'commander', skills: [{ id: 'leadership', lv: 5 }] }]
+test('账号动员在统帅后 使用服务器结果', () => { const {Core,Game}=setupGame(); Core.state={player:{militaryRank:17,mobilizationExpiries:{rapidMobilizationOrder:2000}},officers:[]}; Object.assign(Core.state.gameplay,{ordinaryArmyCap:720000,armyCap:1080000}); assert.equal(Core.armyCap(),1080000); Game.gameNow=()=>99999999; assert.equal(Core.armyCap(),1080000); Core.state.gameplay.armyCap=720000; assert.equal(Core.armyCap(),720000); });
+
+test('技能组合介绍展示六种推荐，支持关闭、遮罩、Esc和重复打开且不改变技能库存', () => {
+  const { context, Game } = setupUniversalBook();
+  const before = JSON.stringify(Game.Core.state);
+  const masks = [];
+  let removes = 0;
+  context.document.createElement = () => {
+    const close = { onclick: null, focus() {} };
+    const handlers = {};
+    const mask = { innerHTML: '', handlers, close,
+      querySelector: () => close,
+      addEventListener: (type, handler) => { handlers[type] = handler; },
+      parentNode: { removeChild: () => { removes++; } }
+    };
+    return mask;
   };
-  assert.equal(context.Core.ordinaryArmyCap(), 720000);
-  assert.equal(context.Core.armyCap(), 1080000);
-  assert.equal(context.Core.sortieCap(), 1080000);
-  now = 2000;
-  assert.equal(context.Core.armyCap(), 720000);
-  assert.equal(context.Core.sortieCap(), 720000);
+  context.document.body.appendChild = mask => masks.push(mask);
+  Game.Officer.showSkillCombinations();
+  assert.match(masks[0].innerHTML, /搭配方向.*三技能组合.*核心打法/);
+  assert.equal((masks[0].innerHTML.match(/<tr>/g) || []).length, 7);
+  for (const combo of Game.DATA.officerSkillCombinations) {
+    assert.match(masks[0].innerHTML, new RegExp(combo.direction));
+    for (const id of combo.skills) assert.match(masks[0].innerHTML, new RegExp(Game.DATA.officerSkills[id].name));
+  }
+  Game.Officer.showSkillCombinations();
+  assert.equal(removes, 1);
+  masks[1].handlers.click({ target: {} });
+  assert.equal(removes, 1);
+  masks[1].handlers.click({ target: masks[1] });
+  assert.equal(removes, 2);
+  Game.Officer.showSkillCombinations();
+  masks[2].close.onclick();
+  assert.equal(removes, 3);
+  Game.Officer.showSkillCombinations();
+  masks[3].handlers.keydown({ key: 'Enter' });
+  assert.equal(removes, 3);
+  masks[3].handlers.keydown({ key: 'Escape' });
+  assert.equal(removes, 4);
+  assert.equal(JSON.stringify(Game.Core.state), before);
 });

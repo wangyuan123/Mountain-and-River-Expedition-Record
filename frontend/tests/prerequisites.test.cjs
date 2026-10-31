@@ -2,29 +2,12 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 const rules = JSON.parse(fs.readFileSync(path.join(__dirname,
   '../../backend/src/main/resources/game/tech-building-prerequisites.json'), 'utf8'));
 
-test('军事理论十级前置与设计配置一致，逐项检查军校、研发中心和参谋部', () => {
-  const design = JSON.parse(fs.readFileSync(path.join(__dirname, '../../docs/balance/tech-building-prerequisites-design.json'), 'utf8'));
-  assert.equal(rules.version, design.version);
-  assert.deepEqual(rules.technologies.military_theory, design.technologies.military_theory);
-  for (let level = 1; level <= 10; level++) {
-    const buildings = { lab: Math.max(2, level), academy: level, staff: Math.max(0, level - 2) };
-    assert.equal(environment(buildings).check('technologies', 'military_theory', level).missing.length, 0);
-    for (const key of level < 3 ? ['lab', 'academy'] : ['lab', 'academy', 'staff']) {
-      const below = { ...buildings, [key]: buildings[key] - 1 };
-      const missing = environment(below).check('technologies', 'military_theory', level).missing;
-      assert.deepEqual(Array.from(missing, item => item.id), [key]);
-    }
-  }
-  const pending = environment({ lab: 10, academy: 9, staff: 8 }, [{ id: 'academy', targetLevel: 10 }]);
-  assert.deepEqual(Array.from(pending.check('technologies', 'military_theory', 10).missing, item => item.id), ['academy']);
-});
-
-function environment(buildings, constructions, coastalPortLevel, unitUnlocks, equipment) {
+function environment(buildings, constructions, coastalPortLevel, unitUnlocks) {
   const calls = [];
   const context = {
     window: { Game: {
@@ -36,7 +19,6 @@ function environment(buildings, constructions, coastalPortLevel, unitUnlocks, eq
     document: { getElementById: () => null }
   };
   context.window.window = context.window;
-  context.window.Game.UnitEquipment = equipment;
   context.window.document = context.document;
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/prerequisites.js'), 'utf8'), context);
   const api = context.window.Game.Prerequisites;
@@ -45,53 +27,29 @@ function environment(buildings, constructions, coastalPortLevel, unitUnlocks, eq
   return api;
 }
 
-test('联防雷达逐级校验本城已完成的市政厅、研发中心和联络中心，无军团前置', () => {
-  assert.equal(rules.buildings.radar.name, '城防雷达');
-  assert.equal(rules.buildings.guild_radar.name, '联防雷达');
-  for (let level = 1; level <= 10; level++) {
-    const buildings = { command: Math.max(3, level), lab: Math.ceil(level / 2), liaison: Math.ceil(level / 2) };
-    const result = environment(buildings).check('buildings', 'guild_radar', level);
-    assert.equal(result.missing.length, 0);
-    assert.deepEqual(Array.from(result.requirements, entry => [entry.id, entry.required, entry.scope]),
-      Object.entries(buildings).map(([id, required]) => [id, required, 'city']));
-    for (const id of Object.keys(buildings)) {
-      const below = { ...buildings, [id]: buildings[id] - 1 };
-      const pending = [{ id, targetLevel: buildings[id] }];
-      const missing = environment(below, pending).check('buildings', 'guild_radar', level).missing;
-      assert.deepEqual(Array.from(missing, entry => entry.id), [id]);
-    }
+test('building and technology eligibility reads evaluated server requirements only', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../js/prerequisites.js'), 'utf8');
+  const missing = { id: 'hospital', name: '战地医院', required: 8, actual: 7, scope: 'city' };
+  const quote = { requirements: [missing], missing: [missing] };
+  const state = { buildings: { hospital: 10 }, constructions: [], gameplay: { prerequisites: { buildings: {}, technologies: { log_medical: [quote] } } } };
+  const c = { window: { Game: { Core: { state } } } };
+  vm.runInNewContext(source, c);
+  const api = c.window.Game.Prerequisites;
+  assert.equal(api.check('technologies', 'log_medical', 1), quote);
+  assert.equal(api.firstMissing('technologies', 'log_medical', 1), missing);
+  state.buildings.hospital = 0;
+  assert.equal(api.check('technologies', 'log_medical', 1), quote);
+  state.gameplay = {};
+  assert.equal(api.check('technologies', 'log_medical', 1), null);
+});
+
+test('all evaluated levels remain accessible without rebuilding prerequisite curves', () => {
+  const snapshot = require('./server-gameplay.cjs').fixture.gameplay.prerequisites;
+  const c = { window: { Game: { Core: { state: { gameplay: { prerequisites: snapshot } } } } } };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../js/prerequisites.js'), 'utf8'), c);
+  for (const kind of ['buildings', 'technologies']) for (const [id, levels] of Object.entries(snapshot[kind])) {
+    levels.forEach((quote, level) => assert.equal(c.window.Game.Prerequisites.check(kind, id, level + 1), quote));
   }
-});
-
-test('attack research reports every missing factory without adding duplicate building levels', () => {
-  const api = environment({ lab: 7, lightfactory: 7, heavyfactory: 6,
-    factory: [4, 2], staff: 5 });
-  const missing = api.check('technologies', 'attack_tech', 7).missing;
-  assert.deepEqual(Array.from(missing, item => [item.id, item.required, item.actual]),
-    [['heavyfactory', 7, 6], ['factory', 5, 4]]);
-});
-
-test('demolition of a single building lowers the displayed available level', () => {
-  const api = environment({ lab: 1, radar: 1 },
-    [{ id: 'radar', slot: null, targetLevel: 0 }]);
-  const missing = api.check('technologies', 'recon_level', 1).missing;
-  assert.equal(missing.length, 1);
-  assert.equal(missing[0].id, 'radar');
-  assert.equal(missing[0].actual, 0);
-});
-
-test('laboratory level 10 no longer requires a coastal port', () => {
-  const buildings = { command: 10, refinery: 9, depot: 5, staff: 7 };
-  assert.equal(environment(buildings, [], 0).check('buildings', 'lab', 10)
-    .missing.some(item => item.id === 'port'), false);
-});
-
-test('fire density research requires local firepower facilities and late staff levels', () => {
-  assert.equal(environment({ lab: 3, factory: 1, academy: 1, raremine: 1 })
-    .check('technologies', 'fire_density', 1).missing.length, 0);
-  const missing = environment({ lab: 10, factory: 10, academy: 8, raremine: 8, staff: 7 })
-    .check('technologies', 'fire_density', 10).missing;
-  assert.deepEqual(Array.from(missing, m => [m.id, m.required, m.actual]), [['staff', 8, 7]]);
 });
 
 test('兵种门槛只采用服务端快照，待同步时保持锁定并导航到对应建设或研究页', () => {
@@ -117,18 +75,4 @@ test('兵种门槛只采用服务端快照，待同步时保持锁定并导航�
   api.goToRequirement('geography', 'coastal_or_legacy_naval', 'city');
   assert.deepEqual(api.calls, [['go', 'tech'], ['tab', 'air'], ['go', 'buildArmy'], ['cities']]);
   assert.equal(environment({}).recruitmentHtml('rocket'), '<div class="desc">兵种条件待同步</div>');
-});
-
-test('从装备解锁条件跳转时关闭抽屉，存在草稿或请求时沿用原有保护', () => {
-  let busy = false, unsaved = false; const closes = [];
-  const api = environment({}, [], 0, {}, {
-    isBusy: () => busy, hasUnsaved: () => unsaved, close: force => closes.push(force)
-  });
-  api.goToRequirement('technology', 'air_engine', 'empire');
-  assert.deepEqual(closes, [true]);
-  assert.deepEqual(api.calls, [['go', 'tech'], ['tab', 'air']]);
-  busy = true; api.goToRequirement('building', 'factory', 'city');
-  assert.equal(closes.length, 1); assert.equal(api.calls.length, 2);
-  busy = false; unsaved = true; api.goToRequirement('building', 'factory', 'city');
-  assert.deepEqual(closes, [true, false]); assert.equal(api.calls.length, 2);
 });

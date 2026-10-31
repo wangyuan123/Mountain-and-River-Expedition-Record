@@ -66,7 +66,7 @@ class WildAbandonTest extends BaseServiceTest {
     @ValueSource(strings = {"manual"})
     void gatheringAndStoppedMarchMustBeRecalledBeforeAbandoning(String mode) throws Exception {
         March march = dispatchGather(mode);
-        marchService.processMarches(playerId, march.getArriveAt());
+        markLegacyGathering(march);
         assertTrue(march.getGathering());
         assertFalse(Boolean.TRUE.equals(wildTileRepository.findById(tileId).orElseThrow().getGathering()));
         Long marchId = march.getId();
@@ -230,7 +230,7 @@ class WildAbandonTest extends BaseServiceTest {
     @Test
     void switchingCitiesCannotBypassGatheringGuard() throws Exception {
         March march = dispatchGather("manual");
-        marchService.processMarches(playerId, march.getArriveAt());
+        markLegacyGathering(march);
         try (var ignored = cityScope.enter(playerId, 1)) {
             assertRejectedWithoutChanges(GATHER_ERROR);
         }
@@ -253,7 +253,7 @@ class WildAbandonTest extends BaseServiceTest {
         assertRejectedWithoutChanges(HARVESTED_ERROR);
 
         March gathering = dispatchGather("manual");
-        marchService.processMarches(playerId, gathering.getArriveAt());
+        markLegacyGathering(gathering);
         assertRejectedWithoutChanges(GATHER_ERROR);
 
         marchService.stopGatherMarch(playerId, gathering.getId());
@@ -306,12 +306,28 @@ class WildAbandonTest extends BaseServiceTest {
     private March dispatchGather(String mode) {
         var commander = createOfficer(playerId, "idle", 30, 20, 10);
         March march = marchService.createDispatch(playerId, new DispatchRequest(
-                "wild_gather", tileId, "gather", Map.of("truck", 1), commander.getId(), null, mode));
+                "wild", tileId, "station", Map.of("truck", 1), commander.getId(), null));
+        // 兼容已有采集行军的废弃保护，夹具不再从正式接口创建已取消的任务。
+        march.setTargetKind("wild_gather");
+        march.setAction("gather");
+        march.setGatherMode(mode);
         // 到达时间置于过去，使停止采集时已有实际资源，验证召回后再废弃也能完整返还。
         long now = System.currentTimeMillis();
         march.setStartAt(now - 60_000L);
         march.setArriveAt(now - 15_000L);
         return marchRepository.save(march);
+    }
+
+    private void markLegacyGathering(March march) {
+        WildTile tile = wildTileRepository.findById(tileId).orElseThrow();
+        march.setGathering(true);
+        march.setGatherRes("food");
+        march.setGatherAmount(500);
+        march.setGatherStartAt(System.currentTimeMillis() - 120_000L);
+        march.setGatherEndAt(System.currentTimeMillis() - 60_000L);
+        march.setGatherOccupationVersion(tile.getOccupationVersion());
+        march.setGatherOwnerCitySlot(tile.getOccupiedCitySlot());
+        marchRepository.saveAndFlush(march);
     }
 
     private void assertRejectedWithoutChanges(String expectedError) throws Exception {

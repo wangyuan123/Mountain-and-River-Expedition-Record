@@ -17,6 +17,7 @@ function fixture(customData = {}) {
         updateGuildSettings(name, icon) { calls.push(['updateSettings', name, icon]); return Promise.resolve({}); },
         updateGuildNotice(notice) { calls.push(['updateNotice', notice]); return Promise.resolve({}); },
         updateGuildRelation(guildId, status) { calls.push(['updateRelation', guildId, status]); return Promise.resolve({}); },
+        respondGuildFriendship(guildId, action) { calls.push(['respondFriendship', guildId, action]); return Promise.resolve({ message: '邀请已处理' }); },
         updateGuildRole(playerId, role) { calls.push(['updateRole', playerId, role]); return Promise.resolve({}); },
         transferGuildLeadership(playerId) { calls.push(['transferLeadership', playerId]); return Promise.resolve({}); },
         removeGuildMember(playerId) { calls.push(['remove', playerId]); return Promise.resolve({}); },
@@ -91,7 +92,7 @@ test('renderMine renders emblem, notice, prestige sum, and 4 distinct feature ta
   assert.match(html, /img\/guild\/eagle\.svg/);
   assert.match(html, /铁血第一旅/);
   assert.match(html, /军团声望: <strong>★1000<\/strong>/);
-  assert.match(html, /由全体成员声望总和组成/);
+  assert.match(html, /由榜单有效成员声望总和组成/);
   assert.match(html, /将军甲/);
   assert.match(html, /3\/30 人/);
 
@@ -127,8 +128,9 @@ test('renderMine renders emblem, notice, prestige sum, and 4 distinct feature ta
   assert.match(html, /id="guildTabPanel_diplomacy"/);
   assert.match(html, /敌对交战/);
   assert.match(html, /友好同盟/);
-  assert.match(html, /设为友好/);
-  assert.match(html, /重置中立/);
+  assert.match(html, /邀请友好/);
+  assert.match(html, /解除关系/);
+  assert.match(html, /任一方可解除/);
 
   // 7. Tab 4: 军团政务（新兵审核、改名团徽、退出解散）
   assert.match(html, /id="guildTabPanel_manage"/);
@@ -158,6 +160,35 @@ test('setTab switches tab buttons active class and toggles panel display', () =>
   assert.equal(fields.guildTabBtn_rankings.classList.contains('active'), false);
   assert.equal(fields.guildTabPanel_diplomacy.style.display, 'block');
   assert.equal(fields.guildTabPanel_rankings.style.display, 'none');
+});
+
+test('diplomacy displays incoming and outgoing invitations with their normal actions', async () => {
+  const { guild, calls } = fixture();
+  guild.mine = { id: 10, isManager: true, members: [], relations: [
+    { guildId: 20, status: 'neutral', friendshipInvitation: 'incoming' },
+    { guildId: 30, status: 'hostile', friendshipInvitation: 'outgoing' }
+  ] };
+  guild.list = [{ id: 20, name: '邀请方' }, { id: 30, name: '接收方' }];
+  const html = guild.renderMine();
+  assert.match(html, /Game.Guild.respondFriendship\(20,'accept'\)/);
+  assert.match(html, /Game.Guild.respondFriendship\(20,'reject'\)/);
+  assert.match(html, /Game.Guild.respondFriendship\(30,'withdraw'\)/);
+  assert.match(html, /等待对方接受/);
+  await guild.respondFriendship(20, 'accept');
+  assert.deepEqual(calls.find(c => c[0] === 'respondFriendship'), ['respondFriendship', 20, 'accept']);
+  assert.ok(calls.some(c => c[0] === 'reload'));
+});
+
+test('guild prestige uses eligible leaderboard statistics while retaining the full roster', () => {
+  const { guild } = fixture();
+  guild.mine = { id: 10, prestige: 200, eligibleMembers: 1, members: [
+    { playerId: 1, name: '有效成员', prestige: 200 },
+    { playerId: 2, name: '名册成员', prestige: 500 }
+  ] };
+  const html = guild.renderMine();
+  assert.match(html, /军团声望: <strong>★200<\/strong>/);
+  assert.match(html, /编制人数: <strong>2\/30 人<\/strong>/);
+  assert.match(html, /榜单有效人数: <strong>1 人<\/strong>/);
 });
 
 test('members offer transport and garrison support for other guildmates only', () => {

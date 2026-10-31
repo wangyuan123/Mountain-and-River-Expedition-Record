@@ -29,4 +29,10 @@ public class PlayerItem extends VersionedEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Long updatedAt;
+    /** 库存不能写入负数；所有历史发奖入口也遵守同一持久化边界。 */
+    public void setCount(Integer value) {
+        if (value != null && value < 0) throw new IllegalArgumentException("道具库存超出可保存范围");
+        count = value;
+    }
+
 }

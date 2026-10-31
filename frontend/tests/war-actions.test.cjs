@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function fixture(extra = {}) {
   let now = 100000, renders = 0, wakes = 0;
@@ -83,11 +83,12 @@ test('列表跨过开战和结束边界时自动切换行动，并保留展开�
   const f = fixture();
   f.renderList();
   assert.match(f.view.innerHTML, /开战倒计时 1秒/);
-  assert.doesNotMatch(f.view.innerHTML, /Game.World.attack\('player',0,'campaign'\)/);
+  assert.doesNotMatch(f.view.innerHTML, /Game.World.attack\('player',0,'conquer'\)/);
   f.setTime(101000);
   f.tick();
-  assert.match(f.view.innerHTML, /Game.World.attack\('player',0,'campaign'\)/);
-  assert.doesNotMatch(f.view.innerHTML, />征服<|>掠夺</);
+  assert.match(f.view.innerHTML, /Game.World.attack\('player',0,'conquer'\)/);
+  assert.match(f.view.innerHTML, /Game.World.attack\('player',0,'plunder'\)/);
+  assert.doesNotMatch(f.view.innerHTML, /Game.World.attack\('player',0,'campaign'\)/);
   assert.match(f.view.innerHTML, /tcard-expanded" data-player-id="2"/);
   f.setTime(102000);
   f.tick();
@@ -106,12 +107,14 @@ test('新手宣战明确告知永久退出，取消不发送，确认只授权�
   const requests = [];
   f.state.player.newbieProtectionUntil = 200000;
   f.game.API.declareWar = async (...args) => { requests.push(args); };
-  f.game.World.declareWar('player', 0);
+  f.game.ServerRules.preview = async () => ({warAt:101000,warEndAt:103000});
+  await f.game.World.declareWar('player', 0);
   assert.match(f.dialog.innerHTML, /永久退出账号所有城市的新手保护，无法恢复/);
   assert.match(f.dialog.innerHTML, /退出保护并宣战/);
   f.dialog.querySelector('#dwCancel').onclick();
   assert.equal(requests.length, 0);
-  f.game.World.declareWar('player', 0);
+  f.game.ServerRules.preview = async () => ({warAt:101000,warEndAt:103000});
+  await f.game.World.declareWar('player', 0);
   f.dialog.querySelector('#dwOk').onclick();
   await new Promise(setImmediate);
   assert.deepEqual(requests, [[2, true]]);
@@ -123,8 +126,8 @@ test('战争结束只移除到期城市的进攻按钮，其余战争仍继续�
   f.renderList();
   f.setTime(103000);
   f.tick();
-  assert.doesNotMatch(f.view.innerHTML, /Game.World.attack\('player',0,'campaign'\)/);
-  assert.match(f.view.innerHTML, /Game.World.attack\('player',1,'campaign'\)/);
+  assert.doesNotMatch(f.view.innerHTML, /Game.World.attack\('player',0,'conquer'\)/);
+  assert.match(f.view.innerHTML, /Game.World.attack\('player',1,'conquer'\)/);
   assert.equal(f.timers.size, 1);
   f.setTime(105000);
   f.tick();
@@ -156,7 +159,7 @@ test('地图详情在时间边界切换按钮，无需接口数据变化', () =>
   assert.deepEqual(f.labels(), ['劝降', '侦察']);
   f.setTime(101000);
   f.map.updateWarDetail();
-  assert.deepEqual(f.labels(), ['劝降', '侦察', '讨伐']);
+  assert.deepEqual(f.labels(), ['劝降', '侦察', '征服', '掠夺']);
   f.setTime(103000);
   f.map.updateWarDetail();
   assert.deepEqual(f.labels(), ['劝降', '侦察', '宣战']);
@@ -169,11 +172,11 @@ test('地图详情在时间边界切换按钮，无需接口数据变化', () =>
 test('后台页面恢复时，相同详情响应也会刷新已经到期的按钮', async () => {
   const f = fixture({ warAt: 90000 });
   f.map.renderDetail(f.target);
-  assert.deepEqual(f.labels(), ['劝降', '侦察', '讨伐']);
+  assert.deepEqual(f.labels(), ['劝降', '侦察', '征服', '掠夺']);
   f.context.document.hidden = true;
   f.setTime(103000);
   f.map.updateWarDetail();
-  assert.deepEqual(f.labels(), ['劝降', '侦察', '讨伐']);
+  assert.deepEqual(f.labels(), ['劝降', '侦察', '征服', '掠夺']);
   f.context.document.hidden = false;
   f.map.loadDetail(f.target, true);
   await new Promise(resolve => setImmediate(resolve));
@@ -184,7 +187,7 @@ test('点击时取得战争结束的新状态后，详情立即恢复宣战入�
   const f = fixture({ warAt: 90000 });
   f.map.renderDetail(f.target);
   f.setTime(103000);
-  f.buttons.find(button => button.textContent === '讨伐').onclick();
+  f.buttons.find(button => button.textContent === '征服').onclick();
   await new Promise(resolve => setImmediate(resolve));
   assert.deepEqual(f.labels(), ['劝降', '侦察', '宣战']);
   assert.equal(f.state.world._dispatchTarget, undefined);
@@ -194,10 +197,10 @@ test('点击时取得战争结束的新状态后，详情立即恢复宣战入�
 test('列表和大地图对相同外交及战争状态显示相同顺序的行动', () => {
   for (const scenario of [
     { guildRelation: 'neutral', warAt: 0, warEndAt: 0, labels: ['劝降', '侦察', '宣战'] },
-    { guildRelation: 'hostile', warAt: 0, warEndAt: 0, labels: ['劝降', '侦察', '讨伐'] },
-    { guildRelation: 'hostile', warAt: 90000, warEndAt: 99000, labels: ['劝降', '侦察', '讨伐'] },
+    { guildRelation: 'hostile', warAt: 0, warEndAt: 0, labels: ['劝降', '侦察', '征服', '掠夺'] },
+    { guildRelation: 'hostile', warAt: 90000, warEndAt: 99000, labels: ['劝降', '侦察', '征服', '掠夺'] },
     { guildRelation: 'friendly', warAt: 90000, warEndAt: 103000, labels: ['劝降', '侦察'] },
-    { guildRelation: 'neutral', warAt: 90000, warEndAt: 103000, labels: ['劝降', '侦察', '讨伐'] }
+    { guildRelation: 'neutral', warAt: 90000, warEndAt: 103000, labels: ['劝降', '侦察', '征服', '掠夺'] }
   ]) {
     const f = fixture(scenario);
     f.renderList();
@@ -215,13 +218,13 @@ test('敌对军团的按钮与点击校验一致，过期个人宣战不阻止�
     const f = fixture({ guildRelation: 'hostile', ...war });
     f.renderList();
     f.map.renderDetail(f.target);
-    assert.deepEqual(f.labels(), ['劝降', '侦察', '讨伐']);
+    assert.deepEqual(f.labels(), ['劝降', '侦察', '征服', '掠夺']);
     assert.match(f.view.innerHTML, /敌对军团，可直接交战/);
     assert.match(f.map.detail.innerHTML, /敌对军团，可直接交战/);
     for (const action of ['campaign', 'conquer', 'plunder']) {
       f.game.World.attack('player', 0, action);
       assert.equal(f.state.world._dispatchTarget.action, 'campaign');
-      assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), action === 'campaign' ? 'conquer' : action);
+      assert.equal(f.game.World.resolveDispatchAction(f.state.world._dispatchTarget), action === 'plunder' ? 'guerrilla' : 'conquer');
     }
     assert.deepEqual(f.calls, [['go', 'dispatch'], ['go', 'dispatch'], ['go', 'dispatch']]);
   }
@@ -329,9 +332,9 @@ test('玩家城市处于护盾期间，弹窗内侦查和讨伐按钮禁用且�
   ]) {
     const f = fixture({ name: '焚天灭地域', ...shieldExtra });
     f.map.renderDetail(f.target);
-    assert.deepEqual(f.labels(), ['劝降', '侦察', '讨伐']);
+    assert.deepEqual(f.labels(), ['劝降', '侦察', '征服', '掠夺']);
     const scoutBtn = f.buttons.find(b => b.textContent === '侦察');
-    const campaignBtn = f.buttons.find(b => b.textContent === '讨伐');
+    const campaignBtn = f.buttons.find(b => b.textContent === '征服');
     const surrenderBtn = f.buttons.find(b => b.textContent === '劝降');
     assert.equal(scoutBtn.disabled, true);
     assert.equal(campaignBtn.disabled, true);
@@ -344,13 +347,13 @@ test('玩家城市护盾到期后自动恢复按钮可用并移除提示', () =>
   const f = fixture({ guildRelation: 'hostile', shieldUntil: 102000 });
   f.map.renderDetail(f.target);
   assert.equal(f.buttons.find(b => b.textContent === '侦察').disabled, true);
-  assert.equal(f.buttons.find(b => b.textContent === '讨伐').disabled, true);
+  assert.equal(f.buttons.find(b => b.textContent === '征服').disabled, true);
   assert.ok(f.notes.some(note => note.includes('world-map-shield-note')));
 
   f.setTime(102000);
   f.map.updateWarDetail();
   assert.equal(f.buttons.find(b => b.textContent === '侦察').disabled, false);
-  assert.equal(f.buttons.find(b => b.textContent === '讨伐').disabled, false);
+  assert.equal(f.buttons.find(b => b.textContent === '征服').disabled, false);
   assert.ok(!f.notes.some(note => note.includes('world-map-shield-note')));
 });
 
@@ -358,7 +361,7 @@ test('护盾期间尝试对玩家城市发起军事操作弹出拦截提示', ()
   const f = fixture({ name: '护盾防守城', cityState: 'shield' });
   f.map.renderDetail(f.target);
   const scoutBtn = f.buttons.find(b => b.textContent === '侦察');
-  const campaignBtn = f.buttons.find(b => b.textContent === '讨伐');
+  const campaignBtn = f.buttons.find(b => b.textContent === '征服');
   f.map.act('campaign', campaignBtn);
   f.map.act('scout', scoutBtn);
   assert.deepEqual(f.calls, [

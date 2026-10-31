@@ -26,6 +26,7 @@ window.Game = window.Game || {};
       if (state.player && state.player.username != null && state.player.name == null) {
         state.player.name = state.player.username;
       }
+      if (G.ServerRules) G.ServerRules.installCatalog(state);
       var oldState = G.state || (G.Core && G.Core.state) || null;
       // 战报列表按需加载；同一账号的普通状态刷新不能清掉刚收到的战报。
       if (oldState && oldState.player && state.player && oldState.player.id === state.player.id) {
@@ -75,6 +76,7 @@ window.Game = window.Game || {};
       }
       G.state = state;
       if (G.Core) G.Core.state = G.state;
+      if (G.ItemBuffs) G.ItemBuffs.stateChanged();
     }
     return state;
   }
@@ -85,18 +87,6 @@ window.Game = window.Game || {};
     userKey: client.userKey,
     // 暴露底层客户端以便扩展
     client: client,
-
-    /** 兵种配装与制备接口；保留城市上下文，过期响应不能覆盖已切换的城市。 */
-    unitEquipmentRequest: function (path, body) {
-      var token = client.getToken(), city = client.cityId;
-      return client.post('/game/unit-equipment' + path, body).then(function (data) {
-        if (client.getToken() === token && client.cityId === city && data && data.state) applyState(data.state);
-        return data;
-      });
-    },
-    saveUnitLoadout: function (unit, slots, version) { return this.unitEquipmentRequest('/' + encodeURIComponent(unit) + '/loadout', { slots: slots, version: version }); },
-    manufactureUnitEquipment: function (item) { return this.unitEquipmentRequest('/manufacture', { item: item }); },
-    cancelUnitEquipmentOrder: function (id) { return this.unitEquipmentRequest('/orders/' + id + '/cancel', {}); },
 
     // ===== Token / 登录态（委托给 client）=====
     getToken: function () { return client.getToken(); },
@@ -298,6 +288,7 @@ window.Game = window.Game || {};
     reviewGuildApplication: function (id, approved) { return client.post('/game/guild/applications/' + id + '/review', { approved: approved }); },
     updateGuildNotice: function (notice) { return client.post('/game/guild/notice', { notice: notice }); },
     updateGuildSettings: function (name, icon) { return client.post('/game/guild/settings', { name: name, icon: icon }); },
+    respondGuildFriendship: function (guildId, action) { return client.post('/game/guild/relations/' + guildId + '/respond', { action: action }); },
     updateGuildRelation: function (guildId, status) { return client.post('/game/guild/relations/' + guildId, { status: status }); },
     updateGuildRole: function (playerId, role) { return client.post('/game/guild/members/' + playerId + '/role', { role: role }); },
     removeGuildMember: function (playerId) { return client.post('/game/guild/members/' + playerId + '/remove', {}); },
@@ -462,9 +453,14 @@ window.Game = window.Game || {};
         .then(extractState).then(applyState);
     },
 
+    /** 保留任命/取消结果；业务失败不得覆盖状态或被界面误报为成功。 */
     appointOfficer: function (officerId, role) {
       return client.post('/game/officer/appoint', { officerId: officerId, role: role })
-        .then(extractState).then(applyState);
+        .then(function (data) {
+          if (!data || data.success === false) throw new Error((data && data.message) || '任命失败');
+          if (data.state) applyState(data.state);
+          return data;
+        });
     },
 
     dismissOfficer: function (officerId) {
@@ -566,7 +562,7 @@ window.Game = window.Game || {};
         });
     },
 
-    /** 十二件整套操作及整备使用服务端事务，返回状态统一应用。 */
+    /** 十二件套穿卸操作使用服务端事务，返回状态统一应用。 */
     officerEquipment: function (action, payload) {
       return client.post('/game/officer-equipment/' + action, payload).then(function (data) {
         if (data && data.state) applyState(data.state);

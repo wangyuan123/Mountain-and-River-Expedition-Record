@@ -19,6 +19,7 @@ import java.util.*;
 
 @Service
 public class MarketService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private com.wargame.service.TickService resourceEconomy;
 
     private final MarketOrderRepository marketOrderRepository;
     private final ResourcesRepository resourcesRepository;
@@ -46,8 +47,11 @@ public class MarketService {
     public int getMarketOrderSlotCap(Long playerId, int citySlot) {
         int exLv = getExchangeLevel(playerId, citySlot);
         // 挂单槽位上限完全由交易所等级决定: 基础2个槽位 + 交易所等级 (Lv.1 = 3, Lv.10 = 12)
-        return 2 + exLv;
+        return orderSlotCap(exLv);
     }
+
+    /** 建筑详情与挂单执行共用槽位规则。 */
+    public static int orderSlotCap(int level) { return 2 + level; }
 
     public double getExchangeRate(int exchangeLevel) {
         if (exchangeLevel <= 0) return 0.50;
@@ -96,6 +100,10 @@ public class MarketService {
 
     @Transactional
     public MarketOrder createOrder(Long playerId, int citySlot, String resourceType, int amount, int pricePerUnit) {
+        // 槽位按账号共用，先锁账号再检查挂单和本城资源，跨城请求也必须串行。
+        Player seller = playerRepository.lockById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
+        resourceEconomy.beforeResourceChange(playerId, citySlot);
         int exLv = getExchangeLevel(playerId, citySlot);
         if (exLv <= 0) {
             throw new IllegalArgumentException("当前城池未建成交易所，无法上架");
@@ -111,7 +119,7 @@ public class MarketService {
         }
 
         int slotCap = getMarketOrderSlotCap(playerId, citySlot);
-        int activeCount = marketOrderRepository.countBySellerIdAndStatus(playerId, "ACTIVE");
+        int activeCount = marketOrderRepository.lockActiveOrderIds(playerId).size();
         if (activeCount >= slotCap) {
             throw new IllegalArgumentException("上架槽位已满 (" + activeCount + "/" + slotCap + ")");
         }
@@ -127,9 +135,6 @@ public class MarketService {
         // 扣减资源
         deductResource(res, resourceType, amount);
         resourcesRepository.save(res);
-
-        Player seller = playerRepository.findById(playerId)
-                .orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
 
         MarketOrder order = new MarketOrder();
         order.setSellerId(playerId);
@@ -149,6 +154,12 @@ public class MarketService {
 
     @Transactional
     public MarketOrder buyOrder(Long buyerId, int buyerCitySlot, Long orderId) {
+        Long sellerId = marketOrderRepository.findSellerId(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("挂单不存在"));
+        // 上架、购买、下架统一先锁账号再锁订单；双向交易按相同顺序锁双方。
+        new TreeSet<>(List.of(buyerId, sellerId)).forEach(id -> playerRepository.lockById(id)
+                .orElseThrow(() -> new IllegalArgumentException("交易账号不存在")));
+        resourceEconomy.beforeResourceChange(buyerId, buyerCitySlot);
         int exLv = getExchangeLevel(buyerId, buyerCitySlot);
         if (exLv <= 0) {
             throw new IllegalArgumentException("未建成交易所，无法进行市场交易");
@@ -164,6 +175,7 @@ public class MarketService {
             throw new IllegalArgumentException("不能购买自己上架的商品");
         }
 
+        resourceEconomy.beforeResourceChange(order.getSellerId(), order.getSellerCitySlot());
         Resources buyerRes = resourcesRepository.findCityForTreatment(buyerId, buyerCitySlot)
                 .orElseThrow(() -> new IllegalArgumentException("买方资源不存在"));
 
@@ -176,21 +188,19 @@ public class MarketService {
         Player buyer = playerRepository.findById(buyerId)
                 .orElseThrow(() -> new IllegalArgumentException("买方不存在"));
 
-        // 1. 买家扣除黄金，增加资源
-        buyerRes.setGold(buyerGold - costGold);
-        addResource(buyerRes, order.getResourceType(), order.getAmount());
-        resourcesRepository.save(buyerRes);
-
-        // 2. 卖家结算黄金（扣除税费）
+        // 买卖双方的结算账户须同时存在，整笔交易才能提交。
+        Player seller = playerRepository.findById(order.getSellerId())
+                .filter(p -> !p.deletionDue(System.currentTimeMillis()))
+                .orElseThrow(() -> new IllegalArgumentException("卖方账号已失效，该挂单无法成交"));
+        Resources sellerRes = resourcesRepository.findCityForTreatment(seller.getId(), order.getSellerCitySlot())
+                .orElseThrow(() -> new IllegalArgumentException("卖方结算城市已失效，该挂单无法成交"));
         double tax = Objects.requireNonNullElse(order.getTaxRate(), 0.10);
         long earnGold = Math.max(0, Math.round(costGold * (1.0 - tax)));
-
-        Resources sellerRes = resourcesRepository.findCityForTreatment(order.getSellerId(), order.getSellerCitySlot())
-                .orElse(null);
-        if (sellerRes != null) {
-            sellerRes.addResource("gold", earnGold);
-            resourcesRepository.save(sellerRes);
-        }
+        buyerRes.setGold(buyerGold - costGold);
+        addResource(buyerRes, order.getResourceType(), order.getAmount());
+        sellerRes.addResource("gold", earnGold);
+        resourcesRepository.save(buyerRes);
+        resourcesRepository.save(sellerRes);
 
         // 3. 标记订单为已售出
         order.setStatus("SOLD");
@@ -203,6 +213,7 @@ public class MarketService {
 
     @Transactional
     public MarketOrder cancelOrder(Long playerId, int citySlot, Long orderId) {
+        playerRepository.lockById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         MarketOrder order = marketOrderRepository.findByIdForUpdate(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("挂单不存在"));
 
@@ -215,6 +226,7 @@ public class MarketService {
 
         // 返还资源给卖家（优先返还到当前请求城池，或原上架城池）
         int targetSlot = order.getSellerCitySlot();
+        resourceEconomy.beforeResourceChange(playerId, targetSlot);
         Resources res = resourcesRepository.findCityForTreatment(playerId, targetSlot)
                 .orElseGet(() -> resourcesRepository.findCityForTreatment(playerId, citySlot)
                         .orElseThrow(() -> new IllegalArgumentException("资源记录不存在")));
@@ -226,6 +238,19 @@ public class MarketService {
         order.setCompletedAt(LocalDateTime.now());
 
         return marketOrderRepository.save(order);
+    }
+
+    private int exchangeGain(int amount, int level) {
+        return (int) ((long) amount * (50 + 4 * Math.max(0, Math.min(10, level))) / 100);
+    }
+
+    /** 后端报价使用与兑换扣款相同的整数百分比，拒绝无效币种与数量。 */
+    public Map<String, Object> previewExchange(Long playerId, int slot, String from, String to, int amount) {
+        if (from == null || to == null || !Set.of("food", "steel", "oil", "rare").contains(from)
+                || !Set.of("food", "steel", "oil", "rare").contains(to) || from.equals(to) || amount <= 0)
+            throw new IllegalArgumentException("兑换参数无效");
+        int level = getExchangeLevel(playerId, slot);
+        return Map.of("gain", exchangeGain(amount, level), "rate", getExchangeRate(level), "allowed", level > 0);
     }
 
     @Transactional
@@ -245,6 +270,7 @@ public class MarketService {
             throw new IllegalArgumentException("兑换数量无效");
         }
 
+        resourceEconomy.beforeResourceChange(playerId, citySlot);
         Resources res = resourcesRepository.findCityForTreatment(playerId, citySlot)
                 .orElseThrow(() -> new IllegalArgumentException("资源信息不存在"));
 
@@ -255,8 +281,7 @@ public class MarketService {
 
         double rate = getExchangeRate(exLv);
         // 兑换比例按整数百分比结算，避免100×58%因浮点误差被向下取成57。
-        int percent = 50 + 4 * Math.max(0, Math.min(10, exLv));
-        int gain = (int) ((long) amount * percent / 100);
+        int gain = exchangeGain(amount, exLv);
         if (gain <= 0) {
             throw new IllegalArgumentException("兑换获得数量不足 1");
         }

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 
 function setup() {
   const calls = [];
@@ -64,6 +64,9 @@ test('晋升凭证拒绝重复、过期档位和批量购买，缺钻不发送�
   const { game, calls, toasts } = setup();
   game.Core.state.player = { militaryRank: 3 };
   game.Core.state.items.rank_certificate_4 = 5;
+  Object.assign(game.Core.state.gameplay.shop, {
+    rank_certificate_2:{certificateReason:'已获军衔'},rank_certificate_3:{certificateReason:'已获军衔'},rank_certificate_4:{certificateReason:'已持有'}
+  });
   game.Shop.buy('rank_certificate_2');
   game.Shop.buy('rank_certificate_3');
   game.Shop.buy('rank_certificate_4');
@@ -79,9 +82,12 @@ test('晋升凭证拒绝重复、过期档位和批量购买，缺钻不发送�
   assert.match(view.innerHTML, /disabled[^>]*>已获军衔<\/button>/);
   assert.match(view.innerHTML, /disabled[^>]*>已持有<\/button>/);
   game.Core.state.resources.diamond = 79;
+  game.API.shopBuy=async()=>({success:false,message:'钻石不足'});
   game.Shop.buy('rank_certificate_5');
+  await Promise.resolve();
   assert.equal(calls.length, 0);
   assert.match(toasts.at(-1), /钻石不足/);
+  game.API.shopBuy=async(id)=>{calls.push(['buy',id]);return {success:true};};
   game.Core.state.resources.diamond = 80;
   game.Core.state.items.rank_certificate_5 = 0;
   game.Shop.buy('rank_certificate_5');
@@ -206,6 +212,7 @@ test('新手礼包展示固定资源明细，购买后提示在仓库开启', as
 test('新手礼包开启后的零库存仍显示已购买，切换城市不能重新购买', () => {
   const { game, calls } = setup();
   game.Core.state.items.newbiePack = 0;
+  game.Core.state.gameplay.shop.newbiePack={purchased:true};
   game.Core.state.player = { citySlot: 1 };
   const view = {};
   game.Shop.renderView(view);
@@ -282,15 +289,21 @@ test('充值页关闭后所有新旧档位均不会发起充值', async () => {
   assert.deepEqual(calls, []);
 });
 
-test('普通书与通用书独立上架且通用书购买只入仓', async () => {
+test('商城技能书只保留普通书与通用书，指定书下架且通用书购买只入仓', async () => {
   const { game, calls } = setup();
+  const skillBooks = game.Shop.items().filter(item => item.id.startsWith('skillBook') || item.id === 'universalSkillBook');
+  assert.deepEqual(Array.from(skillBooks, item => item.id), ['skillBook', 'universalSkillBook']);
+  for (const skillId of Object.keys(game.DATA.officerSkills)) {
+    game.Shop.buy('skillBook_' + skillId);
+  }
+  assert.deepEqual(calls, [], '下架指定书不能从前端发起购买');
   const ordinary = game.Constants.shopItems.find(item => item.id === 'skillBook');
   const universal = game.Constants.shopItems.find(item => item.id === 'universalSkillBook');
   assert.equal(ordinary.name, '普通技能书');
   assert.equal(ordinary.price, 80);
   assert.equal(universal.price, 800);
   assert.equal(universal.tag, '自选');
-  assert.match(universal.desc, /Lv\.1.*不用于升级/);
+  assert.match(universal.desc, /满级.*无需升级/);
   game.Shop.buy('universalSkillBook');
   await Promise.resolve();
   assert.deepEqual(calls, [['buy', 'universalSkillBook']]);
@@ -306,7 +319,9 @@ test('批量购买道具传递数量参数并触发批量提示', async () => {
 
   // 钻石不足以支付批量总额时拒绝
   game.Core.state.resources.diamond = 50; // 5个10分加速符需150钻石
+  game.API.shopBuy=async()=>({success:false,message:'钻石不足'});
   game.Shop.buy('speedUp10m', 5);
+  await Promise.resolve();
   assert.match(toasts[1], /钻石不足/);
   assert.equal(calls.length, 1);
 });
@@ -338,7 +353,7 @@ test('关键字搜索与军官二级分类正确过滤商品列表', () => {
   // 3. 军官二级分类：技能秘籍
   game.Shop.setSubCat('skill');
   const skillItems = game.Shop.items();
-  assert.ok(skillItems.length >= 10);
+  assert.equal(skillItems.length, 2);
   assert.ok(skillItems.every(it => it.id.startsWith('skillBook') || it.id === 'universalSkillBook'));
 
   // 4. 军官二级分类：养成与进阶

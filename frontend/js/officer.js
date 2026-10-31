@@ -8,7 +8,6 @@ window.Game = window.Game || {};
   var D = G.DATA;
   var Core = G.Core;
   var skillDetailModal = null;
-  var skillUpgradeModal = null;
   var universalSkillModal = null;
   var universalSkillPending = false;
   var academyAnimTimers = [];
@@ -58,6 +57,12 @@ window.Game = window.Game || {};
       h += '<span class="officer-gem-star' + (i < filled ? '' : ' is-empty') + '" aria-hidden="true"></span>';
     }
     return h + '</span>';
+  }
+
+  /** 培养上限只约束原始属性；兼容没有基础属性字段的历史状态。 */
+  function baseAttribute(officer, key) {
+    var baseKey = 'base' + key.charAt(0).toUpperCase() + key.slice(1);
+    return Number(officer[baseKey] != null ? officer[baseKey] : officer[key]) || 0;
   }
 
   /** 五星军官的稀有度取当前最高属性；军事或防御满值优先于其他满值。 */
@@ -110,7 +115,7 @@ window.Game = window.Game || {};
 
   function renderCandidateCardHtml(o, i, s) {
     s = s || Core.state || {};
-    var cost = o.star * 80;
+    var cost = o.recruitCost;
     var can = !!(s.resources && s.resources.gold >= cost);
     var frame = officerFrame(o);
     var cls = (can ? 'menu-item ok' : 'menu-item lock') + ' officer-card ' + frame.tierClass + ' academy-candidate-card' + (can ? '' : ' is-locked');
@@ -133,7 +138,7 @@ window.Game = window.Game || {};
         if (!sItem) continue;
         var skObj = sItem.id && D.officerSkills ? D.officerSkills[sItem.id] : null;
         var skName = (skObj && skObj.name) || sItem.name || sItem.id || '特长';
-        var skLv = sItem.lv ? 'Lv' + sItem.lv : '';
+        var skLv = skObj ? '满级' : (sItem.lv ? 'Lv' + sItem.lv : '');
         skItems.push(skName + (skLv ? ' ' + skLv : ''));
       }
       if (skItems.length) {
@@ -203,7 +208,7 @@ window.Game = window.Game || {};
       var item = o.skills[i];
       if (!item) continue;
       var sk = item.id ? D.officerSkills[item.id] : null;
-      if (sk) parts.push(sk.name + 'Lv' + item.lv);
+      if (sk) parts.push(sk.name + '（满级）');
       else if (item.name) parts.push(item.name + (item.lv ? 'Lv' + item.lv : ''));
     }
     return parts.length ? ' 技能: ' + parts.join('/') : '';
@@ -214,12 +219,20 @@ window.Game = window.Game || {};
     skillDetailModal = null;
   }
 
-  /** 统一生成技能行，使废弃取消后仍保留升级入口及满级禁用状态。 */
+  function officerIconHtml(info) {
+    return info && G.iconHtml ? G.iconHtml(info.icon, info.name) : '';
+  }
+
+  /** 指定书和通用书允许技能自由组合，共用重复技能与槽位校验；历史 supply 按三军统帅识别，库存由各入口及服务端校验。 */
+  function skillLearningReason(officer, skillId) {
+    var entry = officer && officer.skillLearning && officer.skillLearning[skillId];
+    return entry ? entry.reason : '学习资格待同步';
+  }
+
+  /** 已学技能统一展示原满级效果，只保留查看与废弃操作。 */
   function skillRowHtml(officerId, skillIdx, skill) {
     var info = D.officerSkills[skill.id];
-    var upgrade = skill.lv >= info.max ? ' disabled title="技能已满级"' : ' onclick="Game.Officer.openSkillUpgrade(\'' + officerId + '\',' + skillIdx + ')"';
-    return '<button type="button" class="officer-skill-detail-trigger" onclick="Game.Officer.showSkillDetail(\'' + skill.id + '\',' + skill.lv + ')" title="查看技能详情">' + info.name + ' Lv.' + skill.lv + '/' + info.max + '</button>'
-      + ' <button type="button" class="btn depot-btn"' + upgrade + '>[升级]</button>'
+    return '<button type="button" class="officer-skill-detail-trigger" onclick="Game.Officer.showSkillDetail(\'' + skill.id + '\')" title="查看技能详情">' + officerIconHtml(info) + ' ' + info.name + '（满级）</button>'
       + ' <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'ask\')">[废弃]</button>';
   }
 
@@ -358,6 +371,64 @@ window.Game = window.Game || {};
 
   var Officer = {
     Audio: AcademyAudio,
+    /** 按当前岗位规则解释内政、带兵与常驻加成，复用通用说明弹窗。 */
+    showPositionDetails: function () {
+      if (document.getElementById('officerPositionDetailsModal')) return;
+      var opener = document.activeElement;
+      var chiefPercent = G.ServerRules.value('catalog', {}).roleRates.chiefPercentPerPoint;
+      var researchPercent = G.ServerRules.value('catalog', {}).roleRates.researchPercentPerPoint;
+      var mask = document.createElement('div');
+      mask.id = 'officerPositionDetailsModal';
+      mask.className = 'modal-mask';
+      mask.innerHTML = '<section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="officerPositionDetailsTitle">'
+        + '<div class="modal-title"><span id="officerPositionDetailsTitle">职位详情</span>'
+        + '<button type="button" class="modal-close-btn" id="officerPositionDetailsCloseX" aria-label="关闭职位详情">✕</button></div>'
+        + '<div class="modal-body" tabindex="0" aria-label="三个职位的详细说明">'
+        + '<p>每座城市各设一名市长、一名指挥官和一名司令官。同一军官不能兼任，改任会释放原岗位；替换任职者后，原任职者转为待命。行军中的军官不能改任。</p>'
+        + '<h3>👑 执政市长 · 发展内政</h3><ul>'
+        + '<li><strong>后勤：</strong>每点为本城粮食、钢铁、石油、稀矿的基础产出增加1%加成，与对应生产科技加成相加，再计算其他产量倍率。</li>'
+        + '<li><strong>学识：</strong>每点为黄金税收增加1%加成，并提高科研速度' + researchPercent + '%。科研提速不等于等比例缩短工期。</li>'
+        + '<li><strong>内政技能：</strong>屯田增产提高资源产出，精明理财提高黄金税收，工程营造缩短建筑工期，格物致知提高科研速度，军屯自给降低全城养兵耗粮。所有技能均使用满级效果。</li>'
+        + '<li><strong>生效范围：</strong>只作用于任职城市；装备与套装共鸣计入有效属性。建筑、科研工期在开工时确定，之后换任不会重算已开工队列。</li>'
+        + '<li><strong>选择建议：</strong>优先后勤、学识与内政技能；市长的军事、防御和战斗技能不会自动给守军加成。</li></ul>'
+        + '<h3>⚔️ 作战指挥官 · 带兵作战</h3><ul>'
+        + '<li><strong>守城职责：</strong>作为本城守将，为本城参战编队提供自己的军事、防御和适用战斗技能。守城部队全部参战，不受出征带兵上限限制。</li>'
+        + '<li><strong>攻防属性：</strong>实际带兵将领每点军事提供1%攻击加成，每点防御提供1%防御加成；从首次接战回合E起，在E、E+3、E+6等回合生效，间隔两个回合关闭。技能按各自说明触发，并非所有技能都采用同一周期。</li>'
+        + '<li><strong>出征带兵上限：</strong>本城指挥官的“三军统帅”额外提高20%；军事属性本身不增加带兵上限。出征仍受军衔等规则限制。</li>'
+        + '<li><strong>出征将领：</strong>出征战斗使用实际选择的随队将领；城内指挥官不会自动给每支出征队伍叠加攻防或战斗技能。</li>'
+        + '<li><strong>援军独立：</strong>援军按各自随行将领计算属性和技能，不借用本城指挥官。装备与套装共鸣计入所属将领有效属性。</li>'
+        + '<li><strong>选择建议：</strong>优先军事、防御和适合兵种战术的技能；带兵将领的后勤不直接增加部队生命，学识不直接增加战场速度。</li></ul>'
+        + '<h3>🎖️ 司令官 · 常驻统筹</h3><ul>'
+        + '<li><strong>任命条件：</strong>本城司令部1级建成后解锁。司令官任职期间不能带队出征，需先解除任命。</li>'
+        + '<li><strong>四项属性：</strong>军事提高攻击，防御提高防御，后勤提高生命，学识提高战场移动速度；每点对应属性提供' + chiefPercent + '%加成。例如后勤100，生命倍率为1.1，即生命+10%。</li>'
+        + '<li><strong>范围与时点：</strong>本城出征部队与本城防守方在所有回合享受加成；防守方援军共享被驻军城市的司令官，不叠加援军来源城市的司令官。开战时锁定快照，之后换任或换装不改变已开始的战斗。</li>'
+        + '<li><strong>装备与技能：</strong>装备和套装共鸣计入四项有效属性；司令官技能不参与战斗、带兵上限或内政加成。常驻倍率可与科技、带兵将领生效回合的倍率叠乘。</li>'
+        + '<li><strong>机动边界：</strong>学识影响战场移动和同射程下的先手，不增加射程，也不缩短大地图行军时间；固定工事不会因此移动。</li>'
+        + '<li><strong>司令部升级：</strong>同时出征队伍数为基础5支＋司令部等级，满级15支；等级不重复放大司令官属性，也不提高单队带兵上限。拆除后暂停新战斗的加成，重建后恢复，仍可取消原任命。</li>'
+        + '<li><strong>选择建议：</strong>重视装备后的四项属性；想提高全军生命，可优先为司令官配置后勤装备。</li></ul>'
+        + '</div><div class="modal-foot"><button type="button" class="btn" id="officerPositionDetailsClose">知道了</button></div></section>';
+      var closeX = mask.querySelector('#officerPositionDetailsCloseX');
+      var closeButton = mask.querySelector('#officerPositionDetailsClose');
+      var close = function () {
+        mask.remove();
+        if (opener && opener.isConnected !== false && typeof opener.focus === 'function') opener.focus();
+      };
+      closeX.onclick = close;
+      closeButton.onclick = close;
+      mask.addEventListener('click', function (event) { if (event.target === mask) close(); });
+      mask.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') { event.preventDefault(); close(); }
+        // 保留正文的键盘滚动焦点，只在首尾按钮之间循环，避免操作遮罩后的任命按钮。
+        if (event.key === 'Tab' && event.shiftKey && document.activeElement === closeX) {
+          event.preventDefault(); closeButton.focus();
+        } else if (event.key === 'Tab' && !event.shiftKey && document.activeElement === closeButton) {
+          event.preventDefault(); closeX.focus();
+        }
+      });
+      document.body.appendChild(mask);
+      closeX.focus();
+    },
+
     /** 复用科技页说明弹窗，将招募费用、批次概率和刷新额度集中展示。 */
     showAcademyInfo: function () {
       if (document.getElementById('academyInfoModal')) return;
@@ -647,9 +718,23 @@ window.Game = window.Game || {};
       });
     },
 
+    /** 司令官任命受本城司令部与行军状态限制；条件不足时直接说明原因。 */
     appoint: function (officerId, role) {
-      G.API.appointOfficer(officerId, role).then(function () {
-        G.toast('任命成功');
+      var s = Core.state || {};
+      var officer = (s.officers || []).find(function (o) { return String(o.id) === String(officerId); });
+      if (role === 'commander_in_chief' && officer) {
+        if (officer.role === 'march') {
+          G.toast('军官正在行军，无法任命');
+          return Promise.resolve(null);
+        }
+        // 司令部拆除后仍允许解除现任司令官，不能用建造条件锁住取消操作。
+        if (officer.role !== role && !(s.buildings && Number(s.buildings.headquarters) > 0)) {
+          G.toast('请先到军工建造司令部，再任命司令官');
+          return Promise.resolve(null);
+        }
+      }
+      return G.API.appointOfficer(officerId, role).then(function (resp) {
+        G.toast((resp && resp.message) || '任命成功');
         if (G.MainQuest && G.MainQuest.refresh) G.MainQuest.refresh();
         Core.render();
       }).catch(function (err) {
@@ -679,12 +764,12 @@ window.Game = window.Game || {};
       }
       if (action === 'cancel') {
         if (wrap) {
-          wrap.innerHTML = '<p>解雇后该军官的部位整备进度永久失去，材料不返还。</p><button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'ask\')">[解雇]</button>';
+          wrap.innerHTML = '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'ask\')">[解雇]</button>';
         }
         return;
       }
       if (wrap) {
-        wrap.innerHTML = '<p>解雇后该军官的部位整备进度永久失去，材料不返还。</p><button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'confirm\')">[确认解雇]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'cancel\')">[取消]</button>';
+        wrap.innerHTML = '<p>确认解雇该军官？</p><button type="button" class="btn depot-btn warn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'confirm\')">[确认解雇]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.dismiss(\'' + officerId + '\',\'cancel\')">[取消]</button>';
       }
     },
 
@@ -754,82 +839,26 @@ window.Game = window.Game || {};
         return;
       }
       if (wrap) {
-        wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + ' Lv.' + sk.lv + '/' + skInfo.max + '</b> <span class="d">' + skInfo.desc + '</span> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'confirm\')">[确认废弃]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'cancel\')">[取消]</button>';
+        wrap.innerHTML = '<b style="color:var(--accent-dark)">' + skName + '（满级）' + '</b> <span class="d">' + skInfo.desc + '</span> <button type="button" class="btn depot-btn warn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'confirm\')">[确认废弃]</button> <button type="button" class="btn depot-btn" onclick="Game.Officer.forgetSkill(\'' + officerId + '\',' + skillIdx + ',\'cancel\')">[取消]</button>';
       }
     },
 
-    /**
-     * 打开技能升级选择框，仅展示当前技能对应的指定技能书。
-     * @param {number|string} officerId - 军官 ID
-     * @param {number} skillIdx - 技能在军官技能列表中的索引
-     */
-    openSkillUpgrade: function (officerId, skillIdx) {
-      var officer = findOfficer(Core.state && Core.state.officers, officerId);
-      var owned = officer && officer.skills && officer.skills[skillIdx];
-      var info = owned && D.officerSkills[owned.id];
-      if (!info) { G.toast('技能不存在'); return; }
-      if (owned.lv >= info.max) { G.toast('技能已满级'); return; }
-      var skillId = owned.id === 'supply' ? 'leadership' : owned.id;
-      var itemId = 'skillBook_' + skillId;
-      var book = D.items[itemId];
-      var count = (Core.state.items && Core.state.items[itemId]) || 0;
-      if (skillUpgradeModal) Officer.closeSkillUpgrade();
-      var mask = document.createElement('div');
-      mask.className = 'modal-mask';
-      mask.innerHTML = '<div class="modal-card skill-upgrade-modal">'
-        + '<div class="skill-upgrade-head"><span class="skill-upgrade-kicker">军官技能</span><h3>升级「' + info.name + '」</h3></div>'
-        + '<div class="skill-upgrade-body">'
-        + '<div class="skill-upgrade-level"><span>当前等级</span><strong>Lv.' + owned.lv + '</strong><span class="skill-upgrade-arrow">→</span><span>目标等级</span><strong class="skill-upgrade-next">Lv.' + (owned.lv + 1) + '</strong></div>'
-        + '<p class="skill-upgrade-hint">请选择一本同类型技能书完成升级</p>'
-        + (book && count > 0 ? '<button type="button" class="btn ok skill-upgrade-book"><span class="skill-upgrade-book-icon">' + book.icon + '</span><span>' + book.name + '<small>库存 ×' + count + ' · 消耗 1 本</small></span><span class="skill-upgrade-book-arrow">›</span></button>' : '<p class="skill-upgrade-empty">暂无' + info.name + '技能书，请前往商城获取。</p>')
-        + '</div>'
-        + '<div class="skill-upgrade-foot"><button type="button" class="btn skill-upgrade-cancel">取消</button></div></div>';
-      document.body.appendChild(mask);
-      skillUpgradeModal = mask;
-      mask.querySelector('.skill-upgrade-cancel').onclick = Officer.closeSkillUpgrade;
-      mask.onclick = function (event) { if (event.target === mask) Officer.closeSkillUpgrade(); };
-      var select = mask.querySelector('.skill-upgrade-book');
-      if (select) select.onclick = function () {
-        select.disabled = true;
-        G.API.upgradeSkill(officerId, skillIdx, itemId).then(function (resp) {
-          if (resp && resp.success === false) {
-            G.toast(resp.message || '升级失败');
-            select.disabled = false;
-            return;
-          }
-          Officer.closeSkillUpgrade();
-          G.toast((resp && resp.message) || '技能升级成功');
-          Core.render();
-        }).catch(function (err) {
-          G.toast(err.message || '升级失败');
-          select.disabled = false;
-        });
-      };
-    },
-
-    closeSkillUpgrade: function () {
-      if (skillUpgradeModal && skillUpgradeModal.parentNode) skillUpgradeModal.parentNode.removeChild(skillUpgradeModal);
-      skillUpgradeModal = null;
+    /** 兼容仍持有旧事件的页面，不再打开升级弹窗或提交升级请求。 */
+    openSkillUpgrade: function () {
+      G.toast('技能已统一为满级，无需升级');
     },
 
     /** 返回正式技能与当前军官的学习资格；历史 supply 仅参与已掌握判断。 */
     universalSkillOptions: function (officerId, category) {
       var officer = findOfficer((Core.state && Core.state.officers) || [], officerId);
       if (!officer) return [];
-      var owned = (officer.skills || []).map(function (skill) {
-        var id = typeof skill === 'string' ? skill : skill.id;
-        return id === 'supply' ? 'leadership' : id;
-      });
       return Object.keys(D.officerSkills).filter(function (id) {
         if (id === 'supply') return false;
         var domestic = ['harvest', 'construct', 'finance', 'research', 'ration'].indexOf(id) >= 0;
         return !category || category === 'all' || (category === 'domestic' ? domestic : !domestic);
       }).map(function (id) {
-        var conflict = id === 'bulwark' ? 'borrow_armor' : id === 'borrow_armor' ? 'bulwark' : '';
-        var reason = owned.indexOf(id) >= 0 ? '已掌握'
-          : conflict && owned.indexOf(conflict) >= 0 ? '与「' + D.officerSkills[conflict].name + '」互斥'
-          : owned.length >= 3 ? '技能已满3个，请先废弃一个'
-          : !((Core.state.items || {}).universalSkillBook > 0) ? '通用技能书不足' : '';
+        var reason = skillLearningReason(officer, id)
+          || (!((Core.state.items || {}).universalSkillBook > 0) ? '通用技能书不足' : '');
         return { id: id, info: D.officerSkills[id], reason: reason };
       });
     },
@@ -850,7 +879,7 @@ window.Game = window.Game || {};
       mask.innerHTML = '<div class="modal-card" role="dialog" aria-modal="true" aria-label="通用技能书自选学习">'
         + '<div class="modal-title">通用技能书 · 自选学习</div><div class="modal-body">'
         + '<p>' + esc(officer.name) + ' · 技能 ' + (officer.skills || []).length + '/3 · 通用技能书 ×' + Core.state.items.universalSkillBook + '</p>'
-        + '<p>学习等级固定 Lv.1，仅学习新技能，不用于升级。</p>'
+        + '<p>学习后直接获得满级技能，无需升级。</p>'
         + '<label>技能分类 <select name="skillCategory"><option value="all">全部</option><option value="combat">战斗</option><option value="domestic">内政</option></select></label>'
         + '<div data-skill-options></div><p data-skill-summary>请选择一个技能</p></div>'
         + '<div class="modal-foot"><button type="button" class="btn" data-skill-cancel>取消</button>'
@@ -867,10 +896,10 @@ window.Game = window.Game || {};
         options.innerHTML = choices.map(function (choice) {
           return '<p><label><input type="radio" name="universalSkill" value="' + esc(choice.id) + '"'
             + (choice.reason ? ' disabled' : '') + (selected === choice.id ? ' checked' : '') + '> '
-            + esc(choice.info.name) + ' Lv.1' + (choice.reason ? '（' + esc(choice.reason) + '）' : '')
+            + esc(choice.info.name) + '（满级）' + (choice.reason ? '（' + esc(choice.reason) + '）' : '')
             + '</label><br><small>' + esc(choice.info.desc) + '</small></p>';
         }).join('');
-        summary.textContent = selected ? '消耗通用技能书 ×1，为【' + officer.name + '】学习【' + D.officerSkills[selected].name + '】Lv.1' : '请选择一个技能';
+        summary.textContent = selected ? '消耗通用技能书 ×1，为【' + officer.name + '】学习【' + D.officerSkills[selected].name + '】满级' : '请选择一个技能';
         confirm.disabled = !selected || universalSkillPending;
       }
       options.onchange = function (event) {
@@ -951,11 +980,18 @@ window.Game = window.Game || {};
       });
     },
 
+    /** 提交前再次校验当前军官的学习资格；服务端仍以锁内最新状态决定是否扣书。 */
     useSpecificSkillBook: function (officerId, itemId) {
       var book = D.items[itemId];
       if (!book || itemId.indexOf('skillBook_') !== 0) {
         G.toast('指定技能书不存在');
         return Promise.resolve();
+      }
+      var officer = findOfficer((Core.state && Core.state.officers) || [], officerId);
+      var reason = skillLearningReason(officer, itemId.slice('skillBook_'.length));
+      if (reason) {
+        G.toast(reason);
+        return Promise.resolve({ success: false, message: reason });
       }
       return G.API.depotUse(itemId, officerId).then(function (resp) {
         if (resp && resp.success === false) {
@@ -1069,9 +1105,9 @@ window.Game = window.Game || {};
       }
 
       var bookList = [
-        { id: 'expBook', name: '经验书', icon: '📘', exp: 10000, cnt: bNormal },
-        { id: 'expBookAdv', name: '高级经验书', icon: '📕', exp: 100000, cnt: bAdv },
-        { id: 'expBookRapid', name: '极速经验书', icon: '📕', exp: 500000, cnt: bRapid },
+        { id: 'expBook', name: '经验书', icon: '📘', exp: (G.ServerRules.value('catalog', {}).experienceBooks || {}).expBook, cnt: bNormal },
+        { id: 'expBookAdv', name: '高级经验书', icon: '📕', exp: (G.ServerRules.value('catalog', {}).experienceBooks || {}).expBookAdv, cnt: bAdv },
+        { id: 'expBookRapid', name: '极速经验书', icon: '📕', exp: (G.ServerRules.value('catalog', {}).experienceBooks || {}).expBookRapid, cnt: bRapid },
         { id: 'expBookMax', name: '满级经验书', icon: '📙', exp: 0, isMax: true, cnt: bMax }
       ];
 
@@ -1148,11 +1184,17 @@ window.Game = window.Game || {};
         var summary = mask.querySelector('#expBookSummary');
         var confirmBtn = mask.querySelector('#expBookConfirmBtn');
 
+        var quote = G.ServerRules.cachedPreview({ action: 'experience', objectId: Number(o.id), id: selectedId, count: selectedBook.isMax ? 1 : curQty }, function () {
+          if (Officer._expBookMask === mask && mask.isConnected !== false) updateSliderAndSummary();
+        });
+        if (confirmBtn) confirmBtn.disabled = !quote;
+        if (!quote) { if (summary) summary.textContent = '正在获取经验预览…'; return; }
+
         if (selectedBook.isMax) {
           curQty = 1;
           if (sliderRow) sliderRow.style.display = 'none';
-          var upgraded = G.OFFICER_MAX_LEVEL - (o.level || 1);
-          var points = upgraded;
+          var upgraded = quote.upgraded;
+          var points = quote.points;
           var levelChangeHtml = '<span style="color:#2e7d32;font-weight:bold">Lv.' + o.level + ' → Lv.' + G.OFFICER_MAX_LEVEL + ' (直升满级 +' + upgraded + ' 级)</span>'
             + '<br><span style="color:var(--accent);font-size:12px">立即获得 +' + points + ' 点可分配属性，经验归 0</span>';
 
@@ -1184,15 +1226,7 @@ window.Game = window.Game || {};
           input.value = curQty;
         }
 
-        var totalGain = curQty * selectedBook.exp;
-        var simExp = (o.exp || 0) + totalGain;
-        var simLv = o.level || 1;
-        var upLevels = 0;
-        while (simLv < G.OFFICER_MAX_LEVEL && simExp >= G.expNeeded(simLv)) {
-          simExp -= G.expNeeded(simLv);
-          simLv++;
-          upLevels++;
-        }
+        var totalGain = quote.gain, simExp = quote.remainingExp, simLv = quote.level, upLevels = quote.upgraded;
 
         var levelChangeHtml = '';
         if (upLevels > 0) {
@@ -1203,7 +1237,7 @@ window.Game = window.Game || {};
             levelChangeHtml += '<br><span style="color:#2e7d32;font-size:12px">已可直达满级 (Lv.' + G.OFFICER_MAX_LEVEL + ')</span>';
           }
         } else {
-          var needMore = G.expNeeded(o.level) - simExp;
+          var needMore = quote.neededForNext;
           levelChangeHtml = '<span>Lv.' + o.level + ' (经验: ' + (o.exp || 0) + ' → ' + simExp + ' / ' + G.expNeeded(o.level) + ')</span>'
             + '<br><span style="color:var(--muted);font-size:12px">距升至 Lv.' + (o.level + 1) + ' 还需 ' + (needMore > 0 ? needMore : 0) + ' 经验</span>';
         }
@@ -1452,6 +1486,7 @@ window.Game = window.Game || {};
       }).catch(function (err) { G.toast(err.message || '卸下失败'); });
     },
 
+    /** 使用基础属性计算可分配空间，装备和套装加成不占培养上限。 */
     addAttr: function (officerId, attr, action, customVal) {
       var s = Core.state;
       var o = findOfficer(s.officers, officerId);
@@ -1463,8 +1498,8 @@ window.Game = window.Game || {};
         var n = customVal !== undefined ? customVal : (input ? parseInt(input.value, 10) : 0);
         if (isNaN(n) || n < 1) { G.toast('请输入有效点数'); return; }
         if (n > (o.attrPoints || 0)) { G.toast('点数不足，仅有 ' + (o.attrPoints || 0) + ' 点'); return; }
-        var cur = o[attr] || 0;
-        if (cur + n > G.ATTR_MAX) n = G.ATTR_MAX - cur;
+        var cur = baseAttribute(o, attr);
+        if (n > ((o.assignable || {})[attr] || 0)) { G.toast('超出服务器允许分配的点数'); return; }
         if (n < 1) { G.toast(attrNames[attr] + '已满'); return; }
         G.API.assignOfficerAttr(officerId, attr, n).then(function (resp) {
           if (resp && resp.success === false) {
@@ -1491,8 +1526,8 @@ window.Game = window.Game || {};
         return;
       }
       var avail = o.attrPoints || 0;
-      var cur = o[attr] || 0;
-      var maxAdd = Math.min(avail, G.ATTR_MAX - cur);
+      var cur = baseAttribute(o, attr);
+      var maxAdd = (o.assignable || {})[attr] || 0;
       if (maxAdd < 1) { G.toast(attrNames[attr] + '已满或无可用点数'); return; }
       if (wrap) {
         var quick5 = Math.min(5, maxAdd);
@@ -1529,7 +1564,7 @@ window.Game = window.Game || {};
             G.toast(resp.message || '洗点失败');
             return;
           }
-          G.toast((resp && resp.message) || (oName + ' 已洗点，属性恢复初始值'));
+          G.toast((resp && resp.message) || (oName + ' 已洗点，退还已记录的加点'));
           Core.render();
         }).catch(function (err) {
           G.toast(err.message || '洗点失败');
@@ -1601,13 +1636,14 @@ window.Game = window.Game || {};
       if (chief) {
         h += '<div class="board-slot-officer">' + esc(chief.name) + ' ' + starIcons(chief.star) + '</div>';
         [['military', '攻击'], ['defense', '防御'], ['logistics', '生命'], ['knowledge', '机动']].forEach(function (entry) {
-          h += '<div class="board-slot-detail">' + entry[1] + ' <b>+' + ((chief[entry[0]] || 0) * G.Constants.commandBonusRate * 100).toFixed(1) + '%</b></div>';
+          h += '<div class="board-slot-detail">' + entry[1] + ' <b>+' + Number((chief.chiefPercents || {})[entry[0]] || 0).toFixed(1) + '%</b></div>';
         });
         if (!enabled) h += '<div class="board-slot-detail">司令部未建成，加成暂停</div>';
       } else {
         h += '<div class="board-slot-vacant">暂未任命司令官</div><div class="board-slot-detail">'
           + (enabled ? '在下方选择将领点击【任司令官】' : '先到军工建造司令部') + '</div>';
       }
+      if (!enabled) h += '<button type="button" class="btn-card-action" onclick="event.stopPropagation();Game.go(\'buildArmy\')">前往建造司令部</button>';
       return h + '<div class="board-slot-detail">本城全部战斗常驻；装备、套装计入，技能不参与</div></div>';
     },
 
@@ -1628,6 +1664,7 @@ window.Game = window.Game || {};
       h += '<div class="officer-mgmt-header">';
       h += '<div class="officer-mgmt-title-row">';
       h += '<div class="officer-mgmt-title">🎖️ 参谋部 · 军官管理</div>';
+      h += '<button type="button" class="link-act" aria-haspopup="dialog" onclick="Game.Officer.showPositionDetails()">职位详情</button>';
       h += '<button type="button" class="officer-mgmt-recruit-btn" onclick="Game.go(\'academy\')" title="前往军校招募新将领">招募将领 &gt;</button>';
       h += '</div>';
       h += '<div class="officer-mgmt-desc">已招募将领 <b>' + officers.length + '</b> 名。委任市长提升城池资源产能，委任指挥官加持部队攻防与带兵上限。司令官四项属性增益本城全部战斗，装备与套装计入，技能不参与。</div>';
@@ -1733,8 +1770,7 @@ window.Game = window.Game || {};
               if (!sItem) continue;
               var skObj = (sItem.id && D.officerSkills) ? D.officerSkills[sItem.id] : null;
               var skName = (skObj && skObj.name) || sItem.name || sItem.id || '技能';
-              var skLv = sItem.lv || 1;
-              skillTagsHtml += '<span class="card-skill-tag">⚡ ' + esc(skName) + ' Lv.' + skLv + '</span>';
+              skillTagsHtml += '<span class="card-skill-tag">⚡ ' + esc(skName) + (skObj ? '（满级）' : '') + '</span>';
             }
           }
           if (!skillTagsHtml) {
@@ -1798,6 +1834,7 @@ window.Game = window.Game || {};
           // 底部操作与详情提示
           h += '<div class="card-footer-actions">';
           h += '<div class="card-action-btns">';
+          if (G.PlayGuide) h += '<button type="button" class="btn-card-action" onclick="event.stopPropagation();Game.PlayGuide.openOfficerPreview(\'' + o.id + '\')">任命效果</button>';
           if (o.role === 'mayor') {
             h += '<button type="button" class="btn-card-action btn-dismiss" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'mayor\')">取消市长任命</button>';
             h += '<button type="button" class="btn-card-action btn-appoint-commander" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander\')">任指挥官</button>';
@@ -1811,8 +1848,8 @@ window.Game = window.Game || {};
           if (o.role === 'commander_in_chief') {
             h += '<button type="button" class="btn-card-action btn-dismiss" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander_in_chief\')">取消司令官任命</button>';
           } else {
-            var chiefLocked = !s.buildings || !s.buildings.headquarters || o.role === 'march';
-            h += '<button type="button" class="btn-card-action btn-appoint-commander"' + (chiefLocked ? ' disabled title="司令部落成且军官未行军时可任命"' : '') + ' onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander_in_chief\')">任司令官</button>';
+            var chiefHint = o.role === 'march' ? '（行军中）' : !(s.buildings && Number(s.buildings.headquarters) > 0) ? '（需建司令部）' : '';
+            h += '<button type="button" class="btn-card-action btn-appoint-commander" onclick="event.stopPropagation();Game.Officer.appoint(\'' + o.id + '\',\'commander_in_chief\')">任司令官' + chiefHint + '</button>';
           }
           h += '</div>';
           h += '<span class="card-detail-hint">详情 &gt;</span>';
@@ -1865,7 +1902,14 @@ window.Game = window.Game || {};
 
     _equipmentChoices: {},
 
-    /** 页面选择只改变预览；确认按钮才向服务端提交穿戴或培养。 */
+    /** 展开状态按军官保存到临时界面状态，换装返回新状态后不自动收起。 */
+    toggleEquipmentDetails: function (officerId, expanded) {
+      if (!Core.state) return;
+      var expandedOfficers = Core.state._expandedOfficerEquipment || (Core.state._expandedOfficerEquipment = {});
+      expandedOfficers[officerId] = expanded;
+    },
+
+    /** 页面选择只改变预览；确认按钮才向服务端提交穿戴。 */
     equipmentAction: function (action, payload) {
       return G.API.officerEquipment(action, payload).then(function (r) {
         G.toast(r.message || (r.success === false ? '操作失败' : '操作成功'));
@@ -1878,36 +1922,14 @@ window.Game = window.Game || {};
       c[key] = value; Core.render();
     },
 
-    prepareEquipment: function (officerId, slot, level) {
-      return this.equipmentAction('prepare', { officerId: officerId, slot: slot, expectedLevel: level });
-    },
-
     renderEquipmentOverview: function (s) {
       var p = s.officerEquipment;
       if (!p) return '';
       var esc = G.escapeHtml || function (x) { return String(x); };
-      var h = '<details class="officer-equipment-collapsible officer-equipment-overview-details"><summary class="officer-equipment-summary">军备日常与收藏 · 军备零件 ' + (p.parts || 0) + ' · 图鉴 ' + (p.collection || []).length + '/288</summary>';
+      var h = '<details class="officer-equipment-collapsible officer-equipment-overview-details"><summary class="officer-equipment-summary">装备收藏 · 图鉴 ' + (p.collection || []).length + '/288</summary>';
       h += '<div class="officer-equipment-collapsible-body">';
-      h += '<div class="officer-overview-head-bar">';
-      h += '<div class="officer-equipment-tip">每日任选三项领取，每项40零件；每周领取15项日常后可额外领取240。北京时间00:00重置，周一开始新一周。</div>';
-      h += '<button type="button" class="btn sm depot-btn" onclick="Game.Officer.equipmentAction(\'refresh\',{})">刷新军备任务</button>';
-      h += '</div>';
-      h += '<div class="officer-overview-tasks">';
-      (p.daily || []).forEach(function (t) {
-        h += '<div class="officer-overview-task-row">';
-        h += '<span class="task-name">' + esc(t.name) + '</span>';
-        h += '<span class="task-progress">' + t.progress + '/' + t.required + '</span>';
-        h += '<button type="button" class="btn sm ' + (t.claimed ? 'depot-btn' : 'officer-equipment-btn') + '"' + (t.claimed || t.progress < t.required || p.dailyClaims >= 3 ? ' disabled' : '') + ' onclick="Game.Officer.equipmentAction(\'claim\',{task:\'' + t.id + '\'})">' + (t.claimed ? '已领取' : '领取40零件') + '</button>';
-        h += '</div>';
-      });
-      h += '<div class="officer-overview-task-row is-weekly">';
-      h += '<span class="task-name">周常进度</span>';
-      h += '<span class="task-progress">' + (p.weeklyProgress || 0) + '/15</span>';
-      h += '<button type="button" class="btn sm ' + (p.weeklyClaimed ? 'depot-btn' : 'officer-equipment-btn') + '"' + (p.weeklyClaimed || p.weeklyProgress < 15 ? ' disabled' : '') + ' onclick="Game.Officer.equipmentAction(\'claim\',{task:\'weekly\'})">' + (p.weeklyClaimed ? '已领取' : '领取240零件') + '</button>';
-      h += '</div>';
-      h += '</div>';
       h += '<details class="officer-equipment-collapsible-inner"><summary class="officer-equipment-subsummary">展示成就（不增加属性）</summary><div class="officer-achievements-list">';
-      var descriptions = { first: '任一军官穿齐同套十二件', branches: '四名军官同时穿齐四个分支', collection: '历史获得全部288件', prepared3: '一名军官十二部位整备均达+3', prepared5: '一名军官十二部位整备均达+5', marshal: '元帅同套十二件且全部有效+5', empire: '四名军官覆盖四分支元帅全+5' };
+      var descriptions = { first: '任一军官穿齐同套十二件', branches: '四名军官同时穿齐四个分支', collection: '历史获得全部288件', marshal: '任一军官穿齐元帅同套十二件', empire: '四名军官穿齐四分支元帅十二件套' };
       (p.achievements || []).forEach(function (a) {
         h += '<div class="officer-achievement-row' + (a.unlocked ? ' is-unlocked' : '') + '"><span class="achievement-icon-name">' + (a.unlocked ? '★ ' : '☆ ') + esc(a.name) + '</span><span class="achievement-desc">· ' + descriptions[a.id] + '</span></div>';
       });
@@ -1927,6 +1949,7 @@ window.Game = window.Game || {};
       return h;
     },
 
+    /** 十二件装备默认折叠，仅在玩家主动展开后保留当前军官的展开状态。 */
     renderEquipment: function (o, s) {
       var C = G.Constants, cfg = C.officerEquipmentConfig;
       var esc = G.escapeHtml || function (v) { return String(v == null ? '' : v); };
@@ -1934,18 +1957,22 @@ window.Game = window.Game || {};
       var locked = o.role === 'march';
       equipped.forEach(function (e) { bySlot[e.slot] = e; });
       function netText(keys) {
-        var net = G.EquipmentCatalog.preview(o, keys).net;
+        var preview = G.EquipmentCatalog.preview(o, keys);
+        if (preview.pending) return '正在获取属性预览…';
+        var net = preview.net;
         return cfg.branches.map(function (b) { return b.name + ' ' + (net[b.key] >= 0 ? '+' : '') + net[b.key]; }).join(' · ');
       }
-      var h = '<section class="officer-detail-section officer-equipment"><div class="officer-detail-section-head"><h2>军官十二件套</h2><span>同套3/6/9/12件累计共鸣</span></div>';
-      h += '<div class="officer-equipment-tip">一箱固定给齐十二件。' + (locked ? '<span class="officer-equipment-locked-hint">军官行军期间不可换装或整备。</span>' : '替换装备返还仓库；整备跟随本军官部位，换装保留。') + '</div>';
+      var expanded = !!(s._expandedOfficerEquipment && s._expandedOfficerEquipment[o.id]);
+      var h = '<details class="officer-detail-section officer-equipment officer-equipment-collapsible"' + (expanded ? ' open' : '')
+        + ' ontoggle="Game.Officer.toggleEquipmentDetails(\'' + o.id + '\',this.open)"><summary class="officer-equipment-summary"><span>军官十二件套</span><span>点击展开 / 收起</span></summary><div class="officer-equipment-collapsible-body">';
+      h += '<div class="officer-equipment-tip">一箱固定给齐十二件，同套3/6/9/12件累计共鸣。' + (locked ? '<span class="officer-equipment-locked-hint">军官行军期间不可换装。</span>' : '装备属性固定，无需升级；替换装备返还仓库。') + '</div>';
       var groups = { core: '核心装备', clothing: '防护穿着', kit: '随身军具' }, lastGroup = '';
       cfg.slots.forEach(function (slot) {
         if (slot.group !== lastGroup) {
           h += '<div class="officer-equipment-group-title"><span class="officer-equipment-group-bar"></span>' + groups[slot.group] + '</div>';
           lastGroup = slot.group;
         }
-        var e = bySlot[slot.key], stored = (o.preparation || {})[slot.key] || 0;
+        var e = bySlot[slot.key];
         h += '<div class="officer-equipment-card">';
         h += '<div class="officer-equipment-row"><span class="officer-equipment-slot">' + slot.name + '</span><div class="officer-equipment-info">';
         if (e) {
@@ -1955,7 +1982,7 @@ window.Game = window.Game || {};
         } else {
           h += '<div class="officer-equipment-item-title"><span class="officer-equipment-empty">未装备</span></div>';
         }
-        h += '<div class="officer-equipment-prep-status">部位整备 +' + stored + '，当前有效 +' + (e ? (e.effectivePreparation || 0) : 0) + '</div></div>';
+        h += '</div>';
         if (e) {
           h += '<button type="button" class="btn sm depot-btn warn officer-equipment-unequip-btn"' + (locked ? ' disabled' : '') + ' onclick="Game.Officer.unequip(\'' + o.id + '\',\'' + e.itemId + '\')">卸下</button>';
         }
@@ -1967,7 +1994,7 @@ window.Game = window.Game || {};
           h += '<div class="officer-equipment-sub-row officer-equipment-replace-row">';
           h += '<label class="officer-equipment-replace-label"><span class="officer-equipment-sub-label">替换</span>';
           h += '<select class="officer-equipment-select" aria-label="' + slot.name + '替换" onchange="Game.Officer.chooseEquipment(\'' + o.id + '\',\'' + slot.key + '\',this.value)"><option value="">选择装备（' + options.length + '件可用）</option>';
-          options.forEach(function (k) { var d = C.equipmentItems[k]; h += '<option value="' + k + '"' + (choice === k ? ' selected' : '') + '>' + d.name + ' ×' + s.items[k] + '（Lv.' + d.level + '）</option>'; });
+          options.forEach(function (k) { var d = C.equipmentItems[k]; h += '<option value="' + k + '"' + (choice === k ? ' selected' : '') + '>' + d.name + ' ×' + s.items[k] + '（军官Lv.' + d.level + '）</option>'; });
           h += '</select>';
           if (choice && options.indexOf(choice) >= 0) {
             h += '<button type="button" class="btn sm officer-equipment-btn"' + (locked || o.level < C.equipmentItems[choice].level ? ' disabled' : '') + ' onclick="Game.Officer.equip(\'' + o.id + '\',\'' + choice + '\')">确认替换</button>';
@@ -1977,22 +2004,6 @@ window.Game = window.Game || {};
             var next = equipped.filter(function (v) { return v.slot !== slot.key; }).map(function (v) { return v.itemId; }); next.push(choice);
             h += '<div class="officer-equipment-preview">替换后净变化：' + netText(next) + '</div>';
           }
-          h += '</div>';
-        }
-        if (stored < 5) {
-          var step = cfg.preparation.steps[stored], def = e && C.equipmentItems[e.itemId];
-          var effective = def ? Math.min(stored, def.cap) : 0, after = def ? Math.min(stored + 1, def.cap) : 0;
-          h += '<div class="officer-equipment-sub-row officer-equipment-prep-row">';
-          h += '<div class="officer-equipment-prep-desc">';
-          h += '<span class="officer-equipment-prep-target">整备至 +' + (stored + 1) + '：</span>';
-          h += '<span class="officer-equipment-prep-cost">' + step.parts + '零件 + ' + step.gold + '主城黄金</span>';
-          h += '<span class="officer-equipment-sep">·</span>';
-          h += '<span class="officer-equipment-prep-cond">军官Lv.' + step.required_officer_level + '</span>';
-          h += '<span class="officer-equipment-sep">·</span>';
-          h += '<span class="officer-equipment-prep-gain">主属性再+' + (after - effective) + '</span>';
-          if (!def || stored + 1 > def.cap) h += '<span class="officer-equipment-prep-note">（进度保留，更高档装备可生效）</span>';
-          h += '</div>';
-          h += '<button type="button" class="btn sm officer-equipment-btn officer-equipment-prep-btn"' + (locked || o.level < step.required_officer_level || ((s.officerEquipment || {}).parts || 0) < step.parts ? ' disabled' : '') + ' onclick="Game.Officer.prepareEquipment(\'' + o.id + '\',\'' + slot.key + '\',' + stored + ')">确认整备</button>';
           h += '</div>';
         }
         h += '</div>';
@@ -2018,7 +2029,7 @@ window.Game = window.Game || {};
       h += '<details class="officer-equipment-collapsible"' + (choices.set ? ' open' : '') + '><summary class="officer-equipment-summary">整套穿戴与属性预览</summary>';
       h += '<div class="officer-equipment-collapsible-body">';
       h += '<div class="officer-equipment-form-row"><label class="officer-equipment-form-label">选择套装</label><select class="officer-equipment-select" aria-label="选择整套装备" onchange="Game.Officer.chooseEquipment(\'' + o.id + '\',\'set\',this.value)">';
-      Object.keys(C.equipmentSets).forEach(function (key) { var set = C.equipmentSets[key]; h += '<option value="' + key + '"' + (key === setChoice ? ' selected' : '') + '>' + set.name + ' · Lv.' + set.level + '</option>'; });
+      Object.keys(C.equipmentSets).forEach(function (key) { var set = C.equipmentSets[key]; h += '<option value="' + key + '"' + (key === setChoice ? ' selected' : '') + '>' + set.name + ' · 军官Lv.' + set.level + '</option>'; });
       h += '</select></div>';
       var selected = C.equipmentSets[setChoice], missing = selected.keys.filter(function (k) { return !equipped.some(function (e) { return e.itemId === k; }) && !((s.items || {})[k] > 0); });
       h += '<div class="officer-equipment-preview-box">';
@@ -2029,29 +2040,8 @@ window.Game = window.Game || {};
       h += '<button type="button" class="btn sm officer-equipment-btn"' + (locked || missing.length || o.level < selected.level ? ' disabled' : '') + ' onclick="Game.Officer.equipmentAction(\'equip-set\',{officerId:\'' + o.id + '\',setKey:\'' + setChoice + '\'})">穿戴整套十二件</button>';
       h += '<button type="button" class="btn sm depot-btn"' + (locked || !equipped.length ? ' disabled' : '') + ' onclick="Game.Officer.equipmentAction(\'unequip-all\',{officerId:\'' + o.id + '\'})">整套卸下</button>';
       h += '</div></div></details>';
-      h += '<details class="officer-equipment-collapsible"><summary class="officer-equipment-summary">保存与应用混搭配装</summary>';
-      h += '<div class="officer-equipment-collapsible-body">';
-      h += '<div class="officer-equipment-tip">保存当前十二件目标，应用时仍须有对应装备库存。方案可跨军官使用，整备进度跟随各军官。</div>';
-      var loadouts = (s.officerEquipment || {}).loadouts || {};
-      h += '<div class="officer-loadout-list">';
-      for (var li = 1; li <= 3; li++) {
-        var keys = loadouts[String(li)] || [];
-        h += '<div class="officer-loadout-card"><div class="officer-loadout-header"><span class="officer-loadout-title">配装方案' + li + '</span>';
-        h += '<div class="officer-loadout-actions"><button type="button" class="btn sm officer-equipment-btn"' + (equipped.length !== 12 ? ' disabled' : '') + ' onclick="Game.Officer.equipmentAction(\'save-loadout\',{officerId:\'' + o.id + '\',index:' + li + '})">保存当前混搭</button>';
-        if (keys.length === 12) {
-          var unavailable = keys.some(function (key) { return !equipped.some(function (e) { return e.itemId === key; }) && !(s.items || {})[key]; });
-          var tooHigh = keys.some(function (key) { return o.level < C.equipmentItems[key].level; });
-          h += ' <button type="button" class="btn sm officer-equipment-btn"' + (locked || unavailable || tooHigh ? ' disabled' : '') + ' onclick="Game.Officer.equipmentAction(\'equip-loadout\',{officerId:\'' + o.id + '\',index:' + li + '})">应用十二件方案</button>';
-        }
-        h += '</div></div>';
-        if (keys.length === 12) {
-          h += '<div class="officer-loadout-body"><div class="loadout-net">净变化：' + netText(keys) + (unavailable ? ' · <span class="is-missing">库存不足</span>' : '') + '</div><div class="loadout-names">' + keys.map(function (key) { return C.equipmentNames[key]; }).join('、') + '</div></div>';
-        } else h += '<div class="officer-loadout-empty">尚未保存</div>';
-        h += '</div>';
-      }
-      h += '</div></div></details>';
       h += '<div class="officer-detail-actions"><button type="button" class="btn sm depot-btn" onclick="Game.Officer.openEquipmentShop()">前往军官商城选购</button></div>';
-      return h + this.renderEquipmentOverview(s) + '</section>';
+      return h + this.renderEquipmentOverview(s) + '</div></details>';
     },
 
     renderDetail: function (v) {
@@ -2096,29 +2086,35 @@ window.Game = window.Game || {};
         h += '<div class="officer-record-grid"><div><strong>' + (o.record.battlesWon || 0) + '</strong><span>胜场</span></div><div><strong>' + (o.record.battlesLost || 0) + '</strong><span>败场</span></div><div><strong>' + (o.record.enemiesDefeated || 0) + '</strong><span>击毁敌军</span></div><div><strong>' + winRate + '%</strong><span>胜率</span></div></div></section>';
       }
 
+      if (G.PlayGuide) h += G.PlayGuide.officerPreview(o);
       var canAdd = (o.attrPoints || 0) > 0;
-      h += '<section class="officer-detail-section"><div class="officer-detail-section-head"><h2>军官能力</h2><span>' + (canAdd ? '可分配点 <b>' + o.attrPoints + '</b>' : '能力上限 ' + G.ATTR_MAX) + '</span></div>';
+      h += '<section class="officer-detail-section"><div class="officer-detail-section-head"><h2>军官能力</h2><span>' + (canAdd ? '可分配点 <b>' + o.attrPoints + '</b>' : '基础能力上限 ' + G.ATTR_MAX) + '</span></div>';
       h += '<div class="officer-attr-grid">';
       var attrs = [
-        { key: 'military', label: '军事', value: o.military || 0, effect: o.role === 'commander' ? '指挥官 · 攻击 +' + (o.military || 0) + '%' : '' },
-        { key: 'defense', label: '防御', value: o.defense || 0, effect: o.role === 'commander' ? '指挥官 · 防御 +' + (o.defense || 0) + '%' : '' },
+        { key: 'military', label: '军事', value: o.military || 0, effect: o.role === 'commander' ? '指挥官 · 周期回合攻击 +' + (o.military || 0) + '%' : '' },
+        { key: 'defense', label: '防御', value: o.defense || 0, effect: o.role === 'commander' ? '指挥官 · 周期回合防御 +' + (o.defense || 0) + '%' : '' },
         { key: 'logistics', label: '后勤', value: o.logistics || 0, effect: o.role === 'mayor' ? '市长 · 资源 +' + (o.logistics || 0) + '%' : '' },
-        { key: 'knowledge', label: '学识', value: o.knowledge || 0, effect: o.role === 'mayor' ? '市长 · 黄金 +' + (o.knowledge || 0) + '% · 科研速度 +' + (Math.max(0, o.knowledge || 0) * G.Constants.researchSpeed.knowledgePerPoint * 100).toFixed(1) + '%' : '' }
+        { key: 'knowledge', label: '学识', value: o.knowledge || 0, effect: o.role === 'mayor' ? '市长 · 黄金 +' + (o.knowledge || 0) + '% · 科研速度 +' + Number(o.researchKnowledgePercent || 0).toFixed(1) + '%' : '' }
       ];
       for (var ai = 0; ai < attrs.length; ai++) {
         var attr = attrs[ai];
         if (o.role === 'commander_in_chief') {
           var chiefEffects = { military: '攻击', defense: '防御', logistics: '生命', knowledge: '机动' };
-          attr.effect = '司令官 · ' + chiefEffects[attr.key] + ' +' + (attr.value * G.Constants.commandBonusRate * 100).toFixed(1) + '%（常驻）';
+          attr.effect = '司令官 · ' + chiefEffects[attr.key] + ' +' + Number((o.chiefPercents || {})[attr.key] || 0).toFixed(1) + '%（常驻）';
         }
-        h += '<div class="officer-attr-row"><div class="officer-attr-main"><span>' + attr.label + '</span><strong>' + attr.value + '</strong><small>/ ' + G.ATTR_MAX + '</small>';
-        if (canAdd && attr.value < G.ATTR_MAX) h += '<button type="button" class="officer-attr-add" aria-label="增加' + attr.label + '" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'' + attr.key + '\')">+</button>';
+        var base = baseAttribute(o, attr.key);
+        // 总属性已由后端统一计入装备和共鸣，此处只做拆分，不再次叠加目录数值。
+        var equipmentBonus = Math.max(0, attr.value - base);
+        h += '<div class="officer-attr-row"><div class="officer-attr-main"><span>' + attr.label + '</span><strong>' + attr.value + '</strong>';
+        h += equipmentBonus > 0 ? '<small title="基础属性 + 装备加成（含套装共鸣）">（' + base + ' + <span class="officer-attr-equipment-bonus">' + equipmentBonus + '</span>）</small>' : '<small>/ ' + G.ATTR_MAX + '</small>';
+        if (canAdd && base < G.ATTR_MAX) h += '<button type="button" class="officer-attr-add" aria-label="增加' + attr.label + '" onclick="Game.Officer.addAttr(\'' + o.id + '\',\'' + attr.key + '\')">+</button>';
         h += '</div>';
-        h += '<div class="officer-attr-track"><span style="width:' + Math.max(0, Math.min(100, attr.value / G.ATTR_MAX * 100)) + '%"></span></div>';
+        h += '<div class="officer-attr-track"><span style="width:' + Math.max(0, Math.min(100, base / G.ATTR_MAX * 100)) + '%"></span></div>';
         h += '<span id="attr-add-' + attr.key + '" class="officer-attr-editor"></span>';
         if (attr.effect) h += '<small class="officer-attr-effect">' + attr.effect + '</small>';
         h += '</div>';
       }
+      if (o.legacyAttrAllocation) h += '<p>历史加点保留原值，此后分配的属性点可洗点退还。</p>';
       h += '</div><div id="wash-row" class="officer-detail-actions officer-wash-row">';
       h += '<button type="button" class="btn depot-btn warn" onclick="Game.Officer.wash(\'' + o.id + '\',\'ask\')">[洗点(200金)]</button>';
       h += '</div></section>';
@@ -2137,14 +2133,7 @@ window.Game = window.Game || {};
       h += '<section class="officer-detail-section"><div class="officer-detail-section-head"><h2>等级培养</h2><span>' + bookDescParts.join(' · ') + '</span></div>';
       if (o.level < G.OFFICER_MAX_LEVEL) {
         var canUpgrade = (o.exp || 0) >= need;
-        var canUpCount = 0;
-        var tmpExp = o.exp || 0;
-        var tmpLv = o.level;
-        while (tmpLv < G.OFFICER_MAX_LEVEL && tmpExp >= G.expNeeded(tmpLv)) {
-          tmpExp -= G.expNeeded(tmpLv);
-          tmpLv++;
-          canUpCount++;
-        }
+        var canUpCount = o.availableUpgradeCount || 0;
 
         h += '<div class="officer-exp-caption"><strong>Lv.' + o.level + '</strong><span>经验 ' + (o.exp || 0) + ' / ' + need + ' · ' + pct + '%</span><strong>Lv.' + (o.level + 1) + '</strong></div>';
         h += '<div class="officer-detail-progress"><span style="width:' + pct + '%"></span></div>';
@@ -2168,6 +2157,8 @@ window.Game = window.Game || {};
       var specificSkillBooks = Officer.availableSpecificSkillBooks();
       var specificSkillBookCount = specificSkillBooks.reduce(function (total, book) { return total + book.count; }, 0);
       h += '<section class="officer-detail-section officer-detail-skills"><div class="officer-detail-section-head"><h2>战术技能 <small>' + (o.skills ? o.skills.length : 0) + '/3</small></h2><span>普通 ' + ((s.items && s.items.skillBook) || 0) + '本 · 通用 ' + ((s.items && s.items.universalSkillBook) || 0) + '本 · 指定 ' + specificSkillBookCount + '本</span></div>';
+      h += '<p>技能书用途：普通书随机学习新技能；通用书自选学习；已有指定书学习对应技能。全部直接获得满级效果，无需升级。技能满3项时，先废弃一项才能学习新技能。</p>';
+      h += '<p><a href="#officer-skill-combinations" onclick="Game.Officer.showSkillCombinations();return false;">技能组合介绍</a></p>';
       if (!o.skills || !o.skills.length) {
         h += '<div class="officer-detail-note">暂无技能</div>';
       } else {
@@ -2184,13 +2175,13 @@ window.Game = window.Game || {};
         h += '<div class="officer-detail-note">技能已满3个，请先废弃一个技能再学习</div>';
       }
       if (specificSkillBooks.length) {
-        var hasSkillSlot = !o.skills || o.skills.length < 3;
         h += '<div class="officer-detail-subhead">指定技能书</div><div class="officer-detail-actions">';
         for (var bi = 0; bi < specificSkillBooks.length; bi++) {
           var book = specificSkillBooks[bi];
-          var disabled = hasSkillSlot ? '' : ' disabled title="技能位已满，请先废弃一个技能"';
-          var click = hasSkillSlot ? ' onclick="Game.Officer.useSpecificSkillBook(\'' + o.id + '\',\'' + book.itemId + '\')"' : '';
-          h += '<button type="button" class="btn depot-btn' + (hasSkillSlot ? ' ok' : '') + '"' + click + disabled + '>[' + book.info.icon + ' 使用' + book.info.name + ' ×' + book.count + ']</button>';
+          var reason = skillLearningReason(o, book.itemId.slice('skillBook_'.length));
+          var disabled = reason ? ' disabled title="' + esc(reason) + '"' : '';
+          var click = reason ? '' : ' onclick="Game.Officer.useSpecificSkillBook(\'' + o.id + '\',\'' + book.itemId + '\')"';
+          h += '<button type="button" class="btn depot-btn' + (reason ? '' : ' ok') + '"' + click + disabled + '>[' + officerIconHtml(book.info) + ' 使用' + book.info.name + ' ×' + book.count + ']' + (reason ? '（' + esc(reason) + '）' : '') + '</button>';
         }
         h += '</div>';
       }
@@ -2199,9 +2190,9 @@ window.Game = window.Game || {};
       h += '<section class="officer-detail-section officer-detail-loyalty"><div class="officer-detail-section-head"><h2>忠诚与俸禄</h2><span>每小时结算</span></div>';
       h += '<div class="officer-loyalty-heading"><div><small>忠诚度</small><strong class="' + (loy >= 80 ? 'is-high' : loy >= 50 ? 'is-mid' : 'is-low') + '">' + loy + '<span>/100 · ' + loyLabel + '</span></strong></div><div><small>俸禄</small><strong>' + (o.salary || 0) + '<span>金 / 小时</span></strong></div></div>';
       h += '<div class="officer-detail-progress loyalty"><span style="width:' + Math.max(0, Math.min(100, loy)) + '%"></span></div>';
-      h += '<div class="officer-detail-note">闲置时忠诚缓慢恢复，任职时缓慢下降；俸禄自动从黄金扣除。守城指挥官忠诚为0时，在敌方开启占领的讨伐中守城失败，会被敌方俘虏。</div>';
+      h += '<div class="officer-detail-note">忠诚度不随闲置或任职自然变化；俸禄自动从本城黄金扣除。连续欠薪满1分钟游戏时间后扣2点忠诚，此后每5秒游戏时间扣2点，恢复支付后重新计时。守城指挥官忠诚为0时，在敌方开启占领的讨伐中守城失败，会被敌方俘虏。</div>';
       var nowMs = G.gameNow();
-      var rewardCost = (o.star || 1) * 50 + (o.level || 1) * 2;
+      var rewardCost = o.rewardCost;
       var cooling = o.rewardCoolAt && nowMs < o.rewardCoolAt;
       if (cooling) {
         h += '<div class="officer-detail-actions"><button class="btn sm" disabled>赏赐冷却中 ' + G.formatDuration((o.rewardCoolAt - nowMs) / 1000) + '</button></div>';
@@ -2221,14 +2212,38 @@ window.Game = window.Game || {};
       v.innerHTML = h;
     },
 
-    showSkillDetail: function (skillId, level) {
+    /** 展示推荐的三技能搭配，仅供玩家参考，不改变已学技能或消耗技能书。 */
+    showSkillCombinations: function () {
+      closeSkillDetailModal();
+      var esc = G.escapeHtml || function (value) { return String(value); };
+      var rows = (D.officerSkillCombinations || []).map(function (combo) {
+        var names = combo.skills.map(function (id) { return D.officerSkills[id].name; });
+        return '<tr><td>' + esc(combo.direction) + '</td><td>' + esc(names.join('＋')) + '</td><td>' + esc(combo.tactics) + '</td></tr>';
+      }).join('');
+      var mask = document.createElement('div');
+      mask.className = 'modal-mask officer-skill-detail-mask';
+      mask.innerHTML = '<section class="modal-card officer-skill-detail-modal" role="dialog" aria-modal="true" aria-labelledby="officerSkillCombinationsTitle">'
+        + '<div class="officer-skill-detail-head"><h2 id="officerSkillCombinationsTitle">技能组合介绍</h2>'
+        + '<button type="button" class="officer-skill-detail-close" aria-label="关闭技能组合介绍">×</button></div>'
+        + '<div class="officer-skill-detail-body"><p>每名军官最多学习3项技能，以下为推荐搭配，所有技能均可自由组合。</p>'
+        + '<table><thead><tr><th scope="col">搭配方向</th><th scope="col">三技能组合</th><th scope="col">核心打法</th></tr></thead><tbody>'
+        + rows + '</tbody></table></div></section>';
+      document.body.appendChild(mask);
+      skillDetailModal = mask;
+      mask.querySelector('.officer-skill-detail-close').onclick = closeSkillDetailModal;
+      mask.addEventListener('click', function (event) { if (event.target === mask) closeSkillDetailModal(); });
+      mask.addEventListener('keydown', function (event) { if (event.key === 'Escape') closeSkillDetailModal(); });
+      var closeButton = mask.querySelector('.officer-skill-detail-close');
+      if (closeButton && closeButton.focus) closeButton.focus();
+    },
+
+    showSkillDetail: function (skillId) {
       var skill = D.officerSkills && D.officerSkills[skillId];
       if (!skill) { G.toast('技能不存在'); return; }
       if (typeof document === 'undefined' || !document.createElement || !document.body) return;
 
       closeSkillDetailModal();
       var esc = G.escapeHtml || function (value) { return String(value); };
-      var currentLevel = Math.max(1, Math.min(skill.max || 1, parseInt(level, 10) || 1));
       var iconHtml = (skill.icon && G.iconHtml) ? G.iconHtml(skill.icon, skill.name) + ' ' : '';
       var mask = document.createElement('div');
       mask.className = 'modal-mask officer-skill-detail-mask';
@@ -2238,7 +2253,7 @@ window.Game = window.Game || {};
           '<button type="button" class="officer-skill-detail-close" aria-label="关闭技能详情">×</button>' +
         '</div>' +
         '<div class="officer-skill-detail-body">' +
-          '<div class="officer-skill-detail-level">当前等级 <b>Lv.' + currentLevel + '</b><span>最高 Lv.' + esc(skill.max) + '</span></div>' +
+          '<div class="officer-skill-detail-level">技能效果 <b>满级</b></div>' +
           '<div class="officer-skill-detail-section"><h3>技能说明</h3><p>' + esc(skill.desc || '暂无技能说明') + '</p></div>' +
         '</div>' +
       '</section>';

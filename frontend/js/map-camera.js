@@ -2,8 +2,8 @@
 (function (G) {
   'use strict';
   function Camera(size, x, y, scale) {
-    this.size = size; this.x = x; this.y = y; this.scale = scale || 57.2;
-    // 默认在原始 44 的基础上放大 30%；初始比例仍是按钮、滚轮和双指手势共用的缩小下限。
+    this.size = size; this.x = x; this.y = y; this.scale = scale || 80;
+    // 默认每格 80 像素；初始比例仍是按钮、滚轮和双指手势共用的缩小下限。
     this.minScale = this.scale;
     this.width = 1; this.height = 1;
   }
@@ -52,7 +52,7 @@
   Camera.prototype.zoom = function (factor, px, py) {
     if (!(factor > 0) || !Number.isFinite(factor)) return;
     var before = this.world(px, py);
-    this.scale = Math.max(this.minimumScale(), Math.min(88, this.scale * factor));
+    this.scale = Math.max(this.minimumScale(), Math.min(144, this.scale * factor));
     var after = this.world(px, py);
     this.x += before.x - after.x; this.y += before.y - after.y; this.clamp();
   };

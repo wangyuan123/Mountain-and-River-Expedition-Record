@@ -39,6 +39,9 @@ public class ArmyProductionQueue extends CityOwnedEntity {
     private Integer costOil = 0;
     @Column(name = "cost_rare", nullable = false)
     private Integer costRare = 0;
+    /** 完工待发声望；旧订单在创建时已领取，迁移默认0以免重复发奖。 */
+    @Column(name = "prestige_reward", nullable = false)
+    private int prestigeReward = 0;
     // 创建时实扣总人口；null 仅兼容迁移前的历史订单，不能用当前单价重算退款。
     @Column(name = "cost_population")
     private Integer costPopulation;

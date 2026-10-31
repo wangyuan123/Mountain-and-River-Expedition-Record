@@ -9,6 +9,7 @@ import com.wargame.model.constants.MilitaryRankDef;
 import com.wargame.model.entity.*;
 import com.wargame.repository.*;
 import com.wargame.util.JsonUtil;
+import com.wargame.model.constants.TechnologyRules;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
@@ -17,6 +18,8 @@ import java.util.*;
 @Service
 @Transactional(readOnly = true)
 public class WorldViewService {
+    @org.springframework.beans.factory.annotation.Autowired @org.springframework.context.annotation.Lazy private MarchService marchViews;
+    @org.springframework.beans.factory.annotation.Autowired private PersonalWarService personalWars;
     @org.springframework.beans.factory.annotation.Autowired private WarPowerProtectionService warPowerProtection;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -154,19 +157,12 @@ public class WorldViewService {
                 pcMap.put("militaryRankName", MilitaryRankDef.getRankName(owner.getMilitaryRank()));
                 pcMap.put("prestige", owner.getPrestige() != null ? owner.getPrestige() : 0);
                 pcMap.put("level", 0); // 真实玩家等级仅个人档案可见，地图区不展示玩家等级
-                long pcWarAt = 0L, pcWarEnd = 0L;
-                if (!selfCity && owner != null && player.getId().equals(owner.getWarAgainstId())) {
-                    pcWarAt = owner.getWarAt() != null ? owner.getWarAt() : 0L;
-                    pcWarEnd = owner.getWarEndAt() != null ? owner.getWarEndAt() : 0L;
-                }
-                pcMap.put("selfCity", selfCity);
-                pcMap.put("warAt", pcWarAt);
-                pcMap.put("warEndAt", pcWarEnd);
-                pcMap.put("canAccelerateWar", pcWarAt > GameClock.now()
-                        && player.getId().equals(owner.getWarInitiatorId())
-                        && Objects.equals(pc.getId(), owner.getWarTargetCityId())
-                        && Objects.equals(cityScope.slot(player.getId()), owner.getWarCitySlot())
-                        && !owner.isWarAccelerated());
+                var war = selfCity ? null : personalWars.between(player.getId(), cityOwner);
+                long pcWarAt = war == null ? 0 : war.getWarAt(), pcWarEnd = war == null ? 0 : war.getWarEndAt();
+                pcMap.put("selfCity", selfCity); pcMap.put("warAt", pcWarAt); pcMap.put("warEndAt", pcWarEnd);
+                pcMap.put("canAccelerateWar", war != null && pcWarAt > GameClock.now()
+                        && player.getId().equals(war.getInitiatorId()) && Objects.equals(pc.getId(), war.getTargetCityId())
+                        && cityScope.slot(player.getId()) == war.getCitySlot() && !war.isAccelerated());
                 // coolAt 表示战后保护期 (仅当未处于战争状态时), 战争窗口用 warAt/warEndAt 表达
                 pcMap.put("coolAt", pcWarAt == 0 ? pcWarEnd : 0L);
                 // 列表与坐标地图共用新手保护规则，避免敌对关系绕过受保护城市的行动限制。
@@ -266,6 +262,7 @@ public class WorldViewService {
                     wtMap.put("gatherRes", wt.getGatherRes());
                     wtMap.put("gatherMode", "manual");
                     wtMap.put("gatherHarvested", wt.getGatherHarvested());
+                    wtMap.put("gatherView", marchViews.gatherView(player.getId(), wt));
                 }
                 wildTiles.add(wtMap);
             }
@@ -430,6 +427,7 @@ public class WorldViewService {
         Map<String, Object> mMap = new LinkedHashMap<>();
         mMap.put("id", m.getId());
         mMap.put("version", m.getVersion());
+        mMap.put("acceleration", MarchService.accelerationView(m, now));
         mMap.put("outboundAccelerated", Boolean.TRUE.equals(m.getOutboundAccelerated()));
         mMap.put("returnAccelerated", Boolean.TRUE.equals(m.getReturnAccelerated()));
         mMap.put("stratagemUsed", Boolean.TRUE.equals(m.getStratagemUsed()));
@@ -448,7 +446,7 @@ public class WorldViewService {
         mMap.put("battleMode", m.getBattleMode());
         mMap.put("conquerMode", Objects.requireNonNullElse(m.getConquerMode(), "withdraw"));
         mMap.put("army", JsonUtil.parseObjMap(m.getArmy()));
-        mMap.put("unitEquipment", JsonUtil.parseIntMap(m.getUnitEquipmentSnapshot()));
+        mMap.put("actionSnapshot", TechnologyRules.loadSnapshot(JsonUtil.parseIntMap(m.getActionSnapshot())));
         mMap.put("commanderId", m.getCommanderId());
         mMap.put("carryRes", JsonUtil.parseObjMap(m.getCarryRes()));
         mMap.put("startAt", m.getStartAt());

@@ -122,7 +122,7 @@ test('军情缺失或无效坐标保持文本，目的地缺省时仍可定位�
   assert.doesNotMatch(html, /data-intel-coordinate/);
 });
 
-test('十级雷达按服务端对象目录解析装备并显示本队快照', () => {
+test('十级雷达显示本队科技快照并忽略历史兵种装备', () => {
   const html = render({ radarLevel: 10, army: { infantry: 150 }, commander: '统帅甲', commanderStar: 3, commanderLevel: 8,
     combatTech: { attack_tech: 10 }, unitEquipment: { '@ue:infantry:item:infantry_helmet': 1 },
     commanderAttributes: { military: 80, defense: 70 }, skills: { blitz: 5 },
@@ -131,7 +131,7 @@ test('十级雷达按服务端对象目录解析装备并显示本队快照', ()
   assert.match(html, /步兵 ×150/);
   assert.match(html, /统帅甲 3星 Lv.8/);
   assert.match(html, /攻击科技 Lv.10/);
-  assert.match(html, /已配装装备: 钢盔/);
+  assert.doesNotMatch(html, /已配装装备|钢盔/);
   assert.match(html, /司令官: 司令甲（军事 50 \/ 防御 40 \/ 后勤 30 \/ 学识 20）/);
   assert.match(html, /战斗属性为开战快照/);
   assert.doesNotMatch(html, /undefined|将领有效属性:|将领技能:|军事 80 \/ 防御 70|blitz Lv\.5/);

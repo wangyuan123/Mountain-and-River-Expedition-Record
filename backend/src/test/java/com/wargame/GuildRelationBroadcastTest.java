@@ -45,11 +45,13 @@ class GuildRelationBroadcastTest {
         myGuild.setId(10L);
         myGuild.setName("铁血第一旅");
         when(guilds.findById(10L)).thenReturn(Optional.of(myGuild));
+        when(guilds.lockById(10L)).thenReturn(Optional.of(myGuild));
 
         Guild targetGuild = new Guild();
         targetGuild.setId(20L);
         targetGuild.setName("狂龙军团");
         when(guilds.findById(20L)).thenReturn(Optional.of(targetGuild));
+        when(guilds.lockById(20L)).thenReturn(Optional.of(targetGuild));
 
         when(relations.findByGuildLowIdAndGuildHighId(10L, 20L)).thenReturn(Optional.empty());
 

@@ -32,6 +32,7 @@ class ShieldDurationTest {
     void setUp() {
         when(players.lockById(1L)).thenReturn(Optional.of(new Player()));
         ReflectionTestUtils.setField(depot, "cityScope", scope);
+        ReflectionTestUtils.setField(depot, "economy", mock(com.wargame.service.TickService.class));
         when(scope.slot(1L)).thenReturn(0);
         when(cities.findByPlayerIdAndCitySlot(1L, 0)).thenReturn(Optional.of(city));
         when(items.tryConsume(eq(1L), eq("shield"), eq(1), anyLong())).thenReturn(1);

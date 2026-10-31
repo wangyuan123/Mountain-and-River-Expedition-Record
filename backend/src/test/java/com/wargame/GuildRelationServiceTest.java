@@ -28,6 +28,8 @@ class GuildRelationServiceTest {
         target.setId(3L);
         when(members.findByPlayerId(99L)).thenReturn(Optional.of(new GuildMember(null, 7L, 99L, "admin", 1L)));
         when(guilds.findById(3L)).thenReturn(Optional.of(target));
+        when(guilds.lockById(3L)).thenReturn(Optional.of(target));
+        when(guilds.lockById(7L)).thenReturn(Optional.of(new Guild()));
         when(relations.findByGuildLowIdAndGuildHighId(3L, 7L)).thenReturn(Optional.empty());
 
         service.updateRelation(99L, 3L, GuildRelationService.HOSTILE);

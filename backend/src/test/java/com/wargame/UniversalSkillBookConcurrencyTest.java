@@ -126,7 +126,7 @@ class UniversalSkillBookConcurrencyTest extends BaseServiceTest {
     }
 
     @Test
-    void upgradeAndAbandonPreserveConcurrentLearning() throws Exception {
+    void retiredUpgradeAndAbandonPreserveConcurrentFullLevelLearning() throws Exception {
         for (boolean upgrade : new boolean[] {true, false}) {
             Long playerId = createTestPlayer("books-edit-race-" + upgrade, 30).getId();
             Officer officer = officer(playerId);
@@ -138,13 +138,14 @@ class UniversalSkillBookConcurrencyTest extends BaseServiceTest {
                     () -> officers.learnUniversalSkill(playerId, officer.getId(), "medic"),
                     () -> upgrade ? officers.upgradeSkill(playerId, officer.getId(), 0, "skillBook_pierce")
                             : officers.abandonSkill(playerId, officer.getId(), 0));
-            assertTrue(results.stream().allMatch(result -> Boolean.TRUE.equals(result.get("success"))), results.toString());
+            assertEquals(true, results.get(0).get("success"));
+            assertEquals(!upgrade, results.get(1).get("success"));
             var learned = JsonUtil.parseList(officerRepository.findById(officer.getId()).orElseThrow().getSkills());
-            assertTrue(learned.contains(Map.of("id", "medic", "lv", 1)));
+            assertTrue(learned.contains(Map.of("id", "medic", "lv", 5)));
             assertEquals(upgrade ? 2 : 1, learned.size());
             if (upgrade) {
-                assertTrue(learned.contains(Map.of("id", "pierce", "lv", 3)));
-                assertEquals(0, count(playerId, "skillBook_pierce"));
+                assertTrue(learned.contains(Map.of("id", "pierce", "lv", 5)));
+                assertEquals(1, count(playerId, "skillBook_pierce"));
             }
             assertEquals(0, count(playerId, "universalSkillBook"));
         }

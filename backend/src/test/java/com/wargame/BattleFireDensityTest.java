@@ -2,7 +2,6 @@ package com.wargame;
 
 import com.wargame.model.constants.FortDef;
 import com.wargame.model.constants.UnitDef;
-import com.wargame.model.constants.UnitEquipmentEffects;
 import com.wargame.model.dto.CommandBonus;
 import com.wargame.service.BattleService;
 import org.junit.jupiter.api.Test;
@@ -144,7 +143,7 @@ class BattleFireDensityTest {
     void equipmentGroupsAndPracticeValuationIncludeDensityWithoutChangingRangeOrSpeed() {
         var engine = new BattleService(1);
         String group = "rocket~support";
-        var gear = new HashMap<>(Map.of("attack_tech", 10, UnitEquipmentEffects.key(group, "ground"), 10));
+        var gear = new HashMap<>(Map.of("attack_tech", 10, "@ue:" + group + ":" + "ground", 10));
         var baseline = engine.practiceStats(group, context(gear, Map.of()));
         gear.put("fire_density", 10);
         var stats = engine.practiceStats(group, context(gear, Map.of()));

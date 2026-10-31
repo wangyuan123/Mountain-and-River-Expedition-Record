@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const vm = require('node:vm');
+const vm = require('./server-gameplay.cjs').vm;
 const path = require('node:path');
 
 function setup(extra = {}) {
@@ -43,115 +43,15 @@ function setup(extra = {}) {
   return c;
 }
 
-test('infantry personal cargo contributes to dispatch load and shares logistics technology', () => {
+test('dispatch no longer exposes browser speed, travel time or fuel formulas', () => {
   const { Game: g } = setup();
-  assert.equal(g.World.calcDispatchLoad({ infantry: 1 }), 10);
-  assert.equal(g.World.calcDispatchLoad({ infantry: 50 }), g.World.calcDispatchLoad({ truck: 1 }));
-  assert.equal(g.World.calcDispatchLoad({ infantry: 100, truck: 2 }), 2000);
+  for (const name of ['calcDispatchSpeed', 'calcDispatchMarchTime', 'calcDispatchFuel', 'calcInterceptionPlan']) assert.equal(g.World[name], undefined);
+  g.World._currentRoute = { cargoLimit: 12345, oil: 678, seconds: 234 };
+  assert.equal(g.World.calcDispatchLoad(), 12345);
   g.Core.state.tech.log_load = 10;
-  assert.equal(g.World.calcDispatchLoad({ infantry: 100 }), 1500);
-  assert.equal(g.World.calcDispatchLoad({ infantry: 100, truck: 2 }), 3000);
-  g.Core.state.tech.log_load = 1;
-  assert.equal(g.World.calcDispatchLoad({ infantry: 10 }), 105);
-});
-
-test('calcDispatchSpeed selects slowest unit speed among multiple unit types', () => {
-  const { Game: g } = setup();
-
-  // 侦察机基础速度9。
-  const res1 = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.equal(res1.slowestSpd, 9);
-  assert.equal(res1.slowestUnitId, 'scout');
-  assert.equal(res1.slowestUnitName, g.DATA.units.scout.name);
-  assert.equal(res1.unitCount, 1);
-
-  // 混编按最慢兵种：侦察机9、步兵2，整队采用步兵速度。
-  const res2 = g.World.calcDispatchSpeed({ scout: 10, infantry: 50 });
-  assert.equal(res2.slowestSpd, 2);
-  assert.equal(res2.slowestUnitId, 'infantry');
-  assert.equal(res2.slowestUnitName, g.DATA.units.infantry.name);
-  assert.equal(res2.unitCount, 2);
-
-  // 轻坦与卡车基础速度均为4，同速时保留遍历到的首个兵种。
-  const res3 = g.World.calcDispatchSpeed({ ltank: 20, truck: 10 });
-  assert.equal(res3.slowestSpd, 4);
-  assert.equal(res3.slowestUnitId, 'ltank');
-  assert.equal(res3.slowestUnitName, g.DATA.units.ltank.name);
-
-  // Empty army
-  const res4 = g.World.calcDispatchSpeed({});
-  assert.equal(res4.slowestSpd, null);
-  assert.equal(res4.unitCount, 0);
-
-  // Army with zero counts
-  const res5 = g.World.calcDispatchSpeed({ infantry: 0, scout: 0 });
-  assert.equal(res5.slowestSpd, null);
-});
-
-test('calcDispatchSpeed factors in engine technology speed bonuses', () => {
-  const c = setup();
-  const { Game: g } = c;
-
-  // Set technology: arm_engine level 2 (+10%), air_engine level 4 (+20%)
-  g.Core.state.tech.arm_engine = 2; // +10%
-  g.Core.state.tech.air_engine = 4; // +20%
-
-  // 轻坦基础4，燃烧引擎2级后为4.4。
-  const resArm = g.World.calcDispatchSpeed({ ltank: 10 });
-  assert.ok(Math.abs(resArm.slowestSpd - 4.4) < 1e-6);
-
-  // 侦察机基础9，喷气推进4级后为10.8。
-  const resAir = g.World.calcDispatchSpeed({ scout: 5 });
-  assert.ok(Math.abs(resAir.slowestSpd - 10.8) < 1e-6);
-
-  // 轻坦4.4与侦察机10.8混编，采用轻坦速度。
-  const resMixed = g.World.calcDispatchSpeed({ ltank: 10, scout: 5 });
-  assert.ok(Math.abs(resMixed.slowestSpd - 4.4) < 1e-6);
-  assert.equal(resMixed.slowestUnitId, 'ltank');
-
-  // 步兵也接燃烧引擎，基础2在2级科技下为2.2。
-  const resWithInf = g.World.calcDispatchSpeed({ ltank: 10, scout: 5, infantry: 20 });
-  assert.equal(resWithInf.slowestSpd, 2.2);
-  assert.equal(resWithInf.slowestUnitId, 'infantry');
-
-  // 特种兵与卡车共用陆军科技，地图行军预估同步获得加成。
-  assert.ok(Math.abs(g.World.calcDispatchSpeed({ special: 10 }).slowestSpd - 6.6) < 1e-6);
-  assert.ok(Math.abs(g.World.calcDispatchSpeed({ truck: 10 }).slowestSpd - 4.4) < 1e-6);
-});
-
-test('calcDispatchMarchTime computes march seconds accurately with distance and speed boost', () => {
-  const { Game: g } = setup();
-
-  // Distance: 10 tiles, Speed: 3, secPerGrid: 18
-  // ceil(10 * 18 / 3) = 60 seconds
-  const t1 = g.World.calcDispatchMarchTime(10, 3, 1.0);
-  assert.equal(t1, 60);
-
-  // 距离15格，轻坦2级引擎速度4.4：ceil(15 × 18 / 4.4) = 62秒。
-  const t2 = g.World.calcDispatchMarchTime(15, 4.4, 1.0);
-  assert.equal(t2, 62);
-
-  // With 50% march boost (speedMul = 1.5)
-  // 10 * 18 / (3 * 1.5) = 180 / 4.5 = 40 seconds
-  const t3 = g.World.calcDispatchMarchTime(10, 3, 1.5);
-  assert.equal(t3, 40);
-
-  // Minimum duration is 1 second
-  const t4 = g.World.calcDispatchMarchTime(0, 14, 1.0);
-  assert.equal(t4, 1);
-});
-
-test('calcDispatchFuel multiplies rounded distance and route-leg oil consumption by ten', () => {
-  const { Game: g } = setup();
-
-  // 单程原始油耗 1.4，先取整为 2 再乘 10；步兵不贡献油耗。
-  const oneWay = g.World.calcDispatchFuel({ infantry: 10, special: 2, ltank: 3 }, 10, 1);
-  assert.equal(oneWay, 20);
-
-  // 普通出征预扣往返油耗，驻防只需要单程油耗。
-  const roundTrip = g.World.calcDispatchFuel({ infantry: 10, special: 2, ltank: 3 }, 10, 2);
-  assert.equal(roundTrip, 30);
-  assert.equal(g.World.calcDispatchFuel({ infantry: 10 }, 10, 2), 0);
+  assert.equal(g.World.calcDispatchLoad(), 12345);
+  g.World._currentRoute = null;
+  assert.equal(g.World.calcDispatchLoad(), null);
 });
 
 test('all units define non-negative march fuel while infantry remains fuel-free', () => {
@@ -240,14 +140,15 @@ test('dispatch estimates and boost descriptions follow each active march order t
   g.Core.state.cityState.marchBoostUntil = g.gameNow() + 3600000;
   for (const percent of [10, 25, 50]) {
     g.Core.state.cityState.marchBoostPercent = percent;
+    g.World._currentRoute = {cargoLimit:500,distance:20,seconds:173,oil:37,boostPercent:percent};
     g.World.updateDispatchStats();
-    const seconds = Math.ceil(20 * g.DATA.world.marchSecPerGrid / (2 * (1 + percent / 100)));
-    assert.equal(elements.estMarchTimeOneWay.textContent, g.World.fmtDuration(seconds));
+    assert.equal(elements.estMarchTimeOneWay.textContent, g.World.fmtDuration(173));
     assert.ok(elements.estMarchBoostTag.textContent.includes('+' + percent + '%'));
-    assert.ok(elements.estMarchSpeedTip.textContent.includes('+' + percent + '%'));
+    assert.match(elements.estMarchSpeedTip.textContent, /服务端/);
   }
   g.Core.state.cityState.marchBoostUntil = g.gameNow() - 1;
+  g.World._currentRoute=null;
   g.World.updateDispatchStats();
-  assert.equal(elements.estMarchBoostTag.style.display, 'none');
-  assert.equal(elements.estMarchTimeOneWay.textContent, g.World.fmtDuration(180));
+  assert.equal(elements.estMarchBoostTag.hidden,true);
+  assert.equal(elements.estMarchTimeOneWay.textContent,'等待服务端计算');
 });

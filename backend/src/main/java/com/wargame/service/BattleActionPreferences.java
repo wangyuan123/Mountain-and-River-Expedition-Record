@@ -1,7 +1,6 @@
 package com.wargame.service;
 
 import com.wargame.model.constants.UnitDef;
-import com.wargame.model.constants.MobilizationRules;
 import com.wargame.util.GameClock;
 import com.wargame.model.entity.Player;
 import com.wargame.repository.PlayerRepository;
@@ -35,7 +34,7 @@ public class BattleActionPreferences {
         this.cities = cities;
     }
 
-    /** sortieArmy 为 null 时自动选兵；手动配置允许缺省兵种，缺省值为 0。 */
+    /** 保留旧客户端数量和动员周期字段用于兼容反序列化；守城全员参战，不再读取或保存这些预设。 */
     public record Preferences(Map<String, String> outgoing, Map<String, String> defending,
                               Map<String, Object> sortieArmy, String formationKey) {
         public Preferences(Map<String, String> outgoing, Map<String, String> defending, Map<String, Object> sortieArmy) {
@@ -43,6 +42,7 @@ public class BattleActionPreferences {
         }
     }
 
+    /** sortieArmy 恒为 null；sortieCap 兼容旧字段名，仅表示主动出征上限，守城没有人数上限。 */
     public record View(Map<String, String> outgoing, Map<String, String> defending,
                        Map<String, Integer> sortieArmy, int sortieCap, boolean locked, String formationKey) {}
 
@@ -60,10 +60,8 @@ public class BattleActionPreferences {
     public View get(Long playerId) {
         Player player = players.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
         long now = GameClock.now();
-        String army = MobilizationRules.sortieArmy(player, now);
         return new View(effective(player.getOutgoingBattleActions()), effective(player.getDefendingBattleActions()),
-                army == null ? null : JsonUtil.parseIntMap(army),
-                armyService.armyCapAt(playerId, now), isLocked(playerId), MobilizationRules.formationKey(player, now));
+                null, armyService.armyCapAt(playerId, now), isLocked(playerId), "default");
     }
 
     /** 保存攻守两套完整配置；拒绝未知兵种或非法命令，防止离线回合使用无效指令。 */
@@ -75,75 +73,26 @@ public class BattleActionPreferences {
         if (preferences == null) {
             throw new IllegalArgumentException("请同时提交出城和守城的默认战术");
         }
-        long now = GameClock.now();
-        String formationKey = MobilizationRules.formationKey(player, now);
-        // 旧客户端仅能保存无动员的默认配置；过期或跨动员周期的草稿一律拒绝。
-        String expectedKey = preferences.formationKey() == null ? "default" : preferences.formationKey();
-        if (!formationKey.equals(expectedKey)) throw new IllegalArgumentException("动员状态已变化，请重新加载防守编队后保存");
         Map<String, String> outgoing = validate(preferences.outgoing());
         Map<String, String> defending = validate(preferences.defending());
-        Map<String, Integer> sortieArmy = validateSortieArmy(preferences.sortieArmy(), armyService.armyCapAt(playerId, now));
         player.setOutgoingBattleActions(JsonUtil.toJson(outgoing));
         player.setDefendingBattleActions(JsonUtil.toJson(defending));
-        String army = sortieArmy == null ? null : JsonUtil.toJson(sortieArmy);
-        if (formationKey.startsWith("mobilization:")) player.setMobilizationSortieArmy(army);
-        else player.setSortieArmy(army);
         players.save(player);
         return get(playerId);
     }
 
-    /** 校验真实整数及总上限；不将负数、小数、未知兵种或溢出值静默转换成有效配置。 */
-    private Map<String, Integer> validateSortieArmy(Map<String, Object> configured, int cap) {
-        if (configured == null) return null;
-        Map<String, Integer> result = new LinkedHashMap<>();
-        long total = 0;
-        for (var entry : configured.entrySet()) {
-            Object value = entry.getValue();
-            if (!UnitDef.UNITS.containsKey(com.wargame.model.constants.UnitEquipmentEffects.base(entry.getKey())) || !(value instanceof Number number)
-                    || !Double.isFinite(number.doubleValue()) || number.doubleValue() != number.longValue()
-                    || number.longValue() < 0 || number.longValue() > Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("迎战兵力必须为有效兵种的非负整数");
-            }
-            int count = ((Number) value).intValue();
-            result.put(entry.getKey(), count);
-            total += count;
-        }
-        if (total > cap) throw new IllegalArgumentException("迎战兵力超过出城迎战上限 " + cap + "（当前选择 " + total + "）");
-        return result;
-    }
-
     /**
-     * 按被攻击城市的实时驻军和容量生成迎战编队；未设置时自动选兵。
-     * 驻军不足先按兵种截断，再按比例缩减超额编队，避免换城或加成失效后越过上限。
-     * 工事不占迎战名额；固定兵种顺序用于分配整数余数，保证每次选兵结果一致。
+     * 锁定开战时被攻击城市的全部可战兵力，不读取历史迎战预设，也不使用出征带兵上限。
+     * 工事由战斗入口另行加入；伤兵和在途部队不在城市可用兵力中，不会加入本场。
      */
     @Transactional(readOnly = true)
     public Map<String, Integer> selectSortieArmy(Long playerId, Map<String, Integer> available) {
-        Player player = players.findById(playerId).orElseThrow(() -> new IllegalArgumentException("玩家不存在"));
-        long now = GameClock.now();
-        String army = MobilizationRules.sortieArmy(player, now);
-        Map<String, Integer> configured = army == null ? available : JsonUtil.parseIntMap(army);
         Map<String, Integer> selected = new LinkedHashMap<>();
         UnitDef.UNITS.keySet().stream().sorted().forEach(unit -> {
-            int count = Math.min(Math.max(0, configured.getOrDefault(unit, 0)),
-                    Math.max(0, available.getOrDefault(unit, 0)));
-            if (count > 0) selected.put(unit, count);
+            Integer count = available.get(unit);
+            if (count != null && count > 0) selected.put(unit, count);
         });
-        long total = selected.values().stream().mapToLong(Integer::longValue).sum();
-        int cap = armyService.armyCapAt(playerId, now);
-        if (total <= cap) return selected;
-        Map<String, Integer> limited = new LinkedHashMap<>();
-        selected.forEach((unit, count) -> limited.put(unit, (int) ((long) count * cap / total)));
-        int remaining = cap - limited.values().stream().mapToInt(Integer::intValue).sum();
-        for (String unit : selected.keySet()) {
-            if (remaining == 0) break;
-            if (limited.get(unit) < selected.get(unit)) {
-                limited.put(unit, limited.get(unit) + 1);
-                remaining--;
-            }
-        }
-        limited.values().removeIf(count -> count == 0);
-        return limited;
+        return selected;
     }
 
     /** 仅将有存活兵力的兵种转换为默认指令；工事与 NPC 不使用玩家账号配置。 */
@@ -155,9 +104,9 @@ public class BattleActionPreferences {
         Map<String, BattleService.UnitOrder> orders = new LinkedHashMap<>();
         Map<String, String> configured = effective(defending ? player.getDefendingBattleActions() : player.getOutgoingBattleActions());
         for (Map.Entry<String, Integer> entry : army.entrySet()) {
-            if (entry.getValue() == null || entry.getValue() <= 0 || !UnitDef.UNITS.containsKey(com.wargame.model.constants.UnitEquipmentEffects.base(entry.getKey()))) continue;
+            if (entry.getValue() == null || entry.getValue() <= 0 || !UnitDef.UNITS.containsKey(com.wargame.model.constants.BattleUnitIds.base(entry.getKey()))) continue;
             orders.put(entry.getKey(), new BattleService.UnitOrder(
-                    BattleService.CommandAction.valueOf(configured.get(com.wargame.model.constants.UnitEquipmentEffects.base(entry.getKey())))));
+                    BattleService.CommandAction.valueOf(configured.get(com.wargame.model.constants.BattleUnitIds.base(entry.getKey())))));
         }
         return orders;
     }

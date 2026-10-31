@@ -31,12 +31,12 @@
 | `WARGAME_EMAIL_HMAC_KEY` | Base64 编码的另一把 32 字节摘要密钥 |
 | `WARGAME_MAIL_HOURLY_LIMIT` / `WARGAME_MAIL_DAILY_LIMIT` | 默认 200 / 1000，按发件服务实际额度调整 |
 | `WARGAME_MAIL_QUEUE_LIMIT` | 默认 1000 条待发/发送中任务 |
-| `WARGAME_MAIL_TRUSTED_PROXIES` | 受控反向代理 IP 或 CIDR，逗号分隔；默认不信任转发头 |
+| `WARGAME_TRUSTED_PROXIES` | 全系统统一的受控反向代理 IP/CIDR；旧 `WARGAME_MAIL_TRUSTED_PROXIES` 仅作兼容 |
 | `WARGAME_SUPPORT_URL` | 实际官方支持 HTTPS 地址；未配置时不展示虚构链接 |
 
 两把密钥分别用 `openssl rand -base64 32` 生成并备份。不能在已有邮箱数据时直接更换；当前密文格式为 `v1`，正式轮换需要实现带旧密钥读取、重加密及 HMAC 唯一索引重建流程。
 
-`docker-compose.yml` 已透传上述配置。受信任代理必须覆盖 `X-Real-IP`，本仓库 Nginx 已采用该设置；不能填写包含非受控客户端的宽泛网段。默认仅按 TCP 来源限流，代理部署若未配置可信代理会把共享来源计入同一限额。对外网关应启用 HTTPS。
+`docker-compose.yml` 已透传上述配置。注册、登录、邮箱、后台审计及统一限流共用可信代理判断；网关必须覆盖来源头，本仓库 Nginx 已覆盖 XFF 与 `X-Real-IP`，并清除 `Forwarded`。不能填写包含非受控客户端的宽泛网段。默认仅按 TCP 来源限流，代理部署若未配置可信代理会把共享来源计入同一限额。具体代理链规则见 [后台凭据与统一请求防护](AUTH_REQUEST_SECURITY.md)。对外网关应启用 HTTPS。
 
 缺少发件配置或密钥时，不提供免邮箱注册降级。`GET /api/auth/server` 的 `accountSecurity.mailAvailable` 表示配置完整，不代表已经验证实际 SMTP 连通或收件成功。投递失败仅记录内部任务编号，需接入运维告警；整体故障可关闭发码，过期载荷清理仍继续执行。
 

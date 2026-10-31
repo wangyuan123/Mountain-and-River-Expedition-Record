@@ -56,7 +56,7 @@ class BotPlannerTest {
         when(armies.findByPlayerIdAndCitySlot(1L, 0)).thenReturn(List.of(infantry, recon));
         when(constructions.findByPlayerIdAndCitySlot(1L, 0)).thenReturn(List.of(new Construction(), new Construction(), new Construction()));
         when(research.findByPlayerIdOrderByStartedAtAscIdAsc(1L)).thenReturn(List.of(new TechResearchQueue()));
-        when(ticks.foodPerHour(1L)).thenReturn(200);
+        when(ticks.foodPerHour(1L)).thenReturn(200L);
         when(world.calcScanRadius(1L)).thenReturn(3);
         when(marchService.getMaxMarches(1L, 0)).thenReturn(5);
         when(worldView.getWorld(eq(player), anyInt(), anyInt(), anyInt())).thenReturn(Map.of("bandits", List.of(target())));

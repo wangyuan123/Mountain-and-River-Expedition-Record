@@ -17,7 +17,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PvpSnapshotService {
     public static final String RULES = "pvp-v1-" + PvpJson.hash(PvpJson.write(Map.of("battle", BattleRules.PRACTICE_VERSION, "units", versionedUnits(),
-            "skills", versionedSkills(), "equipment", UnitEquipmentDef.ITEMS))).substring(0, 24);
+            "skills", versionedSkills()))).substring(0, 24);
 
     /** 城市协防只补充闪电的场景说明，演习仍用原引擎及已校准的技能定义摘要。 */
     private static Map<String, OfficerSkillDef> versionedSkills() {
@@ -103,8 +103,8 @@ public class PvpSnapshotService {
             Officer chief = targets.getCommanderInChief(playerId, preset.citySlot());
             var ca = equipment.attributes(chief);
             CommandBonus bonus = chief == null ? CommandBonus.NONE : new CommandBonus(chief.getId(), chief.getName(), ca.military(), ca.defense(), ca.logistics(), ca.knowledge());
-            Map<String, Integer> tech = new TreeMap<>(UnitEquipmentEffects.forArmy(targets.getCombatTechMap(playerId), preset.army()));
-            tech.keySet().removeIf(k -> !k.startsWith(UnitEquipmentEffects.PREFIX) && !Set.of("attack_tech", "defense_tech", "cmd_hp", "fire_density", "arm_engine", "air_engine", "nav_engine", "weapon_range").contains(k));
+            Map<String, Integer> tech = new TreeMap<>(TechnologyRules.activeTech(targets.getCombatTechMap(playerId)));
+            tech.keySet().removeIf(k -> !Set.of("attack_tech", "defense_tech", "cmd_hp", "fire_density", "arm_engine", "air_engine", "nav_engine", "weapon_range").contains(k));
             Map<String, Integer> skills = new TreeMap<>(targets.getCommanderSkills(o));
             Map<String, Double> values = new TreeMap<>();
             Map<String, Map<String, Double>> stats = new TreeMap<>();
@@ -147,8 +147,33 @@ public class PvpSnapshotService {
             cityList.add(Map.of("slot", 0, "name", "主城"));
             cities.findByOwnerIdAndCitySlotIsNotNullOrderByCitySlotAsc(player).stream().filter(c -> c.getCitySlot() != 0 && c.getReadyAt() <= GameClock.now())
                     .forEach(c -> cityList.add(Map.of("slot", c.getCitySlot(), "name", "城市 " + c.getCitySlot())));
-            return Map.of("army", targets.getArmyMap(player), "cap", armies.armyCap(player), "officers", candidates, "cities", cityList,
+            Map<String, Integer> availableArmy = targets.getArmyMap(player);
+            int cap = armies.armyCap(player);
+            return Map.of("army", availableArmy, "cap", cap, "defaultArmies", Map.of(
+                    "LAND_AIR", defaultArmy(availableArmy, cap, "land"), "SEA_AIR", defaultArmy(availableArmy, cap, "sea")),
+                    "officers", candidates, "cities", cityList,
                     "chief", Objects.requireNonNullElse(targets.getCommanderInChief(player, slot), new Officer()).getName() == null ? "未任命" : targets.getCommanderInChief(player, slot).getName());
         }
     }
+
+    /** 默认编队与“填满上限”共用后端比例分配，余数按稳定兵种顺序补齐且不超过库存。 */
+    public static Map<String, Integer> defaultArmy(Map<String, Integer> available, int cap, String branch) {
+        List<String> keys = available.keySet().stream().filter(id -> {
+            UnitDef unit = UnitDef.UNITS.get(id);
+            return unit != null && ("air".equals(unit.branch()) || branch.equals(unit.branch())) && available.get(id) > 0;
+        }).sorted().toList();
+        long total = keys.stream().mapToLong(available::get).sum();
+        Map<String, Integer> selected = new LinkedHashMap<>();
+        long left = Math.max(0, cap);
+        for (String id : keys) {
+            int count = total > cap ? (int) ((long) available.get(id) * Math.max(0, cap) / total) : available.get(id);
+            if (count > 0) selected.put(id, count);
+            left -= count;
+        }
+        for (String id : keys) if (total > cap && left > 0 && selected.getOrDefault(id, 0) < available.get(id)) {
+            selected.merge(id, 1, Integer::sum); left--;
+        }
+        return selected;
+    }
+
 }

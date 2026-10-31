@@ -36,8 +36,8 @@ class TechnologyReworkIntegrationTest extends BaseServiceTest {
     @Test void loadSnapshotAppliesAcrossAllUnitBranchesAndCannotFollowResearchChanges() {
         for (UnitDef u : UnitDef.UNITS.values()) {
             int load = Objects.requireNonNullElse(u.load(), 0);
-            var snapshot = TechnologyRules.actionSnapshot(Map.of("log_load", 10, UnitEquipmentEffects.key(u.key(), "load"), 20));
-            assertEquals((int) Math.floor(10 * load * 1.2 * 1.5), marchService.calcArmyLoad(Map.of(u.key(), 10), snapshot), u.key());
+            var snapshot = TechnologyRules.actionSnapshot(Map.of("log_load", 10, "@ue:" + u.key() + ":" + "load", 20));
+            assertEquals((int) Math.floor(10 * load * 1.5), marchService.calcArmyLoad(Map.of(u.key(), 10), snapshot), u.key());
             assertEquals(10 * load, marchService.calcArmyLoad(Map.of(u.key(), 10), Map.of()), u.key());
         }
         Map<String, Integer> live = new HashMap<>(Map.of("log_load", 2));
@@ -52,22 +52,22 @@ class TechnologyReworkIntegrationTest extends BaseServiceTest {
         assertEquals(3, research.getTechLevel(p.getId(), "prod_food"));
         assertEquals(8, research.getTechLevel(p.getId(), "log_load"));
         assertEquals(6, research.getTechLevel(p.getId(), "recon_radar"));
-        assertEquals(10, research.getTechLevel(p.getId(), "unit_refit"));
+        assertEquals(0, research.getTechLevel(p.getId(), "unit_refit"));
         imports.importFromJson(p.getId(), "{\"technologyRulesVersion\":\"technology-v2-20261016\",\"tech\":{\"recon_radar\":2,\"unit_refit\":3}}");
         assertEquals(4, research.getTechLevel(p.getId(), "recon_radar"));
-        assertEquals(6, research.getTechLevel(p.getId(), "unit_refit"));
+        assertEquals(0, research.getTechLevel(p.getId(), "unit_refit"));
     }
-    @Test void newImportsRemainAtExactLevelsAndLegacyPaidQueueCanSkipOddLevel() {
+    @Test void newImportsIgnoreRetiredTechnologyAndKeepActiveLevels() {
         createTestWorld(); var p = createTestPlayer(); Long id = p.getId();
         imports.importFromJson(id, "{\"technologyRulesVersion\":\"technology-v3-20261019\",\"tech\":{\"unit_refit\":6,\"recon_radar\":9}}");
-        assertEquals(6, research.getTechLevel(id, "unit_refit"));
+        assertEquals(0, research.getTechLevel(id, "unit_refit"));
         assertEquals(9, research.getTechLevel(id, "recon_radar"));
         TechResearchQueue q = new TechResearchQueue(); q.setPlayerId(id); q.setCitySlot(0);
-        q.setTechType("unit_refit"); q.setTargetLevel(8); q.setStartedAt(1L); q.setFinishesAt(2L);
+        q.setTechType("recon_radar"); q.setTargetLevel(10); q.setStartedAt(1L); q.setFinishesAt(2L);
         q.setDurationSeconds(1); q.setCostSteel(321);
         queues.saveAndFlush(q);
         assertEquals(1, research.settleCompletedResearch(id, System.currentTimeMillis()).size());
-        assertEquals(8, research.getTechLevel(id, "unit_refit"));
+        assertEquals(10, research.getTechLevel(id, "recon_radar"));
         assertTrue(research.settleCompletedResearch(id, System.currentTimeMillis()).isEmpty());
     }
 

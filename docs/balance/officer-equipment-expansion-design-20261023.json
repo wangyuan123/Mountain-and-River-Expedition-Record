@@ -44,7 +44,7 @@
     {
       "key": "recruit", "name": "列兵", "persisted_tier_id": 1, "progression_order": 1, "required_level": 1, "box_diamonds": 200,
       "base_main": { "core": 5, "major": 1, "medium": 1, "minor": 1 }, "core_each_secondary": 1, "new_slot_each_secondary": 0,
-      "resonance_increment_main": [3, 1, 1, 1], "resonance_increment_all": [0, 0, 0, 0], "effective_preparation_cap": 1,
+      "resonance_increment_main": [3, 1, 1, 1], "resonance_increment_all": [0, 0, 0, 0],
       "expected_full_set": { "main": 30, "each_secondary": 3 },
       "core_names": {
         "military": ["列兵军刀", "列兵臂章", "列兵作训服"],
@@ -56,7 +56,7 @@
     {
       "key": "sergeant", "name": "士官", "persisted_tier_id": 4, "progression_order": 2, "required_level": 20, "box_diamonds": 500,
       "base_main": { "core": 9, "major": 1, "medium": 1, "minor": 1 }, "core_each_secondary": 2, "new_slot_each_secondary": 0,
-      "resonance_increment_main": [8, 2, 2, 2], "resonance_increment_all": [0, 0, 0, 0], "effective_preparation_cap": 2,
+      "resonance_increment_main": [8, 2, 2, 2], "resonance_increment_all": [0, 0, 0, 0],
       "expected_full_set": { "main": 50, "each_secondary": 6 },
       "core_names": {
         "military": ["士官战刀", "士官突击章", "士官作战服"],
@@ -68,7 +68,7 @@
     {
       "key": "officer", "name": "校官", "persisted_tier_id": 2, "progression_order": 3, "required_level": 40, "box_diamonds": 1200,
       "base_main": { "core": 15, "major": 3, "medium": 2, "minor": 1 }, "core_each_secondary": 3, "new_slot_each_secondary": 0,
-      "resonance_increment_main": [15, 3, 3, 3], "resonance_increment_all": [0, 0, 0, 0], "effective_preparation_cap": 3,
+      "resonance_increment_main": [15, 3, 3, 3], "resonance_increment_all": [0, 0, 0, 0],
       "expected_full_set": { "main": 87, "each_secondary": 9 },
       "core_names": {
         "military": ["校官军刀", "校官勋章", "校官军服"],
@@ -80,7 +80,7 @@
     {
       "key": "brigadier", "name": "准将", "persisted_tier_id": 5, "progression_order": 4, "required_level": 60, "box_diamonds": 2400,
       "base_main": { "core": 20, "major": 3, "medium": 2, "minor": 1 }, "core_each_secondary": 4, "new_slot_each_secondary": 0,
-      "resonance_increment_main": [20, 4, 4, 4], "resonance_increment_all": [0, 0, 0, 0], "effective_preparation_cap": 4,
+      "resonance_increment_main": [20, 4, 4, 4], "resonance_increment_all": [0, 0, 0, 0],
       "expected_full_set": { "main": 110, "each_secondary": 12 },
       "core_names": {
         "military": ["准将指挥刀", "准将先锋勋章", "准将指挥服"],
@@ -92,7 +92,7 @@
     {
       "key": "general", "name": "上将", "persisted_tier_id": 6, "progression_order": 5, "required_level": 80, "box_diamonds": 3600,
       "base_main": { "core": 25, "major": 4, "medium": 3, "minor": 2 }, "core_each_secondary": 4, "new_slot_each_secondary": 0,
-      "resonance_increment_main": [25, 5, 5, 5], "resonance_increment_all": [0, 0, 0, 0], "effective_preparation_cap": 5,
+      "resonance_increment_main": [25, 5, 5, 5], "resonance_increment_all": [0, 0, 0, 0],
       "expected_full_set": { "main": 142, "each_secondary": 12 },
       "core_names": {
         "military": ["上将统御佩剑", "上将决胜勋章", "上将统御军服"],
@@ -104,7 +104,7 @@
     {
       "key": "marshal", "name": "元帅", "persisted_tier_id": 3, "progression_order": 6, "required_level": 100, "box_diamonds": 5000,
       "base_main": { "core": 30, "major": 4, "medium": 3, "minor": 2 }, "core_each_secondary": 5, "new_slot_each_secondary": 0,
-      "resonance_increment_main": [30, 6, 6, 6], "resonance_increment_all": [5, 0, 0, 2], "effective_preparation_cap": 5,
+      "resonance_increment_main": [30, 6, 6, 6], "resonance_increment_all": [5, 0, 0, 2],
       "expected_full_set": { "main": 172, "each_secondary": 22 },
       "core_names": {
         "military": ["元帅佩剑", "元帅将星", "元帅礼服"],
@@ -114,38 +114,6 @@
       }
     }
   ],
-  "preparation": {
-    "binding": "player_officer_slot",
-    "main_attribute_per_effective_level": 1,
-    "empty_slot_bonus": 0,
-    "persist_on_gear_change": true,
-    "persist_on_officer_dismissal": false,
-    "success_rate": 1,
-    "gold_source": "player_main_city_gold",
-    "material_key": "officerPreparationParts",
-    "material_name": "军备零件",
-    "steps": [
-      { "target_level": 1, "required_officer_level": 1, "parts": 20, "gold": 1000 },
-      { "target_level": 2, "required_officer_level": 20, "parts": 40, "gold": 2000 },
-      { "target_level": 3, "required_officer_level": 40, "parts": 60, "gold": 3000 },
-      { "target_level": 4, "required_officer_level": 60, "parts": 80, "gold": 4000 },
-      { "target_level": 5, "required_officer_level": 80, "parts": 100, "gold": 5000 }
-    ],
-    "daily": { "available_tasks": 4, "max_claims": 3, "parts_per_claim": 40, "timezone": "Asia/Shanghai", "reset": "00:00" },
-    "weekly": { "daily_claims_required": 15, "parts": 240, "max_claims": 1, "timezone": "Asia/Shanghai", "reset": "monday_00:00" },
-    "parts_sold_in_shop": false,
-    "gear_dismantles_into_parts": false,
-    "expected_full_officer_cost": { "parts": 3600, "gold": 180000 },
-    "pacing_example": {
-      "assumptions": "120 parts daily; 240 extra on days 7,14,21,...; enough gold and officer level; one officer and no other spending",
-      "all_slots_level_1_day": 2,
-      "all_slots_level_2_day": 6,
-      "all_slots_level_3_day": 10,
-      "all_slots_level_4_day": 16,
-      "all_slots_level_5_day": 24,
-      "four_officers_all_slots_level_5_day": 94
-    }
-  },
   "legacy": {
     "tiers": ["recruit", "officer", "marshal"],
     "slots": ["weapon", "badge", "coat"],

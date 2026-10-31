@@ -30,6 +30,10 @@ public class GuildRelation extends VersionedEntity {
     @Column(name = "updated_by_player_id", nullable = false)
     private Long updatedByPlayerId;
 
+    /** 请求仅代表发起方意愿，status在对方接受前保持原值。 */
+    @Column(name = "friendship_requested_by")
+    private Long friendshipRequestedBy;
+
     @Column(name = "updated_at", nullable = false)
     private Long updatedAt;
 }

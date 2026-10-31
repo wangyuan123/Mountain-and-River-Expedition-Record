@@ -1,0 +1,95 @@
+{
+  "mail_attachment_integer_overflow": {
+    "quantityPerEntry": 1000000000,
+    "attachmentEntries": 3,
+    "diamondsAfter": 1294967296,
+    "diamondsBefore": 0,
+    "success": true
+  },
+  "prisoner_recruitment_retroactive_food": {
+    "success": true,
+    "foodAfter": 9900,
+    "foodBefore": 10000
+  },
+  "mail_army_retroactive_food": {
+    "success": true,
+    "foodAfter": 9900,
+    "foodBefore": 10000
+  },
+  "wall_downgrade_keeps_overcapacity_forts": {
+    "capacityAfter": 0,
+    "fortsAfter": 3000,
+    "build": {
+      "success": true,
+      "message": "修筑 碉堡 x3000",
+      "fortType": "bunker",
+      "count": 3000
+    },
+    "combatForts": {
+      "bunker": 3000
+    },
+    "dismantle": {
+      "success": true,
+      "message": "城防 开始拆除 (拆除后消失释放卡槽)，预计 30秒完成",
+      "buildingType": "wall",
+      "slot": null,
+      "targetLevel": 0,
+      "buildTime": 30,
+      "startAt": 1800000000000,
+      "finishAt": 1800000030000
+    }
+  },
+  "cancel_production_leaves_idle_lane": {
+    "secondStartsAfter": 1800000324000,
+    "cancelled": true,
+    "idleSeconds": 324,
+    "now": 1800000000000,
+    "remainingOrders": 1,
+    "secondStartsBefore": 1800000324000
+  },
+  "construction_refund_changes_with_technology": {
+    "started": true,
+    "start": {
+      "success": true,
+      "message": "民居 #1 开始升级，预计 30秒完成 (竣工获得 +1 声望)",
+      "buildingType": "house",
+      "slot": 0,
+      "targetLevel": 1,
+      "cost": {
+        "food": 60,
+        "steel": 120
+      },
+      "buildTime": 30,
+      "startAt": 1800000165000,
+      "finishAt": 1800000195000,
+      "prestigeGain": 1
+    },
+    "cancelled": true,
+    "paidSteel": 120,
+    "actualSteelRefund": 57,
+    "expectedHalfRefund": 60
+  },
+  "new_officer_retroactive_salary": {
+    "goldAfterRecruit": 99920,
+    "goldAfterSameTimeTick": 99820,
+    "recruited": true,
+    "retroactiveSalary": 100
+  },
+  "new_officer_immediate_arrears_penalty": {
+    "arrearsStartedAt": 1799996400000,
+    "recruitedAt": 1800000000000,
+    "recruited": true,
+    "loyaltyBefore": 80,
+    "loyaltyAfter": 0,
+    "officerStillPresent": true
+  },
+  "tax_change_retroactive_income": {
+    "newTax": 100,
+    "changedAt": 1800000000000,
+    "success": true,
+    "oldTax": 0,
+    "goldAfterSameTimeTick": 1802,
+    "baselineGoldWithoutChange": 0,
+    "previousTick": 1799996400000
+  }
+}
